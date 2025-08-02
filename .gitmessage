@@ -1,0 +1,23 @@
+# <type>(<scope>): <subject>
+#
+# <body>
+#
+# <footer>
+
+# Types:
+# feat:     A new feature
+# fix:      A bug fix
+# docs:     Documentation only changes
+# style:    Changes that do not affect the meaning of the code
+# refactor: A code change that neither fixes a bug nor adds a feature
+# test:     Adding missing tests or correcting existing tests
+# chore:    Changes to the build process or auxiliary tools
+
+# Rules:
+# - Use English
+# - Use imperative mood in subject line
+# - Capitalize first letter of subject
+# - Do not end subject line with period
+# - Limit subject line to 50 characters
+# - Separate subject from body with blank line
+# - Use body to explain what and why vs. how

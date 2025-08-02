@@ -1,0 +1,38 @@
+# Cursor AI Rules for Git Commits
+
+## Commit Message Guidelines
+When generating commit messages, always follow these rules:
+
+### Format: `<type>(<scope>): <description>`
+
+### Types:
+- `feat`: new feature
+- `fix`: bug fix
+- `docs`: documentation changes
+- `style`: formatting, missing semicolons, etc (no code change)
+- `refactor`: code change that neither fixes bug nor adds feature
+- `test`: adding missing tests
+- `chore`: updating build tasks, package manager configs, etc
+
+### Rules:
+1. **Always write in English**
+2. Use lowercase for description
+3. No period at the end
+4. Use imperative mood ("add" not "added")
+5. Keep description under 50 characters
+6. If needed, add longer explanation in commit body
+
+### Examples:
+- `feat: add user authentication system`
+- `fix: resolve header navigation bug`
+- `docs: update installation instructions`
+- `style: format code with prettier`
+- `refactor: reorganize components structure`
+- `chore: update dependencies`
+
+### Scopes (optional):
+- `ui`: user interface changes
+- `api`: API related changes
+- `auth`: authentication features
+- `db`: database changes
+- `config`: configuration changes
