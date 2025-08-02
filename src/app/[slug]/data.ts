@@ -16,12 +16,12 @@ export const stores = {
     },
     products: [
       { image: "/lessari/image.png", price: "R$ 69,99", name: "Bolsa média alça removível" },
-      { image: "/lessari/image2.png", price: "R$ 49,99", name: "Bolsa baguete marrom" },
-      { image: "/lessari/image3.png", price: "R$ 69,99", name: "Bolsa média terracota" },
-      { image: "/lessari/image4.png", price: "R$ 99,99", name: "Round bag" },
-      { image: "/lessari/image5.png", price: "R$ 49,99", name: "Shoulder bag" },
-      { image: "/lessari/image6.png", price: "R$ 69,99", name: "Bolsa média off white" },
-      { image: "/lessari/image7.png", price: "R$ 49,99", name: "Baguete terracota" }
+      { image: "/lessari/baguete-marrom.JPG", price: "R$ 49,99", name: "Bolsa baguete marrom" },
+      { image: "/lessari/media-terracota.JPG", price: "R$ 69,99", name: "Bolsa média terracota" },
+      { image: "/lessari/round-bag.JPG", price: "R$ 99,99", name: "Round bag" },
+      { image: "/lessari/shoulder-bag.JPG", price: "R$ 49,99", name: "Shoulder bag" },
+      { image: "/lessari/media-off-white.JPG", price: "R$ 69,99", name: "Bolsa média off white" },
+      { image: "/lessari/baguete-terracota.JPG", price: "R$ 49,99", name: "Baguete terracota" }
     ]
   }
 };
