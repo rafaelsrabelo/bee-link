@@ -21,7 +21,7 @@ export const stores = {
       { image: "/lessari/round-bag.JPG", price: "R$ 99,99", name: "Round bag" },
       { image: "/lessari/shoulder-bag.JPG", price: "R$ 49,99", name: "Shoulder bag" },
       { image: "/lessari/media-off-white.JPG", price: "R$ 69,99", name: "Bolsa média off white" },
-      { image: "/lessari/baguete-terracota.JPG", price: "R$ 49,99", name: "Baguete terracota" }
+      { image: "/lessari/baguete-terracota.JPG", price: "R$ 49,99", name: "Bolsa Baguete terracota" }
     ]
   }
 };
