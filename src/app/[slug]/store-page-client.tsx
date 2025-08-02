@@ -91,7 +91,14 @@ export default function StorePageClient({ store }: StorePageClientProps) {
             <div className="text-white font-medium">Catálogo</div>
             <div className="text-white/70 text-sm">{store.store_name}</div>
           </div>
-          <div className="relative">
+          <div className="relative flex items-center gap-3">
+            {cart.length > 0 && (
+              <div className="bg-white/10 backdrop-blur-sm rounded-full px-3 py-1 border border-white/20">
+                <span className="text-white/90 text-xs font-medium">
+                  R$ {getCartTotal().toFixed(2).replace('.', ',')}
+                </span>
+              </div>
+            )}
             <button
               type="button"
               className="text-white hover:bg-white/10 p-2 rounded-full relative transition-all"
