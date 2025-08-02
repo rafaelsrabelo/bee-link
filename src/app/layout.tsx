@@ -1,9 +1,15 @@
-import type { Metadata } from "next";
 import "./globals.css";
+import type { Metadata } from "next";
+import { Red_Hat_Display } from "next/font/google";
+
+const redHatDisplay = Red_Hat_Display({
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+});
 
 export const metadata: Metadata = {
-  title: "Bee Link",
-  description: "Bee Link Application",
+  title: "Bee Link - Sua loja e redes sociais em um único link",
+  description: "Centralize produtos, redes sociais e contatos em uma página profissional. Facilite a conexão com seus clientes e aumente suas vendas.",
 };
 
 export default function RootLayout({
@@ -13,7 +19,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body suppressHydrationWarning={true}>
+      <body className={`${redHatDisplay.className} bg-background-primary text-content-body`} suppressHydrationWarning={true}>
         {children}
       </body>
     </html>
