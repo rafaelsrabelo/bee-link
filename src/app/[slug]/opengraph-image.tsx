@@ -37,20 +37,20 @@ export default async function Image({ params }: { params: { slug: string } }) {
     (
       <div
         style={{
-          background: 'linear-gradient(135deg, #856342 0%, #6B4F35 100%)',
+          background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
           width: '100%',
           height: '100%',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          color: 'white',
-          padding: 40,
+          color: '#2c3e50',
+          padding: 60,
           position: 'relative',
           overflow: 'hidden',
         }}
       >
-        {/* Background Image Overlay */}
+        {/* Subtle Background Pattern */}
         <div
           style={{
             position: 'absolute',
@@ -58,106 +58,28 @@ export default async function Image({ params }: { params: { slug: string } }) {
             left: 0,
             right: 0,
             bottom: 0,
-            background: 'linear-gradient(135deg, #856342 0%, #6B4F35 100%)',
-            opacity: 0.8,
+            background: `
+              radial-gradient(circle at 20% 20%, rgba(133, 99, 66, 0.03) 0%, transparent 50%),
+              radial-gradient(circle at 80% 80%, rgba(107, 79, 53, 0.03) 0%, transparent 50%),
+              radial-gradient(circle at 40% 60%, rgba(166, 124, 82, 0.02) 0%, transparent 50%)
+            `,
           }}
         />
 
-        {/* Decorative Elements - Bolas decorativas */}
+        {/* Elegant Border */}
         <div
           style={{
             position: 'absolute',
-            top: '10%',
-            left: '5%',
-            width: '15%',
-            height: '15%',
-            borderRadius: '50%',
-            backgroundColor: 'rgba(255, 255, 255, 0.2)',
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            top: '15%',
-            right: '10%',
-            width: '10%',
-            height: '10%',
-            borderRadius: '50%',
-            backgroundColor: 'rgba(255, 255, 255, 0.15)',
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            top: '30%',
-            left: '15%',
-            width: '20%',
-            height: '20%',
-            borderRadius: '50%',
-            backgroundColor: 'rgba(255, 255, 255, 0.1)',
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            top: '40%',
-            right: '5%',
-            width: '12%',
-            height: '12%',
-            borderRadius: '50%',
-            backgroundColor: 'rgba(255, 255, 255, 0.2)',
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            bottom: '25%',
-            left: '10%',
-            width: '18%',
-            height: '18%',
-            borderRadius: '50%',
-            backgroundColor: 'rgba(255, 255, 255, 0.15)',
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            bottom: '35%',
-            right: '15%',
-            width: '25%',
-            height: '25%',
-            borderRadius: '50%',
-            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+            top: 40,
+            left: 40,
+            right: 40,
+            bottom: 40,
+            border: '1px solid rgba(133, 99, 66, 0.1)',
+            borderRadius: 16,
           }}
         />
 
-        {/* Marble texture elements */}
-        <div
-          style={{
-            position: 'absolute',
-            top: '25%',
-            right: '-10%',
-            width: '30%',
-            height: '30%',
-            borderRadius: '50%',
-            backgroundColor: 'rgba(255, 255, 255, 0.3)',
-            transform: 'translateX(50%)',
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            bottom: '15%',
-            left: '-12%',
-            width: '35%',
-            height: '35%',
-            borderRadius: '50%',
-            backgroundColor: 'rgba(255, 255, 255, 0.25)',
-            transform: 'translateX(-50%)',
-          }}
-        />
-
-        {/* Conteúdo principal */}
+        {/* Main Content */}
         <div
           style={{
             position: 'relative',
@@ -167,69 +89,119 @@ export default async function Image({ params }: { params: { slug: string } }) {
             alignItems: 'center',
             justifyContent: 'center',
             textAlign: 'center',
+            maxWidth: 800,
           }}
         >
-          {/* Logo da loja */}
+          {/* Elegant Logo Container */}
           <div
             style={{
-              width: 120,
-              height: 120,
+              width: 100,
+              height: 100,
               borderRadius: '50%',
-              backgroundColor: '#A67C52',
+              background: 'linear-gradient(135deg, #856342 0%, #6B4F35 100%)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              marginBottom: 32,
-              fontSize: 48,
-              fontWeight: 'bold',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+              marginBottom: 40,
+              boxShadow: '0 8px 32px rgba(133, 99, 66, 0.2)',
+              border: '3px solid rgba(255, 255, 255, 0.9)',
             }}
           >
-            L
+            <span
+              style={{
+                color: 'white',
+                fontSize: 36,
+                fontWeight: '300',
+                letterSpacing: '2px',
+              }}
+            >
+              L
+            </span>
           </div>
 
-          {/* Nome da loja */}
+          {/* Store Name */}
           <h1
             style={{
-              fontSize: 64,
-              fontWeight: 'bold',
+              fontSize: 48,
+              fontWeight: '300',
               marginBottom: 16,
               textAlign: 'center',
-              textShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+              color: '#2c3e50',
+              letterSpacing: '1px',
             }}
           >
             {store.store_name}
           </h1>
 
-          {/* Descrição */}
+          {/* Elegant Divider */}
+          <div
+            style={{
+              width: 60,
+              height: 2,
+              background: 'linear-gradient(90deg, transparent 0%, #856342 50%, transparent 100%)',
+              marginBottom: 24,
+            }}
+          />
+
+          {/* Description */}
           <p
             style={{
-              fontSize: 24,
-              marginBottom: 32,
+              fontSize: 20,
+              marginBottom: 40,
               textAlign: 'center',
-              opacity: 0.9,
-              maxWidth: 800,
-              textShadow: '0 1px 4px rgba(0, 0, 0, 0.3)',
+              color: '#6c757d',
+              fontWeight: '300',
+              lineHeight: 1.6,
+              maxWidth: 600,
             }}
           >
             {store.description}
           </p>
 
-          {/* Bee Link branding */}
+          {/* Professional Badge */}
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 12,
-              fontSize: 18,
-              opacity: 0.8,
-              textShadow: '0 1px 4px rgba(0, 0, 0, 0.3)',
+              gap: 8,
+              padding: '12px 24px',
+              background: 'rgba(133, 99, 66, 0.05)',
+              borderRadius: 50,
+              border: '1px solid rgba(133, 99, 66, 0.1)',
+              fontSize: 14,
+              color: '#856342',
+              fontWeight: '400',
+              letterSpacing: '0.5px',
             }}
           >
-            <span>🐝</span>
+            <span style={{ fontSize: 16 }}>🐝</span>
             <span>Criado com Bee Link</span>
           </div>
         </div>
+
+        {/* Subtle Corner Accents */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 60,
+            right: 60,
+            width: 8,
+            height: 8,
+            borderRadius: '50%',
+            background: 'rgba(133, 99, 66, 0.2)',
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 60,
+            left: 60,
+            width: 6,
+            height: 6,
+            borderRadius: '50%',
+            background: 'rgba(107, 79, 53, 0.15)',
+          }}
+        />
       </div>
     ),
     size

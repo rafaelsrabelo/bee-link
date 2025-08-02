@@ -15,7 +15,7 @@ export const stores = {
       whatsapp: "+558594100683"
     },
     products: [
-      { image: "/lessari/image.png", price: "R$ 69,99", name: "Bolsa média alça removível" },
+      { image: "/lessari/media-alca-removivel.JPG", price: "R$ 69,99", name: "Bolsa média alça removível" },
       { image: "/lessari/baguete-marrom.JPG", price: "R$ 49,99", name: "Bolsa baguete marrom" },
       { image: "/lessari/media-terracota.JPG", price: "R$ 69,99", name: "Bolsa média terracota" },
       { image: "/lessari/round-bag.JPG", price: "R$ 99,99", name: "Round bag" },
