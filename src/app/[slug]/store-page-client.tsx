@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, ExternalLink, Instagram, MessageCircle, Minus, Plus, ShoppingCart } from "lucide-react";
+import { ArrowLeft, ExternalLink, Instagram, MessageCircle, Minus, Phone, Plus, ShoppingCart } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 import type { StoreData } from './data';
@@ -270,28 +270,31 @@ export default function StorePageClient({ store }: StorePageClientProps) {
         <div className="w-full max-w-sm space-y-4 mb-8">
           <button 
             type="button"
-            onClick={handleWhatsAppCheckout}
-            disabled={cart.length === 0}
-            className={`w-full font-medium py-6 rounded-full text-lg backdrop-blur-sm flex items-center justify-center transition-all ${
+            onClick={cart.length > 0 ? handleWhatsAppCheckout : () => {
+              const message = `Olá! Gostaria de saber mais sobre os produtos da ${store.store_name}`;
+              const whatsappUrl = `https://wa.me/${store.social_networks.whatsapp.replace(/[^\d]/g, '')}?text=${encodeURIComponent(message)}`;
+              window.open(whatsappUrl, '_blank');
+            }}
+            className={`w-full font-medium py-4 rounded-full text-lg backdrop-blur-sm flex items-center justify-center transition-all ${
               cart.length > 0 
                 ? 'bg-white/90 hover:bg-white text-[#856342] shadow-lg hover:shadow-xl' 
-                : 'bg-white/20 text-white/40 cursor-not-allowed'
+                : 'bg-white/90 hover:bg-white text-[#856342] shadow-lg hover:shadow-xl'
             }`}
           >
             <div className="w-8 h-8 bg-[#856342] rounded-full mr-3 flex items-center justify-center">
-              <div className="w-4 h-4 bg-white rounded-full" />
+              <Phone className="w-4 h-4 text-white" />
             </div>
-            {cart.length > 0 ? `Finalizar Pedido (${cart.reduce((total, item) => total + item.quantity, 0)} itens)` : 'Adicione itens ao carrinho'}
+            {cart.length > 0 ? `Finalizar Pedido (${cart.reduce((total, item) => total + item.quantity, 0)} itens)` : 'Fale com a gente'}
           </button>
 
           <button
             type="button"
             onClick={() => setShowCatalog(true)}
-            className="w-full bg-white/90 hover:bg-white text-[#856342] font-medium py-6 rounded-full text-lg backdrop-blur-sm flex items-center justify-between"
+            className="w-full bg-white/90 hover:bg-white text-[#856342] font-medium py-4 rounded-full text-lg backdrop-blur-sm flex items-center justify-between"
           >
-            <span className="flex-1">CATÁLOGO</span>
+            <span className="flex-1">COMPRE AQUI</span>
             <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-[#6B4F35] to-[#A67C52] flex items-center justify-center relative">
-              <span className="text-white font-bold text-lg">L</span>
+              <ShoppingCart className="w-4 h-4 text-white" />
               {cart.length > 0 && (
                 <span className="absolute -top-1 -right-1 bg-[#A67C52] text-white text-xs rounded-full w-6 h-6 flex items-center justify-center shadow-lg border-2 border-white/50">
                   {cart.reduce((total, item) => total + item.quantity, 0)}
