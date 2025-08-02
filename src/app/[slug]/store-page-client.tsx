@@ -20,6 +20,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
   const [showCatalog, setShowCatalog] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
 
+
   const addToCart = (product: { name: string; price: string; image: string }) => {
     setCart(prevCart => {
       const existingItem = prevCart.find(item => item.name === product.name);
@@ -75,6 +76,8 @@ export default function StorePageClient({ store }: StorePageClientProps) {
     window.open(whatsappUrl, '_blank');
   };
 
+
+
   if (showCatalog) {
     return (
       <div className="min-h-screen bg-[#856342] relative overflow-hidden">
@@ -126,7 +129,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
         </div>
 
         {/* Products Grid */}
-        <div className="px-4 pb-20 pt-10">
+        <div className="px-4 pb-20 pt-4">
           <div className="grid grid-cols-2 gap-3">
             {store.products.map((product, index) => {
               const cartItem = cart.find(item => item.name === product.name);
