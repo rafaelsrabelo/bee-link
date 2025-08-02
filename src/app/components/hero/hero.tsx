@@ -1,5 +1,5 @@
 import { TotalVisits } from "../commons/total-visits"
-import UserCard from "../commons/user-card"
+import StoreCard from "../commons/store-card"
 import Button from "../ui/button"
 import TextInput from "../ui/text-input"
 
@@ -35,7 +35,7 @@ export const Hero = () => {
 
       <div className="w-full flex items-center justify-center bg-[radial-gradient(circle_at_50%_50%,#4B2DBB,transparent_55%)]">
         <div className="relative w-full max-w-md px-4">
-          <UserCard />
+          <StoreCard />
           <div className="absolute -bottom-4 -right-8 hidden lg:block z-10">
             <TotalVisits />
           </div>

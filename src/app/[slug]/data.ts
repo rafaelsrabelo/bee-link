@@ -23,6 +23,24 @@ export const stores = {
       { image: "/lessari/media-off-white.JPG", price: "R$ 69,99", name: "Bolsa média off white", category: "bag" },
       { image: "/lessari/baguete-terracota.JPG", price: "R$ 49,99", name: "Bolsa baguete terracota", category: "bag" }
     ]
+  },
+  "dindin-da-leia": {
+    store_name: "Dindin da Leia",
+    description: "Muito sabor e carinho desde 2016",
+    slug: "dindin-da-leia",
+    logo: "/dindin-da-leia/logo.png",
+    colors: {
+      primary: "#FE3F5C", // Vermelho salmão
+      secondary: "#007AC4", // Azul
+      accent: "#FF6B8A" // Rosa claro (accent escolhido)
+    },
+    social_networks: {
+      instagram: "dindin.daleia",
+      whatsapp: "+5585996826836"
+    },
+    products: [
+      { image: "/dindin-da-leia/produto-teste.jpg", price: "R$ 25,00", name: "Ninho com Nutella", category: "default" }
+    ]
   }
 };
 

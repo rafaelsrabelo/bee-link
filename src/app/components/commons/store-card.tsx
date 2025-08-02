@@ -1,7 +1,7 @@
 import { Instagram, MessageCircle, Music, Phone, Plus, Video } from "lucide-react";
 import Button from "../ui/button";
 
-export default function UserCard() {
+export default function StoreCard() {
   // Objeto com os links sociais - só renderiza se tiver valor
   const socialLinks = {
     instagram: "https://instagram.com/sua_loja",
@@ -68,7 +68,7 @@ export default function UserCard() {
 
         <div className="flex flex-col gap-3 w-full">
           <Button className="w-full bg-accent-purple text-white hover:bg-accent-purple/90">
-            Crie seus links
+            Crie seus produtos
           </Button>
           
           {/* biome-ignore lint/a11y/useButtonType: <explanation> */}

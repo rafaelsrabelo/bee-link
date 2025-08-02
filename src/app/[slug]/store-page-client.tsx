@@ -80,9 +80,9 @@ export default function StorePageClient({ store }: StorePageClientProps) {
 
   if (showCatalog) {
     return (
-      <div className="min-h-screen bg-[#856342] relative overflow-hidden">
+      <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: store.colors.primary }}>
         {/* Header */}
-        <div className="flex justify-between items-center px-4 py-4 fixed top-0 left-0 right-0 z-50 bg-[#856342]/95 backdrop-blur-sm border-b border-white/10">
+        <div className="flex justify-between items-center px-4 py-4 fixed top-0 left-0 right-0 z-50 backdrop-blur-sm border-b border-white/10" style={{ backgroundColor: `${store.colors.primary}95` }}>
           <button
             type="button"
             className="text-white hover:bg-white/10 p-2 rounded-full"
@@ -121,9 +121,9 @@ export default function StorePageClient({ store }: StorePageClientProps) {
         {/* Catalog Header */}
         <div className="px-4 mb-6 pt-20">
           <div className="bg-white/90 backdrop-blur-sm rounded-full px-6 py-4 flex items-center justify-between">
-            <span className="text-[#856342] font-medium text-lg">CATÁLOGO</span>
-            <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-[#6B4F35] to-[#A67C52] flex items-center justify-center">
-              <span className="text-white font-bold text-lg">L</span>
+            <span className="font-medium text-lg" style={{ color: store.colors.primary }}>CATÁLOGO</span>
+            <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center" style={{ background: `linear-gradient(to bottom right, ${store.colors.secondary}, ${store.colors.accent})` }}>
+              <span className="text-white font-bold text-lg">{store.store_name.charAt(0)}</span>
             </div>
           </div>
         </div>
@@ -175,7 +175,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
                       )}
                       
                       {quantity > 0 && (
-                        <span className="bg-white/95 backdrop-blur-sm text-[#856342] text-sm font-medium px-3 py-1 rounded-full min-w-[28px] text-center shadow-sm">
+                        <span className="bg-white/95 backdrop-blur-sm text-sm font-medium px-3 py-1 rounded-full min-w-[28px] text-center shadow-sm" style={{ color: store.colors.primary }}>
                           {quantity}
                         </span>
                       )}
@@ -204,16 +204,16 @@ export default function StorePageClient({ store }: StorePageClientProps) {
   }
 
   return (
-    <div className="min-h-screen bg-[#856342] relative overflow-hidden">
+    <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: store.colors.primary }}>
       {/* Background Image */}
       <div className="absolute inset-0">
         <Image
-          src="/lessari/background.png"
+          src={store.logo.replace('/logo.png', '/background.png')}
           alt="Background"
           fill
           className="object-cover"
         />
-        <div className="absolute inset-0 bg-[#856342]/80" />
+        <div className="absolute inset-0" style={{ backgroundColor: `${store.colors.primary}80` }} />
       </div>
 
       {/* Decorative Elements */}
@@ -239,10 +239,10 @@ export default function StorePageClient({ store }: StorePageClientProps) {
       <div className="flex flex-col items-center px-6 relative z-10">
         {/* Logo */}
         <div className="mb-8">
-          <div className="w-48 h-48 bg-[#6B4F35] rounded-full flex items-center justify-center relative overflow-hidden">
+          <div className="w-48 h-48 rounded-full flex items-center justify-center relative overflow-hidden" style={{ backgroundColor: store.colors.secondary }}>
             <Image
-              src="/lessari/logo.jpeg"
-              alt="Lessari Logo"
+              src={store.logo}
+              alt={`${store.store_name} Logo`}
               fill
               className="object-cover"
             />
@@ -287,11 +287,12 @@ export default function StorePageClient({ store }: StorePageClientProps) {
             }}
             className={`w-full font-medium py-4 rounded-full text-lg backdrop-blur-sm flex items-center justify-center transition-all ${
               cart.length > 0 
-                ? 'bg-white/90 hover:bg-white text-[#856342] shadow-lg hover:shadow-xl' 
-                : 'bg-white/90 hover:bg-white text-[#856342] shadow-lg hover:shadow-xl'
+                ? 'bg-white/90 hover:bg-white shadow-lg hover:shadow-xl' 
+                : 'bg-white/90 hover:bg-white shadow-lg hover:shadow-xl'
             }`}
+            style={{ color: store.colors.primary }}
           >
-            <div className="w-8 h-8 bg-[#856342] rounded-full mr-3 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-full mr-3 flex items-center justify-center" style={{ backgroundColor: store.colors.primary }}>
               <Phone className="w-4 h-4 text-white" />
             </div>
             {cart.length > 0 ? `Finalizar Pedido (${cart.reduce((total, item) => total + item.quantity, 0)} itens)` : 'Fale com a gente'}
@@ -300,13 +301,14 @@ export default function StorePageClient({ store }: StorePageClientProps) {
           <button
             type="button"
             onClick={() => setShowCatalog(true)}
-            className="w-full bg-white/90 hover:bg-white text-[#856342] font-medium py-4 rounded-full text-lg backdrop-blur-sm flex items-center justify-between"
+            className="w-full bg-white/90 hover:bg-white font-medium py-4 rounded-full text-lg backdrop-blur-sm flex items-center justify-between"
+            style={{ color: store.colors.primary }}
           >
             <span className="flex-1">COMPRE AQUI</span>
-            <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-[#6B4F35] to-[#A67C52] flex items-center justify-center relative">
+            <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center relative" style={{ background: `linear-gradient(to bottom right, ${store.colors.secondary}, ${store.colors.accent})` }}>
               <ShoppingCart className="w-4 h-4 text-white" />
               {cart.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-[#A67C52] text-white text-xs rounded-full w-6 h-6 flex items-center justify-center shadow-lg border-2 border-white/50">
+                <span className="absolute -top-1 -right-1 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center shadow-lg border-2 border-white/50" style={{ backgroundColor: store.colors.accent }}>
                   {cart.reduce((total, item) => total + item.quantity, 0)}
                 </span>
               )}

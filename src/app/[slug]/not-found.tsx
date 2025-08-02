@@ -1,5 +1,6 @@
+"use client";
+
 import { ArrowLeft, Home, Search } from 'lucide-react';
-import Link from 'next/link';
 
 export default function StoreNotFound() {
   return (
@@ -22,13 +23,14 @@ export default function StoreNotFound() {
 
         {/* Botões de ação */}
         <div className="space-y-4">
-          <Link 
-            href="/"
+          <button 
+            type="button"
+            onClick={() => { window.location.href = '/'; }}
             className="w-full inline-flex items-center justify-center gap-2 px-6 py-4 bg-accent-purple text-white rounded-xl font-semibold hover:bg-accent-purple/90 transition-all duration-300 shadow-lg"
           >
             <Home size={20} />
             Voltar ao Início
-          </Link>
+          </button>
           
           <button 
             type="button"
@@ -48,13 +50,14 @@ export default function StoreNotFound() {
           <p className="text-content-body text-sm mb-4">
             Crie sua própria página personalizada e centralize todos os seus links em um só lugar.
           </p>
-          <Link 
-            href="/"
+          <button 
+            type="button"
+            onClick={() => { window.location.href = '/'; }}
             className="inline-flex items-center gap-2 text-accent-purple font-semibold hover:text-accent-purple/80 transition-colors"
           >
             Criar minha loja
             <span>→</span>
-          </Link>
+          </button>
         </div>
       </div>
     </div>
