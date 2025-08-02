@@ -2,7 +2,7 @@
 
 import { ArrowLeft, Share2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import type { StoreData } from '../../[slug]/page';
+import type { StoreData } from '../../[slug]/data';
 
 interface StoreHeaderProps {
   store: StoreData;

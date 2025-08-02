@@ -3,7 +3,7 @@
 import { ExternalLink, Heart, ZoomIn } from 'lucide-react';
 import Image from 'next/image';
 import { useState } from 'react';
-import type { StoreData } from '../../[slug]/page';
+import type { StoreData } from '../../[slug]/data';
 
 interface StoreGalleryProps {
   store: StoreData;

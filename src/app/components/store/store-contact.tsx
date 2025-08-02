@@ -2,7 +2,7 @@
 
 import { Check, Clock, Mail, MapPin, MessageCircle, Send } from 'lucide-react';
 import { useState } from 'react';
-import type { StoreData } from '../../[slug]/page';
+import type { StoreData } from '../../[slug]/data';
 
 interface StoreContactProps {
   store: StoreData;

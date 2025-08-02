@@ -3,7 +3,7 @@
 import { ExternalLink, Instagram, MessageCircle, X } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
-import type { StoreData } from './page';
+import type { StoreData } from './data';
 
 interface StorePageClientProps {
   store: StoreData;

@@ -1,7 +1,7 @@
 'use client';
 
 import { ExternalLink, Instagram, MessageCircle } from 'lucide-react';
-import type { StoreData } from '../../[slug]/page';
+import type { StoreData } from '../../[slug]/data';
 
 interface StoreSocialProps {
   store: StoreData;
