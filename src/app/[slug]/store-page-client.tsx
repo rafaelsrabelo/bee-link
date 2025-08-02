@@ -1,6 +1,6 @@
 "use client";
 
-import { ExternalLink, Instagram, MessageCircle, X } from "lucide-react";
+import { ArrowLeft, ExternalLink, Instagram, MessageCircle } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 import type { StoreData } from './data';
@@ -28,7 +28,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
             className="text-white hover:bg-white/10 p-2 rounded-full"
             onClick={() => setShowCatalog(false)}
           >
-            <X className="w-6 h-6" />
+            <ArrowLeft className="w-6 h-6" />
           </button>
           <div className="text-center">
             <div className="text-white font-medium">Catálogo</div>
