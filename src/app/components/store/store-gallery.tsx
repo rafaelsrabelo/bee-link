@@ -1,6 +1,7 @@
 'use client';
 
 import { ExternalLink, Heart, ZoomIn } from 'lucide-react';
+import Image from 'next/image';
 import { useState } from 'react';
 import type { StoreData } from '../../[slug]/page';
 
@@ -33,10 +34,11 @@ function ProductModal({ image, isOpen, onClose }: ProductModalProps) {
       tabIndex={-1}
     >
       <div className="relative max-w-4xl max-h-[90vh] w-full">
-        <img
+        <Image
           src={image}
           alt="Produto"
-          className="w-full h-full object-contain rounded-lg"
+          fill
+          className="object-contain rounded-lg"
           onClick={(e) => e.stopPropagation()}
         />
         <button
@@ -97,11 +99,11 @@ export function StoreGallery({ store }: StoreGalleryProps) {
               >
                 {/* Container da imagem */}
                 <div className="relative aspect-square overflow-hidden">
-                  <img
-                    src={product}
-                    alt={`Produto ${index + 1} - ${store.store_name}`}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                    loading="lazy"
+                  <Image
+                    src={product.image}
+                    alt={product.name}
+                    fill
+                    className="object-cover transition-transform duration-700 group-hover:scale-110"
                   />
                   
                   {/* Overlay com ações */}
@@ -111,21 +113,21 @@ export function StoreGallery({ store }: StoreGalleryProps) {
                       <div className="flex gap-2">
                         <button
                           type="button"
-                          onClick={() => handleImageClick(product)}
+                          onClick={() => handleImageClick(product.image)}
                           className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-colors"
                         >
                           <ZoomIn size={18} />
                         </button>
                         <button
                           type="button"
-                          onClick={() => toggleFavorite(product)}
+                          onClick={() => toggleFavorite(product.image)}
                           className={`w-10 h-10 backdrop-blur-sm rounded-full flex items-center justify-center transition-colors ${
-                            favorites.has(product)
+                            favorites.has(product.image)
                               ? 'bg-red-500 text-white'
                               : 'bg-white/20 text-white hover:bg-white/30'
                           }`}
                         >
-                          <Heart size={18} fill={favorites.has(product) ? 'currentColor' : 'none'} />
+                          <Heart size={18} fill={favorites.has(product.image) ? 'currentColor' : 'none'} />
                         </button>
                       </div>
                       
