@@ -4,7 +4,7 @@ export const stores = {
     store_name: "Lessari",
     description: "Bolsas de crochê autorais & feitas à mão",
     slug: "lessari",
-    logo: "/lessari/logo.png",
+    logo: "/lessari/logo.jpeg",
     colors: {
       primary: "#856342", // Marrom principal
       secondary: "#6B4F35", // Marrom mais escuro
