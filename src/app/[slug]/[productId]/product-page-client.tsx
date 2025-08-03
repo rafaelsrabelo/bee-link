@@ -6,7 +6,6 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import CartControls from '../../components/cart-controls';
 import CartHeader from '../../components/cart-header';
-import WebViewWarning from '../../components/webview-warning';
 import { openWhatsAppWithFallback, saveNavigationState } from '../../lib/utils';
 import { useCartStore } from '../../stores/cartStore';
 import type { StoreData } from '../data';
@@ -42,7 +41,6 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
 
   return (
     <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: store.colors.primary }}>
-      <WebViewWarning storeColors={store.colors} />
       {/* Background Image */}
       <div className="absolute inset-0">
         <Image

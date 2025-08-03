@@ -3,7 +3,6 @@
 import { ArrowLeft, MessageCircle, ShoppingCart, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect } from 'react';
-import WebViewWarning from '../../components/webview-warning';
 import { clearNavigationState, isInstagramWebView, openWhatsAppWithFallback, saveNavigationState } from '../../lib/utils';
 import { useCartStore } from '../../stores/cartStore';
 import type { StoreData } from '../data';
@@ -55,7 +54,6 @@ export default function CartPageClient({ store }: CartPageClientProps) {
   if (cart.length === 0) {
     return (
       <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: store.colors.primary }}>
-        <WebViewWarning storeColors={store.colors} />
 
 
 
@@ -106,7 +104,6 @@ export default function CartPageClient({ store }: CartPageClientProps) {
 
   return (
     <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: store.colors.primary }}>
-      <WebViewWarning storeColors={store.colors} />
       
 
 

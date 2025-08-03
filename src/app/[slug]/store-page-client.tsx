@@ -6,7 +6,6 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import CartControlsCompactLoading from '../components/cart-controls-compact-loading';
 import CartHeader from '../components/cart-header';
-import WebViewWarning from '../components/webview-warning';
 import { clearNavigationState, getNavigationState } from '../lib/utils';
 import { useCartStore } from '../stores/cartStore';
 import type { StoreData } from './data';
@@ -44,6 +43,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
     const navigationState = getNavigationState();
     const fromWhatsApp = searchParams.get('fromWhatsApp') === 'true';
     
+    // Verificar se retornou do WhatsApp
     if (fromWhatsApp && navigationState && navigationState.storeSlug === store.slug) {
       // Mostrar confirmação de que o pedido foi enviado
       setShowWhatsAppConfirmation(true);
@@ -94,7 +94,6 @@ export default function StorePageClient({ store }: StorePageClientProps) {
   if (showCatalog) {
     return (
       <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: store.colors.primary }}>
-        <WebViewWarning storeColors={store.colors} />
         {/* Header */}
         <div className="flex justify-between items-center px-4 py-4 fixed top-0 left-0 right-0 z-50 backdrop-blur-sm border-b border-white/10" style={{ backgroundColor: `${store.colors.primary}95` }}>
           <button
@@ -228,7 +227,6 @@ export default function StorePageClient({ store }: StorePageClientProps) {
 
   return (
     <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: store.colors.primary }}>
-      <WebViewWarning storeColors={store.colors} />
       {/* Background Image */}
       <div className="absolute ">
         <Image

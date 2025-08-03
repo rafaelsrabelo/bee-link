@@ -31,23 +31,14 @@ export function openWhatsAppWithFallback(phoneNumber: string, message: string, f
   
   const whatsappUrl = `https://wa.me/${phoneNumber.replace(/[^\d]/g, '')}?text=${encodeURIComponent(message)}`;
   
-  if (isInstagramWebView()) {
-    // Para WebViews do Instagram, usar uma estratégia diferente
-    const newWindow = window.open(whatsappUrl, '_blank');
-    
-    if (newWindow) {
-      // Se conseguiu abrir, aguardar um pouco e redirecionar para fallback
-      setTimeout(() => {
-        window.location.href = fallbackUrl;
-      }, 1000);
-    } else {
-      // Se não conseguiu abrir, tentar redirecionar diretamente
-      window.location.href = whatsappUrl;
-    }
-  } else {
-    // Para navegadores normais, comportamento padrão
-    window.open(whatsappUrl, '_blank');
-  }
+  // Abrir WhatsApp
+  window.open(whatsappUrl, '_blank');
+  
+  // Aguardar um pouco e redirecionar para a página principal
+  // Isso garante que o usuário sempre retorne para a loja
+  setTimeout(() => {
+    window.location.href = fallbackUrl;
+  }, 2000);
 }
 
 export function saveNavigationState(storeSlug: string, productId?: string): void {
