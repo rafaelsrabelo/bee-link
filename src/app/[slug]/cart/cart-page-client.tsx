@@ -1,7 +1,10 @@
 "use client";
 
-import { ArrowLeft, ShoppingCart, Trash2 } from 'lucide-react';
+import { ArrowLeft, MessageCircle, ShoppingCart, Trash2 } from 'lucide-react';
+import Image from 'next/image';
 import { useEffect } from 'react';
+import WebViewWarning from '../../components/webview-warning';
+import { clearNavigationState, isInstagramWebView, openWhatsAppWithFallback, saveNavigationState } from '../../lib/utils';
 import { useCartStore } from '../../stores/cartStore';
 import type { StoreData } from '../data';
 
@@ -10,7 +13,7 @@ interface CartPageClientProps {
 }
 
 export default function CartPageClient({ store }: CartPageClientProps) {
-  const { cart, getCartTotal, getCartItemCount, clearCart, removeFromCart } = useCartStore();
+  const { cart, getCartTotal, getCartItemCount, clearCart, removeFromCart, addToCart } = useCartStore();
 
   // Verificar se o carrinho pertence à loja atual
   useEffect(() => {
@@ -31,17 +34,18 @@ export default function CartPageClient({ store }: CartPageClientProps) {
     const total = getCartTotal().toFixed(2).replace('.', ',');
     
     const message = `Olá! Gostaria de fazer um pedido da ${store.store_name}:\n\n${itemsList}\n\n*Total: R$ ${total}*`;
-    const whatsappUrl = `https://wa.me/${store.social_networks.whatsapp.replace(/[^\d]/g, '')}?text=${encodeURIComponent(message)}`;
     
-    // Abrir WhatsApp primeiro
-    window.open(whatsappUrl, '_blank');
+    // Salvar estado de navegação antes de abrir WhatsApp
+    saveNavigationState(store.slug);
     
-    // Limpar o carrinho e navegar de volta para a loja
+    // Usar a nova função que gerencia WebViews
+    const fallbackUrl = `/${store.slug}?showCatalog=true&fromWhatsApp=true`;
+    openWhatsAppWithFallback(store.social_networks.whatsapp, message, fallbackUrl);
+    
+    // Limpar o carrinho após um delay
     setTimeout(() => {
       clearCart();
-      // Navegar de volta para a página principal da loja
-      window.location.href = `/${store.slug}`;
-    }, 500);
+    }, 2000);
   };
 
   const handleBackToStore = () => {
@@ -51,6 +55,7 @@ export default function CartPageClient({ store }: CartPageClientProps) {
   if (cart.length === 0) {
     return (
       <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: store.colors.primary }}>
+        <WebViewWarning storeColors={store.colors} />
 
 
 
@@ -101,6 +106,7 @@ export default function CartPageClient({ store }: CartPageClientProps) {
 
   return (
     <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: store.colors.primary }}>
+      <WebViewWarning storeColors={store.colors} />
       
 
 
@@ -125,57 +131,140 @@ export default function CartPageClient({ store }: CartPageClientProps) {
       <div className="pt-20 pb-32 px-4 relative z-10">
         {/* Lista de produtos */}
         <div className="space-y-4 mb-8">
-          {cart.map((item) => (
-            <div
-              key={item.name}
-              className="bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-xl border border-white/20"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <h3 className="font-semibold text-lg mb-1" style={{ color: store.colors.primary }}>
-                    {item.name}
-                  </h3>
-                  <p className="text-gray-600 text-sm">
-                    {item.price}
-                  </p>
-                </div>
-                
-                <div className="flex items-center space-x-4">
-                  <span className="font-bold text-lg" style={{ color: store.colors.accent }}>
-                    x{item.quantity}
-                  </span>
+          {cart.map((item) => {
+            // Encontrar a imagem do produto baseado no nome
+            const product = store.products.find(p => p.name === item.name);
+            const productImage = product?.image || '/logo.png';
+            
+            return (
+              <div
+                key={item.name}
+                className="bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-300"
+              >
+                <div className="flex items-center gap-4">
+                  {/* Imagem do produto */}
+                  <div className="relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 shadow-md">
+                    <Image
+                      src={productImage}
+                      alt={item.name}
+                      fill
+                      className="object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/10" />
+                  </div>
                   
-                  <button
-                    onClick={() => removeFromCart(item.name)}
-                    className="text-red-500 hover:text-red-700 transition-all p-2 rounded-full hover:bg-red-50"
-                    type="button"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
+                  {/* Informações do produto */}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-lg mb-1 truncate" style={{ color: store.colors.primary }}>
+                      {item.name}
+                    </h3>
+                    <p className="text-gray-600 text-sm mb-2">
+                      {item.price}
+                    </p>
+                    
+                    {/* Controles de quantidade */}
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 bg-gray-100 rounded-full px-3 py-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (item.quantity > 1) {
+                              removeFromCart(item.name);
+                            }
+                          }}
+                          className="w-6 h-6 rounded-full bg-white shadow-sm flex items-center justify-center hover:bg-gray-50 transition-all"
+                          style={{ color: store.colors.primary }}
+                        >
+                          <span className="text-sm font-bold">−</span>
+                        </button>
+                        <span className="font-semibold text-sm min-w-[20px] text-center" style={{ color: store.colors.primary }}>
+                          {item.quantity}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const product = store.products.find(p => p.name === item.name);
+                            if (product) {
+                              addToCart(product);
+                            }
+                          }}
+                          className="w-6 h-6 rounded-full bg-white shadow-sm flex items-center justify-center hover:bg-gray-50 transition-all"
+                          style={{ color: store.colors.primary }}
+                        >
+                          <span className="text-sm font-bold">+</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Preço total e botão remover */}
+                  <div className="flex flex-col items-end gap-2">
+                    <div className="text-right">
+                      <p className="text-sm text-gray-500">Total</p>
+                      <p className="font-bold text-lg" style={{ color: store.colors.accent }}>
+                        R$ {(Number.parseFloat(item.price.replace(/[^\d,]/g, '').replace(',', '.')) * item.quantity).toFixed(2).replace('.', ',')}
+                      </p>
+                    </div>
+                    
+                    <button
+                      onClick={() => removeFromCart(item.name)}
+                      className="text-red-500 hover:text-red-700 transition-all p-2 rounded-full hover:bg-red-50 hover:scale-110"
+                      type="button"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Total */}
         <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/20 mb-8">
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center mb-4">
             <span className="text-lg font-semibold" style={{ color: store.colors.primary }}>
-              Total
+              Resumo do Pedido
             </span>
-            <span className="text-3xl font-bold" style={{ color: store.colors.accent }}>
-              R$ {getCartTotal().toFixed(2).replace('.', ',')}
+            <span className="text-sm text-gray-500">
+              {getCartItemCount()} {getCartItemCount() === 1 ? 'item' : 'itens'}
             </span>
+          </div>
+          
+          <div className="space-y-2 mb-4">
+            {cart.map((item) => (
+              <div key={item.name} className="flex justify-between items-center text-sm">
+                <span className="text-gray-600">
+                  {item.name} x{item.quantity}
+                </span>
+                <span className="font-medium" style={{ color: store.colors.primary }}>
+                  R$ {(Number.parseFloat(item.price.replace(/[^\d,]/g, '').replace(',', '.')) * item.quantity).toFixed(2).replace('.', ',')}
+                </span>
+              </div>
+            ))}
+          </div>
+          
+          <div className="border-t border-gray-200 pt-4">
+            <div className="flex justify-between items-center">
+              <span className="text-xl font-bold" style={{ color: store.colors.primary }}>
+                Total
+              </span>
+              <span className="text-3xl font-bold" style={{ color: store.colors.accent }}>
+                R$ {getCartTotal().toFixed(2).replace('.', ',')}
+              </span>
+            </div>
           </div>
         </div>
 
         {/* Botão finalizar */}
         <button
           onClick={handleWhatsAppClick}
-          className="w-full bg-green-600 text-white py-4 rounded-full font-semibold hover:bg-green-700 transition-all shadow-lg hover:shadow-xl text-lg"
+          className="w-full bg-green-600 text-white py-5 rounded-full font-semibold hover:bg-green-700 transition-all shadow-lg hover:shadow-xl text-lg flex items-center justify-center gap-3 group"
           type="button"
         >
+          <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <MessageCircle className="w-4 h-4" />
+          </div>
           Finalizar Pedido no WhatsApp
         </button>
       </div>
