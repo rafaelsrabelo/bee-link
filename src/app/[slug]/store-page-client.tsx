@@ -134,6 +134,22 @@ export default function StorePageClient({ store }: StorePageClientProps) {
                         className="object-cover transition-transform group-hover:scale-105"
                       />
                       <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-all" />
+                      
+                      {/* Pronta Entrega Tag */}
+                      {product.readyToShip && (
+                        <div className="absolute top-2 left-2 z-10">
+                          <div 
+                            className="bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-medium shadow-sm border"
+                            style={{ 
+                              color: store.colors.primary,
+                              borderColor: store.colors.secondary 
+                            }}
+                          >
+                            ✓ Pronta entrega
+                          </div>
+                        </div>
+                      )}
+                      
                       {/* Hover overlay with "Ver detalhes" text */}
                       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                         <div className="bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium" style={{ color: store.colors.primary }}>

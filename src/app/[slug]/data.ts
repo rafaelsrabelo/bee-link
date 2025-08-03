@@ -27,28 +27,32 @@ export const stores = {
         price: "R$ 49,99", 
         name: "Bolsa baguete marrom", 
         category: "bag",
-        description: "Bolsa baguete elegante em tom marrom, compacta e sofisticada. Ideal para carregar seus itens essenciais com muito estilo e charme."
+        description: "Bolsa baguete elegante em tom marrom, compacta e sofisticada. Ideal para carregar seus itens essenciais com muito estilo e charme.",
+        readyToShip: true
       },
       { 
         image: "/lessari/media-terracota.JPG", 
         price: "R$ 69,99", 
         name: "Bolsa média terracota", 
         category: "bag",
-        description: "Bolsa média em cor terracota, espaçosa e confortável. Cada peça é única e confeccionada com muito carinho e dedicação artesanal."
+        description: "Bolsa média em cor terracota, espaçosa e confortável. Cada peça é única e confeccionada com muito carinho e dedicação artesanal.",
+        readyToShip: true
       },
       { 
         image: "/lessari/round-bag.JPG", 
         price: "R$ 99,99", 
         name: "Round bag", 
         category: "bag",
-        description: "Round bag com design circular moderno e charmoso. Feita à mão com técnicas tradicionais, combina tradição e contemporaneidade."
+        description: "Round bag com design circular moderno e charmoso. Feita à mão com técnicas tradicionais, combina tradição e contemporaneidade.",
+        readyToShip: true
       },
       { 
         image: "/lessari/shoulder-bag.JPG", 
         price: "R$ 49,99", 
         name: "Shoulder bag", 
         category: "bag",
-        description: "Shoulder bag confortável e estilosa, perfeita para o uso diário. Confeccionada manualmente com atenção aos detalhes."
+        description: "Shoulder bag confortável e estilosa, perfeita para o uso diário. Confeccionada manualmente com atenção aos detalhes.",
+        readyToShip: true
       },
       { 
         image: "/lessari/media-off-white.JPG", 
@@ -62,7 +66,8 @@ export const stores = {
         price: "R$ 49,99", 
         name: "Bolsa baguete terracota", 
         category: "bag",
-        description: "Bolsa baguete em cor terracota, compacta e charmosa. Ideal para quem busca praticidade sem abrir mão do estilo artesanal."
+        description: "Bolsa baguete em cor terracota, compacta e charmosa. Ideal para quem busca praticidade sem abrir mão do estilo artesanal.",
+        readyToShip: true
       }
     ]
   },
@@ -101,4 +106,5 @@ export interface Product {
   image: string;
   category: string;
   description: string;
+  readyToShip?: boolean;
 } 

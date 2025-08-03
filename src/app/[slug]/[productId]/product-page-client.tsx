@@ -18,6 +18,7 @@ interface ProductPageClientProps {
     image: string;
     category: string;
     description: string;
+    readyToShip?: boolean;
   };
 }
 
@@ -96,6 +97,21 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
                 className="object-cover"
               />
               <div className="absolute inset-0 bg-black/10" />
+              
+              {/* Pronta Entrega Tag */}
+              {product.readyToShip && (
+                <div className="absolute top-4 left-4 z-10">
+                  <div 
+                    className="bg-white/90 backdrop-blur-sm px-3 py-2 rounded-full text-sm font-medium shadow-sm border"
+                    style={{ 
+                      color: store.colors.primary,
+                      borderColor: store.colors.secondary 
+                    }}
+                  >
+                    ✓ Pronta entrega
+                  </div>
+                </div>
+              )}
             </div>
             
             {/* Image Thumbnails (se houver mais de uma imagem) */}
