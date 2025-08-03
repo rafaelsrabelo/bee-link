@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, CheckCircle, Instagram, MessageCircle, Minus, Phone, Plus, ShoppingCart } from "lucide-react";
+import { ArrowLeft, Instagram, MessageCircle, Minus, Phone, Plus, ShoppingCart } from "lucide-react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -16,7 +16,6 @@ interface StorePageClientProps {
 export default function StorePageClient({ store }: StorePageClientProps) {
   const [showCatalog, setShowCatalog] = useState(false);
   const [error] = useState<string | null>(null);
-  const [showOrderConfirmation, setShowOrderConfirmation] = useState(false);
   const searchParams = useSearchParams();
   const { cart, addToCart, removeFromCart, getCartItemQuantity, setStoreSlug, isLoading } = useCartStore();
 
@@ -37,22 +36,9 @@ export default function StorePageClient({ store }: StorePageClientProps) {
     }
   }, [searchParams]);
 
-  // Verificar se o pedido foi enviado
-  useEffect(() => {
-    if (searchParams.get('orderSent') === 'true') {
-      setShowOrderConfirmation(true);
-      
-      // Remover o parâmetro da URL
-      const url = new URL(window.location.href);
-      url.searchParams.delete('orderSent');
-      window.history.replaceState({}, '', url.toString());
-      
-      // Esconder a confirmação após 5 segundos
-      setTimeout(() => {
-        setShowOrderConfirmation(false);
-      }, 5000);
-    }
-  }, [searchParams]);
+
+
+
 
 
 
@@ -115,18 +101,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
 
 
         {/* Catalog Header */}
-        {/* Order Confirmation Toast */}
-        {showOrderConfirmation && (
-          <div className="fixed top-20 left-4 right-4 z-50 bg-green-500 text-white p-4 rounded-lg shadow-lg backdrop-blur-sm border border-green-400/30 animate-in slide-in-from-top-2">
-            <div className="flex items-center gap-3">
-              <CheckCircle className="w-5 h-5 flex-shrink-0" />
-              <div>
-                <div className="font-medium">Pedido enviado com sucesso!</div>
-                <div className="text-sm opacity-90">Seu pedido foi enviado para o WhatsApp. Aguarde o retorno da loja.</div>
-              </div>
-            </div>
-          </div>
-        )}
+
 
         <div className="px-4 mb-6 pt-20">
           <div className="bg-white/90 backdrop-blur-sm rounded-full px-6 py-4 flex items-center justify-between">
@@ -261,18 +236,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
 
 
 
-      {/* Order Confirmation Toast */}
-      {showOrderConfirmation && (
-        <div className="fixed top-4 left-4 right-4 z-50 bg-green-500 text-white p-4 rounded-lg shadow-lg backdrop-blur-sm border border-green-400/30 animate-in slide-in-from-top-2">
-          <div className="flex items-center gap-3">
-            <CheckCircle className="w-5 h-5 flex-shrink-0" />
-            <div>
-              <div className="font-medium">Pedido enviado com sucesso!</div>
-              <div className="text-sm opacity-90">Seu pedido foi enviado para o WhatsApp. Aguarde o retorno da loja.</div>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {/* Main Content */}
       <div className="flex flex-col items-center px-6 relative z-10">

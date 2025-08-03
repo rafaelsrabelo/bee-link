@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import CartControls from '../../components/cart-controls';
 import CartHeader from '../../components/cart-header';
-import { openWhatsAppWithFallback } from '../../lib/utils';
+
 import { useCartStore } from '../../stores/cartStore';
 import type { StoreData } from '../data';
 
@@ -198,8 +198,19 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
                 
                 const message = `Olá! Gostaria de fazer um pedido da ${store.store_name}:\n\n${itemsList}\n\n*Total: R$ ${total}*`;
                 
-                // Abrir WhatsApp diretamente (estratégia do Linktree)
-                openWhatsAppWithFallback(store.social_networks.whatsapp, message, '');
+                // Limpar carrinho antes de abrir WhatsApp
+                const { clearCart } = useCartStore.getState();
+                clearCart();
+                
+                // Abrir WhatsApp diretamente
+                const whatsappUrl = `https://wa.me/${store.social_networks.whatsapp.replace(/[^\d]/g, '')}?text=${encodeURIComponent(message)}`;
+                
+                // Para WebViews do Instagram, usar location.href é mais confiável
+                if (typeof window !== 'undefined' && window.navigator.userAgent.toLowerCase().includes('instagram')) {
+                  window.location.href = whatsappUrl;
+                } else {
+                  window.open(whatsappUrl, '_blank');
+                }
               }
             }}
             disabled={cart.length === 0 || isLoading}

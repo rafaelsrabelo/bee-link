@@ -3,7 +3,7 @@
 import { ArrowLeft, MessageCircle, ShoppingCart, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect } from 'react';
-import { openWhatsAppWithFallback } from '../../lib/utils';
+
 import { useCartStore } from '../../stores/cartStore';
 import type { StoreData } from '../data';
 
@@ -34,8 +34,18 @@ export default function CartPageClient({ store }: CartPageClientProps) {
     
     const message = `Olá! Gostaria de fazer um pedido da ${store.store_name}:\n\n${itemsList}\n\n*Total: R$ ${total}*`;
     
-    // Abrir WhatsApp e gerenciar retorno
-    openWhatsAppWithFallback(store.social_networks.whatsapp, message, '');
+    // Limpar carrinho antes de abrir WhatsApp
+    clearCart();
+    
+    // Abrir WhatsApp diretamente
+    const whatsappUrl = `https://wa.me/${store.social_networks.whatsapp.replace(/[^\d]/g, '')}?text=${encodeURIComponent(message)}`;
+    
+    // Para WebViews do Instagram, usar location.href é mais confiável
+    if (typeof window !== 'undefined' && window.navigator.userAgent.toLowerCase().includes('instagram')) {
+      window.location.href = whatsappUrl;
+    } else {
+      window.open(whatsappUrl, '_blank');
+    }
   };
 
   const handleBackToStore = () => {

@@ -31,53 +31,17 @@ export function openWhatsAppWithFallback(phoneNumber: string, message: string, f
   
   const whatsappUrl = `https://wa.me/${phoneNumber.replace(/[^\d]/g, '')}?text=${encodeURIComponent(message)}`;
   
-  // Marcar que estamos abrindo WhatsApp
-  localStorage.setItem('bee-link-whatsapp-opened', Date.now().toString());
-  
-  // Abrir WhatsApp
-  window.open(whatsappUrl, '_blank');
-  
-  // Detectar quando a página volta a ficar visível (retorno do WhatsApp)
-  let hidden = false;
-  
-  const handleVisibilityChange = () => {
-    if (document.hidden) {
-      hidden = true;
-    } else if (hidden) {
-      // Página voltou a ficar visível
-      hidden = false;
-      
-      // Verificar se foi retorno do WhatsApp
-      const whatsappOpened = localStorage.getItem('bee-link-whatsapp-opened');
-      if (whatsappOpened) {
-        const timeSinceWhatsApp = Date.now() - Number.parseInt(whatsappOpened);
-        
-        // Se foi há menos de 30 segundos, provavelmente retornou do WhatsApp
-        if (timeSinceWhatsApp < 30000) {
-          // Limpar o carrinho e mostrar confirmação
-          localStorage.removeItem('cart');
-          localStorage.removeItem('cart-store-slug');
-          localStorage.removeItem('bee-link-whatsapp-opened');
-          
-          // Adicionar parâmetro para mostrar confirmação
-          const url = new URL(window.location.href);
-          url.searchParams.set('orderSent', 'true');
-          window.history.replaceState({}, '', url.toString());
-          
-          // Recarregar para mostrar a confirmação
-          window.location.reload();
-        }
-      }
+  // Solução mais simples: sempre usar window.open() mas com fallback
+  try {
+    const newWindow = window.open(whatsappUrl, '_blank');
+    
+    // Se window.open() falhou (comum em WebViews), usar location.href
+    if (!newWindow) {
+      window.location.href = whatsappUrl;
     }
-  };
-  
-  // Adicionar listener para mudanças de visibilidade
-  document.addEventListener('visibilitychange', handleVisibilityChange);
-  
-  // Remover listener após 30 segundos
-  setTimeout(() => {
-    document.removeEventListener('visibilitychange', handleVisibilityChange);
-    localStorage.removeItem('bee-link-whatsapp-opened');
-  }, 30000);
+  } catch (error) {
+    // Fallback para qualquer erro
+    window.location.href = whatsappUrl;
+  }
 }
 
