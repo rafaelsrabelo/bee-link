@@ -31,49 +31,11 @@ export function openWhatsAppWithFallback(phoneNumber: string, message: string, f
   
   const whatsappUrl = `https://wa.me/${phoneNumber.replace(/[^\d]/g, '')}?text=${encodeURIComponent(message)}`;
   
-  // Abrir WhatsApp
+  // Estratégia do Linktree: não redirecionar a página, apenas abrir WhatsApp
+  // Isso mantém o contexto do WebView intacto
   window.open(whatsappUrl, '_blank');
   
-  // Aguardar um pouco e redirecionar para a página principal
-  // Isso garante que o usuário sempre retorne para a loja
-  setTimeout(() => {
-    window.location.href = fallbackUrl;
-  }, 2000);
+  // Não redirecionar a página - deixar o usuário voltar naturalmente
+  // O WebView do Instagram mantém o contexto quando não há redirecionamento
 }
 
-export function saveNavigationState(storeSlug: string, productId?: string): void {
-  if (typeof window === 'undefined') return;
-  
-  const state = {
-    storeSlug,
-    productId,
-    timestamp: Date.now(),
-    returnUrl: window.location.href
-  };
-  
-  localStorage.setItem('bee-link-navigation-state', JSON.stringify(state));
-}
-
-export function getNavigationState(): { storeSlug: string; productId?: string; returnUrl: string } | null {
-  if (typeof window === 'undefined') return null;
-  
-  const state = localStorage.getItem('bee-link-navigation-state');
-  if (!state) return null;
-  
-  try {
-    const parsed = JSON.parse(state);
-    // Verificar se o estado não é muito antigo (mais de 1 hora)
-    if (Date.now() - parsed.timestamp > 3600000) {
-      localStorage.removeItem('bee-link-navigation-state');
-      return null;
-    }
-    return parsed;
-  } catch {
-    return null;
-  }
-}
-
-export function clearNavigationState(): void {
-  if (typeof window === 'undefined') return;
-  localStorage.removeItem('bee-link-navigation-state');
-}

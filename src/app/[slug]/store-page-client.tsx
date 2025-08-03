@@ -1,12 +1,11 @@
 "use client";
 
-import { ArrowLeft, CheckCircle, Instagram, MessageCircle, Minus, Phone, Plus, ShoppingCart } from "lucide-react";
+import { ArrowLeft, Instagram, MessageCircle, Minus, Phone, Plus, ShoppingCart } from "lucide-react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import CartControlsCompactLoading from '../components/cart-controls-compact-loading';
 import CartHeader from '../components/cart-header';
-import { clearNavigationState, getNavigationState } from '../lib/utils';
 import { useCartStore } from '../stores/cartStore';
 import type { StoreData } from './data';
 
@@ -17,7 +16,6 @@ interface StorePageClientProps {
 export default function StorePageClient({ store }: StorePageClientProps) {
   const [showCatalog, setShowCatalog] = useState(false);
   const [error] = useState<string | null>(null);
-  const [showWhatsAppConfirmation, setShowWhatsAppConfirmation] = useState(false);
   const searchParams = useSearchParams();
   const { cart, addToCart, removeFromCart, getCartItemQuantity, setStoreSlug, isLoading } = useCartStore();
 
@@ -38,23 +36,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
     }
   }, [searchParams]);
 
-  // Verificar se o usuário retornou do WhatsApp
-  useEffect(() => {
-    const navigationState = getNavigationState();
-    const fromWhatsApp = searchParams.get('fromWhatsApp') === 'true';
-    
-    // Verificar se retornou do WhatsApp
-    if (fromWhatsApp && navigationState && navigationState.storeSlug === store.slug) {
-      // Mostrar confirmação de que o pedido foi enviado
-      setShowWhatsAppConfirmation(true);
-      clearNavigationState();
-      
-      // Esconder a confirmação após 5 segundos
-      setTimeout(() => {
-        setShowWhatsAppConfirmation(false);
-      }, 5000);
-    }
-  }, [searchParams, store.slug]);
+
 
   // Verificar se o carrinho pertence à loja atual
   useEffect(() => {
@@ -112,18 +94,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
           />
         </div>
 
-        {/* WhatsApp Confirmation Toast */}
-        {showWhatsAppConfirmation && (
-          <div className="fixed top-20 left-4 right-4 z-50 bg-green-500 text-white p-4 rounded-lg shadow-lg backdrop-blur-sm border border-green-400/30 animate-in slide-in-from-top-2">
-            <div className="flex items-center gap-3">
-              <CheckCircle className="w-5 h-5 flex-shrink-0" />
-              <div>
-                <div className="font-medium">Pedido enviado com sucesso!</div>
-                <div className="text-sm opacity-90">Seu pedido foi enviado para o WhatsApp. Aguarde o retorno da loja.</div>
-              </div>
-            </div>
-          </div>
-        )}
+
 
         {/* Catalog Header */}
         <div className="px-4 mb-6 pt-20">
@@ -257,18 +228,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
        
       </div>
 
-      {/* WhatsApp Confirmation Toast */}
-      {showWhatsAppConfirmation && (
-        <div className="fixed top-4 left-4 right-4 z-50 bg-green-500 text-white p-4 rounded-lg shadow-lg backdrop-blur-sm border border-green-400/30 animate-in slide-in-from-top-2">
-          <div className="flex items-center gap-3">
-            <CheckCircle className="w-5 h-5 flex-shrink-0" />
-            <div>
-              <div className="font-medium">Pedido enviado com sucesso!</div>
-              <div className="text-sm opacity-90">Seu pedido foi enviado para o WhatsApp. Aguarde o retorno da loja.</div>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {/* Main Content */}
       <div className="flex flex-col items-center px-6 relative z-10">
