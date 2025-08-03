@@ -9,7 +9,7 @@ interface CartControlsProps {
     name: string;
     price: string;
     image: string;
-    description: string;
+    description?: string;
   };
   storeColors: {
     primary: string;

@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { type StoreData, stores } from './data';
+import { stores } from './data';
 import StorePageClient from './store-page-client';
 
 interface StorePageProps {

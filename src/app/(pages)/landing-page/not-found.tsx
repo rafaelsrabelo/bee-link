@@ -7,7 +7,7 @@ export default function NotFound() {
           Page Not Found
         </h2>
         <p className="text-content-placeholder mb-8">
-          The page you are looking for doesn't exist.
+          The page you are looking for doesn&apos;t exist.
         </p>
         <a
           href="/"

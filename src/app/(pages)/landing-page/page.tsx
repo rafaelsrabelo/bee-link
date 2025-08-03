@@ -1,7 +1,6 @@
 import { Footer } from "@/app/components/footer";
 import Header from "@/app/components/header/header";
 import { Hero } from "@/app/components/hero";
-import Image from "next/image";
 
 export default function Home() {
   return (

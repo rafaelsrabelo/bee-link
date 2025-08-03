@@ -1,11 +1,9 @@
 "use client";
 
-import { ArrowLeft, ExternalLink, Instagram, MessageCircle, Minus, Phone, Plus, ShoppingCart } from "lucide-react";
+import { ArrowLeft, Instagram, MessageCircle, Minus, Phone, Plus, ShoppingCart } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import CartControls from '../components/cart-controls';
 import CartControlsCompactLoading from '../components/cart-controls-compact-loading';
 import CartHeader from '../components/cart-header';
 import { useCartStore } from '../stores/cartStore';
@@ -51,11 +49,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
     window.open(whatsappUrl, '_blank');
   };
 
-  const handleWhatsAppClick = (product: { name: string; price: string }) => {
-    const message = `Olá! Gostaria de saber mais sobre a ${product.name} por ${product.price} da ${store.store_name}`;
-    const whatsappUrl = `https://wa.me/${store.social_networks.whatsapp.replace(/[^\d]/g, '')}?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
-  };
+
 
 
 
@@ -76,7 +70,6 @@ export default function StorePageClient({ store }: StorePageClientProps) {
             <div className="text-white/70 text-sm">{store.store_name}</div>
           </div>
           <CartHeader 
-            storeSlug={store.slug} 
             onCheckout={handleWhatsAppCheckout}
           />
         </div>
@@ -284,13 +277,8 @@ export default function StorePageClient({ store }: StorePageClientProps) {
             style={{ color: store.colors.primary }}
           >
             <span className="flex-1">COMPRE AQUI</span>
-            <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center relative" style={{ background: `linear-gradient(to bottom right, ${store.colors.secondary}, ${store.colors.accent})` }}>
+            <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center" style={{ background: `linear-gradient(to bottom right, ${store.colors.secondary}, ${store.colors.accent})` }}>
               <ShoppingCart className="w-4 h-4 text-white" />
-              {cart.length > 0 && (
-                <span className="absolute -top-1 -right-1 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center shadow-lg border-2 border-white/50" style={{ backgroundColor: store.colors.accent }}>
-                  {getCartItemCount()}
-                </span>
-              )}
             </div>
           </button>
         </div>

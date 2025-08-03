@@ -5,12 +5,11 @@ import { useCartStore } from "../stores/cartStore";
 import CartLoading from "./cart-loading";
 
 interface CartHeaderProps {
-  storeSlug: string;
   onCheckout: () => void;
   className?: string;
 }
 
-export default function CartHeader({ storeSlug, onCheckout, className = "" }: CartHeaderProps) {
+export default function CartHeader({ onCheckout, className = "" }: CartHeaderProps) {
   const { cart, getCartTotal, getCartItemCount, isLoading } = useCartStore();
 
   // Mostra loading enquanto carrega os dados

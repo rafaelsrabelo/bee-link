@@ -5,7 +5,7 @@ export interface CartItem {
   name: string;
   price: string;
   image: string;
-  description: string;
+  description?: string;
   quantity: number;
 }
 
@@ -43,7 +43,7 @@ export const useCartStore = create<CartStore>()(
         set({ isLoading: loading });
       },
 
-      addToCart: (product: { name: string; price: string; image: string; description: string }) => {
+      addToCart: (product: { name: string; price: string; image: string; description?: string }) => {
         set((state) => {
           const existingItem = state.cart.find(item => item.name === product.name);
           if (existingItem) {

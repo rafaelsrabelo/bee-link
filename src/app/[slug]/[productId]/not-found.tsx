@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { ArrowLeft, Package } from 'lucide-react';
 
 export default function ProductNotFound() {
@@ -17,13 +16,14 @@ export default function ProductNotFound() {
           O produto que você está procurando não existe ou foi removido.
         </p>
         
-        <Link
-          href=".."
+        <button
+          type="button"
+          onClick={() => window.history.back()}
           className="inline-flex items-center gap-2 bg-gray-900 text-white px-6 py-3 rounded-full hover:bg-gray-800 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Voltar para a loja
-        </Link>
+        </button>
       </div>
     </div>
   );

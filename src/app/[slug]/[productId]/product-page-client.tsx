@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, ExternalLink, Instagram, MessageCircle, Minus, Phone, Plus, ShoppingCart } from "lucide-react";
+import { ArrowLeft, Instagram, MessageCircle, ShoppingCart } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -22,7 +22,7 @@ interface ProductPageClientProps {
 
 export default function ProductPageClient({ store, product }: ProductPageClientProps) {
   const [selectedImage, setSelectedImage] = useState(0);
-  const { cart, addToCart, removeFromCart, getCartTotal, getCartItemCount, getCartItemQuantity, setStoreSlug, isLoading } = useCartStore();
+  const { cart, getCartTotal, getCartItemCount, setStoreSlug, isLoading } = useCartStore();
 
   // Configurar o store slug quando o componente montar
   useEffect(() => {
@@ -48,7 +48,7 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
     window.open(whatsappUrl, '_blank');
   };
 
-  const quantity = getCartItemQuantity(product.name);
+
 
   return (
     <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: store.colors.primary }}>
@@ -90,7 +90,6 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
           <div className="text-white/70 text-xs">{store.store_name}</div>
         </div>
         <CartHeader 
-          storeSlug={store.slug} 
           onCheckout={handleWhatsAppCheckout}
         />
       </div>

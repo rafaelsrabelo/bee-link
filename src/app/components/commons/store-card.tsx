@@ -40,7 +40,7 @@ export default function StoreCard() {
           </h3>
         </div>
         <p className="text-base text-content-body px-2">
-          "Uma descrição para sua loja"
+          &ldquo;Uma descrição para sua loja&rdquo;
         </p>
       </div>
       
