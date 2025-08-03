@@ -2,59 +2,40 @@
 
 import { ArrowLeft, ExternalLink, Instagram, MessageCircle, Minus, Phone, Plus, ShoppingCart } from "lucide-react";
 import Image from "next/image";
-import { useState } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import CartControls from '../components/cart-controls';
+import CartControlsCompactLoading from '../components/cart-controls-compact-loading';
+import CartHeader from '../components/cart-header';
+import { useCartStore } from '../stores/cartStore';
 import type { StoreData } from './data';
 
 interface StorePageClientProps {
   store: StoreData;
 }
 
-interface CartItem {
-  name: string;
-  price: string;
-  image: string;
-  quantity: number;
-}
-
 export default function StorePageClient({ store }: StorePageClientProps) {
   const [showCatalog, setShowCatalog] = useState(false);
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const searchParams = useSearchParams();
+  const { cart, addToCart, removeFromCart, getCartTotal, getCartItemCount, getCartItemQuantity, setStoreSlug, isLoading } = useCartStore();
 
+  // Configurar o store slug quando o componente montar
+  useEffect(() => {
+    setStoreSlug(store.slug);
+  }, [store.slug, setStoreSlug]);
 
-  const addToCart = (product: { name: string; price: string; image: string }) => {
-    setCart(prevCart => {
-      const existingItem = prevCart.find(item => item.name === product.name);
-      if (existingItem) {
-        return prevCart.map(item =>
-          item.name === product.name
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
-      }
-      return [...prevCart, { ...product, quantity: 1 }];
-    });
+  // Função para gerar ID do produto baseado no nome
+  const generateProductId = (productName: string) => {
+    return productName.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
   };
 
-  const removeFromCart = (productName: string) => {
-    setCart(prevCart => {
-      const existingItem = prevCart.find(item => item.name === productName);
-      if (existingItem && existingItem.quantity > 1) {
-        return prevCart.map(item =>
-          item.name === productName
-            ? { ...item, quantity: item.quantity - 1 }
-            : item
-        );
-      }
-      return prevCart.filter(item => item.name !== productName);
-    });
-  };
-
-  const getCartTotal = () => {
-    return cart.reduce((total, item) => {
-      const price = Number.parseFloat(item.price.replace('R$ ', '').replace(',', '.'));
-      return total + (price * item.quantity);
-    }, 0);
-  };
+  // Verificar se deve mostrar o catálogo baseado na URL
+  useEffect(() => {
+    if (searchParams.get('showCatalog') === 'true') {
+      setShowCatalog(true);
+    }
+  }, [searchParams]);
 
   const handleWhatsAppCheckout = () => {
     if (cart.length === 0) return;
@@ -94,28 +75,10 @@ export default function StorePageClient({ store }: StorePageClientProps) {
             <div className="text-white font-medium">Catálogo</div>
             <div className="text-white/70 text-sm">{store.store_name}</div>
           </div>
-          <div className="relative flex items-center gap-3">
-            {cart.length > 0 && (
-              <div className="bg-white/10 backdrop-blur-sm rounded-full px-3 py-1 border border-white/20">
-                <span className="text-white/90 text-xs font-medium">
-                  R$ {getCartTotal().toFixed(2).replace('.', ',')}
-                </span>
-              </div>
-            )}
-            <button
-              type="button"
-              className="text-white hover:bg-white/10 p-2 rounded-full relative transition-all"
-              onClick={handleWhatsAppCheckout}
-              disabled={cart.length === 0}
-            >
-              <ShoppingCart className="w-6 h-6" />
-              {cart.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-[#A67C52] text-white text-xs rounded-full w-6 h-6 flex items-center justify-center shadow-lg border-2 border-white/50">
-                  {cart.reduce((total, item) => total + item.quantity, 0)}
-                </span>
-              )}
-            </button>
-          </div>
+          <CartHeader 
+            storeSlug={store.slug} 
+            onCheckout={handleWhatsAppCheckout}
+          />
         </div>
 
         {/* Catalog Header */}
@@ -132,65 +95,80 @@ export default function StorePageClient({ store }: StorePageClientProps) {
         <div className="px-4 pb-20 pt-4">
           <div className="grid grid-cols-2 gap-3">
             {store.products.map((product, index) => {
-              const cartItem = cart.find(item => item.name === product.name);
-              const quantity = cartItem?.quantity || 0;
+              const quantity = getCartItemQuantity(product.name);
+              const productId = generateProductId(product.name);
 
               return (
                 <div
                   key={`product-${product.name}-${index}`}
                   className="relative rounded-lg overflow-hidden bg-white/10 backdrop-blur-sm"
                 >
-                  <div className="aspect-square relative">
-                    <Image
-                      src={product.image}
-                      alt={product.name}
-                      fill
-                      className="object-cover"
-                    />
-                    <div className="absolute inset-0 bg-black/20" />
-                  </div>
+                  {/* Product Image - Clickable Link */}
+                  <a href={`/${store.slug}/${productId}`} className="block">
+                    <div className="aspect-square relative cursor-pointer group">
+                      <Image
+                        src={product.image}
+                        alt={product.name}
+                        fill
+                        className="object-cover transition-transform group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-all" />
+                      {/* Hover overlay with "Ver detalhes" text */}
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium" style={{ color: store.colors.primary }}>
+                          Ver detalhes
+                        </div>
+                      </div>
+                    </div>
+                  </a>
                   
                   {/* Product Info */}
                   <div className="p-3 pb-4">
-                    <h3 className="text-white font-medium text-sm mb-1 truncate">
-                      {product.name}
-                    </h3>
-                    <p className="text-white/90 font-bold text-lg mb-3">
-                      {product.price}
-                    </p>
+                    <a href={`/${store.slug}/${productId}`} className="block">
+                      <h3 className="text-white font-medium text-sm mb-1 truncate hover:text-white/80 transition-colors">
+                        {product.name}
+                      </h3>
+                      <p className="text-white/90 font-bold text-lg mb-3">
+                        {product.price}
+                      </p>
+                    </a>
 
                     {/* Cart Controls */}
-                    <div className="flex items-center justify-center gap-4">
-                      {quantity > 0 && (
+                    {isLoading ? (
+                      <CartControlsCompactLoading />
+                    ) : (
+                      <div className="flex items-center justify-center gap-4">
+                        {quantity > 0 && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeFromCart(product.name);
+                            }}
+                            className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-white/30 transition-all border border-white/30"
+                          >
+                            <Minus className="w-4 h-4 text-white" />
+                          </button>
+                        )}
+                        
+                        {quantity > 0 && (
+                          <span className="bg-white/95 backdrop-blur-sm text-sm font-medium px-3 py-1 rounded-full min-w-[28px] text-center shadow-sm" style={{ color: store.colors.primary }}>
+                            {quantity}
+                          </span>
+                        )}
+                        
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            removeFromCart(product.name);
+                            addToCart(product);
                           }}
                           className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-white/30 transition-all border border-white/30"
                         >
-                          <Minus className="w-4 h-4 text-white" />
+                          <Plus className="w-4 h-4 text-white" />
                         </button>
-                      )}
-                      
-                      {quantity > 0 && (
-                        <span className="bg-white/95 backdrop-blur-sm text-sm font-medium px-3 py-1 rounded-full min-w-[28px] text-center shadow-sm" style={{ color: store.colors.primary }}>
-                          {quantity}
-                        </span>
-                      )}
-                      
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          addToCart(product);
-                        }}
-                        className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-white/30 transition-all border border-white/30"
-                      >
-                        <Plus className="w-4 h-4 text-white" />
-                      </button>
-                    </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -285,8 +263,9 @@ export default function StorePageClient({ store }: StorePageClientProps) {
               const whatsappUrl = `https://wa.me/${store.social_networks.whatsapp.replace(/[^\d]/g, '')}?text=${encodeURIComponent(message)}`;
               window.open(whatsappUrl, '_blank');
             }}
+            disabled={isLoading}
             className={`w-full font-medium py-4 rounded-full text-lg backdrop-blur-sm flex items-center justify-center transition-all ${
-              cart.length > 0 
+              cart.length > 0 && !isLoading
                 ? 'bg-white/90 hover:bg-white shadow-lg hover:shadow-xl' 
                 : 'bg-white/90 hover:bg-white shadow-lg hover:shadow-xl'
             }`}
@@ -295,7 +274,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
             <div className="w-8 h-8 rounded-full mr-3 flex items-center justify-center" style={{ backgroundColor: store.colors.primary }}>
               <Phone className="w-4 h-4 text-white" />
             </div>
-            {cart.length > 0 ? `Finalizar Pedido (${cart.reduce((total, item) => total + item.quantity, 0)} itens)` : 'Fale com a gente'}
+            {isLoading ? 'Carregando...' : cart.length > 0 ? `Finalizar Pedido (${getCartItemCount()} itens)` : 'Fale com a gente'}
           </button>
 
           <button
@@ -309,7 +288,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
               <ShoppingCart className="w-4 h-4 text-white" />
               {cart.length > 0 && (
                 <span className="absolute -top-1 -right-1 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center shadow-lg border-2 border-white/50" style={{ backgroundColor: store.colors.accent }}>
-                  {cart.reduce((total, item) => total + item.quantity, 0)}
+                  {getCartItemCount()}
                 </span>
               )}
             </div>
