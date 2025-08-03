@@ -34,11 +34,8 @@ export default function CartPageClient({ store }: CartPageClientProps) {
     
     const message = `Olá! Gostaria de fazer um pedido da ${store.store_name}:\n\n${itemsList}\n\n*Total: R$ ${total}*`;
     
-    // Abrir WhatsApp diretamente (estratégia do Linktree)
+    // Abrir WhatsApp e gerenciar retorno
     openWhatsAppWithFallback(store.social_networks.whatsapp, message, '');
-    
-    // Limpar o carrinho imediatamente
-    clearCart();
   };
 
   const handleBackToStore = () => {
