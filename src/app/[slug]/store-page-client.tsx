@@ -15,8 +15,9 @@ interface StorePageClientProps {
 
 export default function StorePageClient({ store }: StorePageClientProps) {
   const [showCatalog, setShowCatalog] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const searchParams = useSearchParams();
-  const { cart, addToCart, removeFromCart, getCartTotal, getCartItemCount, getCartItemQuantity, setStoreSlug, isLoading } = useCartStore();
+  const { cart, addToCart, removeFromCart, getCartItemQuantity, setStoreSlug, isLoading } = useCartStore();
 
   // Configurar o store slug quando o componente montar
   useEffect(() => {
@@ -35,19 +36,36 @@ export default function StorePageClient({ store }: StorePageClientProps) {
     }
   }, [searchParams]);
 
-  const handleWhatsAppCheckout = () => {
-    if (cart.length === 0) return;
+  // Verificar se o carrinho pertence à loja atual
+  useEffect(() => {
+    const cartStoreSlug = localStorage.getItem('cart-store-slug');
+    if (cartStoreSlug && cartStoreSlug !== store.slug) {
+      // Se o carrinho pertence a outra loja, limpar
+      const { clearCart } = useCartStore.getState();
+      clearCart();
+    }
+  }, [store.slug]);
 
-    const itemsList = cart.map(item => 
-      `• ${item.name} - ${item.price} x${item.quantity}`
-    ).join('\n');
+  // Tratamento de erro
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: store.colors.primary }}>
+        <div className="text-center text-white">
+          <h1 className="text-2xl font-bold mb-4">Erro</h1>
+          <p className="mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-white/20 px-4 py-2 rounded-lg hover:bg-white/30 transition-all"
+            type="button"
+          >
+            Recarregar página
+          </button>
+        </div>
+      </div>
+    );
+  }
 
-    const total = getCartTotal().toFixed(2).replace('.', ',');
-    
-    const message = `Olá! Gostaria de fazer um pedido da ${store.store_name}:\n\n${itemsList}\n\n*Total: R$ ${total}*`;
-    const whatsappUrl = `https://wa.me/${store.social_networks.whatsapp.replace(/[^\d]/g, '')}?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
-  };
+
 
 
 
@@ -70,7 +88,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
             <div className="text-white/70 text-sm">{store.store_name}</div>
           </div>
           <CartHeader 
-            onCheckout={handleWhatsAppCheckout}
+            storeSlug={store.slug}
           />
         </div>
 
@@ -182,9 +200,9 @@ export default function StorePageClient({ store }: StorePageClientProps) {
           src={store.logo.replace('/logo.png', '/background.png')}
           alt="Background"
           fill
-          className="object-cover"
+          className="object-contain"
         />
-        <div className="absolute inset-0" style={{ backgroundColor: `${store.colors.primary}80` }} />
+        <div className="absolute inset-0" style={{ backgroundColor: `${store.colors.primary}20` }} />
       </div>
 
       {/* Decorative Elements */}
@@ -251,10 +269,16 @@ export default function StorePageClient({ store }: StorePageClientProps) {
         <div className="w-full max-w-sm space-y-4 mb-8">
           <button 
             type="button"
-            onClick={cart.length > 0 ? handleWhatsAppCheckout : () => {
-              const message = `Olá! Gostaria de saber mais sobre os produtos da ${store.store_name}`;
-              const whatsappUrl = `https://wa.me/${store.social_networks.whatsapp.replace(/[^\d]/g, '')}?text=${encodeURIComponent(message)}`;
-              window.open(whatsappUrl, '_blank');
+            onClick={() => {
+              if (cart.length > 0) {
+                // Navegar para a página do carrinho
+                window.location.href = `/${store.slug}/cart`;
+              } else {
+                // Mensagem padrão para WhatsApp
+                const message = `Olá! Gostaria de saber mais sobre os produtos da ${store.store_name}`;
+                const whatsappUrl = `https://wa.me/${store.social_networks.whatsapp.replace(/[^\d]/g, '')}?text=${encodeURIComponent(message)}`;
+                window.open(whatsappUrl, '_blank');
+              }
             }}
             disabled={isLoading}
             className={`w-full font-medium py-4 rounded-full text-lg backdrop-blur-sm flex items-center justify-center transition-all ${
@@ -267,7 +291,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
             <div className="w-8 h-8 rounded-full mr-3 flex items-center justify-center" style={{ backgroundColor: store.colors.primary }}>
               <Phone className="w-4 h-4 text-white" />
             </div>
-            {isLoading ? 'Carregando...' : cart.length > 0 ? `Finalizar Pedido (${getCartItemCount()} itens)` : 'Fale com a gente'}
+            {isLoading ? 'Carregando...' : cart.length > 0 ? 'Ver Carrinho' : 'Fale com a gente'}
           </button>
 
           <button

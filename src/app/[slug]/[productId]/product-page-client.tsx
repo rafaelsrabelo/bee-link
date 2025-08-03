@@ -22,7 +22,7 @@ interface ProductPageClientProps {
 
 export default function ProductPageClient({ store, product }: ProductPageClientProps) {
   const [selectedImage, setSelectedImage] = useState(0);
-  const { cart, getCartTotal, getCartItemCount, setStoreSlug, isLoading } = useCartStore();
+  const { cart, setStoreSlug, isLoading } = useCartStore();
 
   // Configurar o store slug quando o componente montar
   useEffect(() => {
@@ -34,19 +34,7 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
 
 
 
-  const handleWhatsAppCheckout = () => {
-    if (cart.length === 0) return;
 
-    const itemsList = cart.map(item => 
-      `• ${item.name} - ${item.price} x${item.quantity}`
-    ).join('\n');
-
-    const total = getCartTotal().toFixed(2).replace('.', ',');
-    
-    const message = `Olá! Gostaria de fazer um pedido da ${store.store_name}:\n\n${itemsList}\n\n*Total: R$ ${total}*`;
-    const whatsappUrl = `https://wa.me/${store.social_networks.whatsapp.replace(/[^\d]/g, '')}?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
-  };
 
 
 
@@ -90,7 +78,7 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
           <div className="text-white/70 text-xs">{store.store_name}</div>
         </div>
         <CartHeader 
-          onCheckout={handleWhatsAppCheckout}
+          storeSlug={store.slug}
         />
       </div>
 
@@ -198,7 +186,12 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
 
           <button
             type="button"
-            onClick={handleWhatsAppCheckout}
+            onClick={() => {
+              if (cart.length > 0) {
+                // Navegar para a página do carrinho
+                window.location.href = `/${store.slug}/cart`;
+              }
+            }}
             disabled={cart.length === 0 || isLoading}
             className={`w-full font-medium py-4 rounded-full text-lg backdrop-blur-sm flex items-center justify-center transition-all shadow-lg hover:shadow-xl ${
               cart.length > 0 && !isLoading
@@ -210,7 +203,7 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
             <div className="w-8 h-8 rounded-full mr-3 flex items-center justify-center" style={{ backgroundColor: store.colors.primary }}>
               <MessageCircle className="w-4 h-4 text-white" />
             </div>
-            {isLoading ? 'Carregando...' : cart.length > 0 ? `Finalizar Pedido (${getCartItemCount()} itens)` : 'Adicione itens ao carrinho'}
+            {isLoading ? 'Carregando...' : cart.length > 0 ? 'Ver Carrinho' : 'Adicione itens ao carrinho'}
           </button>
 
           <Link

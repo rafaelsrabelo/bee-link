@@ -36,7 +36,13 @@ export const useCartStore = create<CartStore>()(
 
       // Ações
       setStoreSlug: (slug: string) => {
-        set({ storeSlug: slug });
+        set((state) => {
+          // Se mudou de loja, limpar o carrinho
+          if (state.storeSlug && state.storeSlug !== slug) {
+            return { storeSlug: slug, cart: [] };
+          }
+          return { storeSlug: slug };
+        });
       },
 
       setLoading: (loading: boolean) => {
@@ -80,7 +86,7 @@ export const useCartStore = create<CartStore>()(
       },
 
       clearCart: () => {
-        set({ cart: [] });
+        set({ cart: [], isLoading: false });
       },
 
       getCartTotal: () => {

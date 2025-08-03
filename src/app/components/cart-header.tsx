@@ -1,21 +1,29 @@
 "use client";
 
 import { ShoppingCart } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useCartStore } from "../stores/cartStore";
 import CartLoading from "./cart-loading";
 
 interface CartHeaderProps {
-  onCheckout: () => void;
+  storeSlug: string;
   className?: string;
 }
 
-export default function CartHeader({ onCheckout, className = "" }: CartHeaderProps) {
+export default function CartHeader({ storeSlug, className = "" }: CartHeaderProps) {
   const { cart, getCartTotal, getCartItemCount, isLoading } = useCartStore();
+  const router = useRouter();
 
   // Mostra loading enquanto carrega os dados
   if (isLoading) {
     return <CartLoading />;
   }
+
+  const handleCartClick = () => {
+    if (cart.length > 0) {
+      router.push(`/${storeSlug}/cart`);
+    }
+  };
 
   return (
     <div className={`relative flex items-center gap-3 ${className}`}>
@@ -29,7 +37,7 @@ export default function CartHeader({ onCheckout, className = "" }: CartHeaderPro
       <button
         type="button"
         className="text-white hover:bg-white/10 p-2 rounded-full relative transition-all"
-        onClick={onCheckout}
+        onClick={handleCartClick}
         disabled={cart.length === 0}
       >
         <ShoppingCart className="w-6 h-6" />
