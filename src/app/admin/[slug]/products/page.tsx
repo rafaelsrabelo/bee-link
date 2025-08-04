@@ -414,11 +414,11 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
               </p>
               <button
                 onClick={() => setShowAddForm(true)}
-                className="text-white px-6 py-3 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg font-medium"
+                className="w-full sm:w-auto text-white px-6 py-3 rounded-lg flex items-center justify-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg font-medium"
                 style={{ backgroundColor: `${store.colors.primary}CC` }}
               >
-                <Plus className="w-5 h-5 inline mr-2" />
-                Adicionar Primeiro Produto
+                <Plus className="w-5 h-5" />
+                <span>Adicionar Primeiro Produto</span>
               </button>
             </div>
           ) : (
@@ -627,22 +627,22 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
                 </div>
               </div>
               
-              <div className="flex justify-end gap-3 mt-6">
-                <button
-                  type="button"
-                  onClick={() => setShowAddForm(false)}
-                  className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Cancelar
-                </button>
+              <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6">
                 <button
                   type="button"
                   onClick={handleAddProduct}
                   disabled={!isFormValid}
-                  className="px-6 py-2 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full sm:w-auto px-6 py-3 text-white rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-md hover:shadow-lg order-1 sm:order-2"
                   style={{ backgroundColor: store.colors.primary }}
                 >
                   {isFormValid ? 'Adicionar Produto' : 'Preencha todos os campos'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAddForm(false)}
+                  className="w-full sm:w-auto px-6 py-3 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 font-medium order-2 sm:order-1"
+                >
+                  Cancelar
                 </button>
               </div>
             </div>
@@ -752,21 +752,21 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
                   </div>
                 </div>
                 
-                <div className="flex justify-end gap-3 mt-6">
-                  <button
-                    type="button"
-                    onClick={handleCancelEdit}
-                    className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    Cancelar
-                  </button>
+                <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6">
                   <button
                     type="button"
                     onClick={handleSaveEdit}
-                    className="px-6 py-2 text-white rounded-lg transition-colors"
+                    className="w-full sm:w-auto px-6 py-3 text-white rounded-lg transition-all duration-200 font-medium shadow-md hover:shadow-lg order-1 sm:order-2"
                     style={{ backgroundColor: store.colors.primary }}
                   >
                     Salvar Alterações
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCancelEdit}
+                    className="w-full sm:w-auto px-6 py-3 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 font-medium order-2 sm:order-1"
+                  >
+                    Cancelar
                   </button>
                 </div>
               </div>
