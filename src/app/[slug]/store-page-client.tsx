@@ -269,30 +269,25 @@ export default function StorePageClient({ store }: StorePageClientProps) {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: store.colors.primary }}>
-      {/* Background Image */}
-      <div className="absolute inset-0">
-        <Image
-          src={store.logo.replace('/logo.png', '/background.png')}
-          alt="Background"
-          fill
-          className="object-contain"
-        />
-        <div className="absolute inset-0" style={{ backgroundColor: `${store.colors.primary}20` }} />
-      </div>
-
+    <div className="min-h-screen relative overflow-hidden" style={{ 
+      background: `linear-gradient(135deg, ${store.colors.primary} 0%, ${store.colors.primary} 30%, ${store.colors.secondary} 60%, ${store.colors.accent} 100%)`
+    }}>
       {/* Decorative Elements */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-20 left-4 w-24 h-24 bg-white/20 rounded-full" />
-        <div className="absolute top-32 right-8 w-16 h-16 bg-white/15 rounded-full" />
-        <div className="absolute top-48 left-12 w-32 h-32 bg-white/10 rounded-full" />
-        <div className="absolute top-64 right-4 w-20 h-20 bg-white/20 rounded-full" />
-        <div className="absolute bottom-40 left-8 w-28 h-28 bg-white/15 rounded-full" />
-        <div className="absolute bottom-60 right-12 w-36 h-36 bg-white/10 rounded-full" />
+        {/* Desktop only decorative elements */}
+        <div className="hidden md:block absolute top-20 left-4 w-24 h-24 bg-white/20 rounded-full" />
+        <div className="hidden md:block absolute top-32 right-8 w-16 h-16 bg-white/15 rounded-full" />
+        <div className="hidden md:block absolute top-48 left-12 w-32 h-32 bg-white/10 rounded-full" />
+        <div className="hidden md:block absolute bottom-40 left-8 w-28 h-28 bg-white/15 rounded-full" />
+        <div className="hidden md:block absolute bottom-60 right-12 w-36 h-36 bg-white/10 rounded-full" />
 
-        {/* Marble texture elements */}
-        <div className="absolute top-40 right-0 w-40 h-40 bg-white/30 rounded-full transform translate-x-20" />
-        <div className="absolute bottom-20 left-0 w-48 h-48 bg-white/25 rounded-full transform -translate-x-24" />
+        {/* Mobile friendly decorative elements */}
+        <div className="md:hidden absolute top-16 right-6 w-16 h-16 bg-white/15 rounded-full" />
+        <div className="md:hidden absolute bottom-20 left-6 w-20 h-20 bg-white/10 rounded-full" />
+
+        {/* Marble texture elements - desktop only */}
+        <div className="hidden md:block absolute top-40 right-0 w-40 h-40 bg-white/30 rounded-full transform translate-x-20" />
+        <div className="hidden md:block absolute bottom-20 left-0 w-48 h-48 bg-white/25 rounded-full transform -translate-x-24" />
       </div>
 
       {/* Header */}
@@ -327,7 +322,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
             href={`https://instagram.com/${store.social_networks.instagram}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-white hover:bg-white/10 w-12 h-12 rounded-full flex items-center justify-center"
+            className="text-white hover:bg-white/20 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 transform hover:scale-110 backdrop-blur-sm border border-white/20 hover:border-white/40"
           >
             <Instagram className="w-6 h-6" />
           </a>
@@ -335,7 +330,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
             href={`https://wa.me/${store.social_networks.whatsapp.replace(/[^\d]/g, '')}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-white hover:bg-white/10 w-12 h-12 rounded-full flex items-center justify-center"
+            className="text-white hover:bg-white/20 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 transform hover:scale-110 backdrop-blur-sm border border-white/20 hover:border-white/40"
           >
             <MessageCircle className="w-6 h-6" />
           </a>
@@ -357,14 +352,16 @@ export default function StorePageClient({ store }: StorePageClientProps) {
               }
             }}
             disabled={isLoading}
-            className={`w-full font-medium py-4 rounded-full text-lg backdrop-blur-sm flex items-center justify-center transition-all ${
+            className={`w-full font-medium py-4 rounded-full text-lg backdrop-blur-sm flex items-center justify-center transition-all duration-300 ${
               cart.length > 0 && !isLoading
                 ? 'bg-white/90 hover:bg-white shadow-lg hover:shadow-xl' 
                 : 'bg-white/90 hover:bg-white shadow-lg hover:shadow-xl'
             }`}
             style={{ color: store.colors.primary }}
           >
-            <div className="w-8 h-8 rounded-full mr-3 flex items-center justify-center" style={{ backgroundColor: store.colors.primary }}>
+            <div className="w-8 h-8 rounded-full mr-3 flex items-center justify-center" style={{ 
+              backgroundColor: store.colors.primary
+            }}>
               <Phone className="w-4 h-4 text-white" />
             </div>
             {isLoading ? 'Carregando...' : cart.length > 0 ? 'Ver Carrinho' : 'Fale com a gente'}
@@ -373,11 +370,13 @@ export default function StorePageClient({ store }: StorePageClientProps) {
           <button
             type="button"
             onClick={() => setShowCatalog(true)}
-            className="w-full bg-white/90 hover:bg-white font-medium py-4 rounded-full text-lg backdrop-blur-sm flex items-center justify-between"
+            className="w-full bg-white/90 hover:bg-white font-medium py-4 rounded-full text-lg backdrop-blur-sm flex items-center justify-between transition-all duration-300 shadow-lg hover:shadow-xl"
             style={{ color: store.colors.primary }}
           >
             <span className="flex-1">COMPRE AQUI</span>
-            <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center" style={{ background: `linear-gradient(to bottom right, ${store.colors.secondary}, ${store.colors.accent})` }}>
+            <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center" style={{ 
+              background: `linear-gradient(to bottom right, ${store.colors.secondary}, ${store.colors.accent})`
+            }}>
               <ShoppingCart className="w-4 h-4 text-white" />
             </div>
           </button>
