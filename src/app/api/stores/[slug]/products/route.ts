@@ -4,17 +4,18 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const cookieStore = await cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+    const supabase = createRouteHandlerClient({ cookies });
+    
+    const { slug } = await params;
     
     // Primeiro, buscar a loja pelo slug
     const { data: store, error: storeError } = await supabase
       .from('stores')
       .select('id')
-      .eq('slug', params.slug)
+      .eq('slug', slug)
       .single();
 
     if (storeError || !store) {
@@ -42,11 +43,10 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const cookieStore = await cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+    const supabase = createRouteHandlerClient({ cookies });
     
     // Verificar se o usuário está autenticado
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -55,11 +55,13 @@ export async function POST(
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
 
+    const { slug } = await params;
+    
     // Primeiro, buscar a loja pelo slug
     const { data: store, error: storeError } = await supabase
       .from('stores')
       .select('id, user_id')
-      .eq('slug', params.slug)
+      .eq('slug', slug)
       .single();
 
     if (storeError || !store) {
@@ -87,7 +89,7 @@ export async function POST(
     // Se há produtos para inserir
     if (products && products.length > 0) {
       // Adicionar store_id a todos os produtos
-      const productsWithStoreId = products.map((product: any) => ({
+      const productsWithStoreId = products.map((product: { [key: string]: unknown }) => ({
         ...product,
         store_id: store.id
       }));

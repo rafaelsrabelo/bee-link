@@ -3,13 +3,11 @@
 import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../../contexts/AuthContext';
-import { useStore } from '../../../../contexts/StoreContext';
 import { toast } from 'react-hot-toast';
-import { Edit, Eye, EyeOff, Package, Plus, Settings, Trash2, X, Store, LogOut, User } from 'lucide-react';
+import { Edit, Eye, EyeOff, Package, Plus, Trash2, X } from 'lucide-react';
 import Image from 'next/image';
 import DeleteModal from '../../../../components/ui/delete-modal';
 import LottieLoader from '../../../../components/ui/lottie-loader';
-import DotsLoading from '../../../../components/ui/dots-loading';
 import MobileImageUpload from '../../../../components/ui/mobile-image-upload';
 import ProtectedRoute from '../../../../components/auth/ProtectedRoute';
 import AdminHeader from '../../../../components/ui/admin-header';
@@ -40,7 +38,7 @@ interface Store {
   user_id: string;
 }
 
-export default function ProductsPage({ params }: { params: { slug: string } }) {
+export default function ProductsPage({ params }: { params: Promise<{ slug: string }> }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [store, setStore] = useState<Store | null>(null);
   const [isEditing, setIsEditing] = useState<string | null>(null);
@@ -401,7 +399,7 @@ export default function ProductsPage({ params }: { params: { slug: string } }) {
             <div className="flex justify-center py-12">
               <LottieLoader 
                 animationData={loadingAnimation}
-                size={150}
+                size="lg"
                 text="Carregando produtos..."
               />
             </div>

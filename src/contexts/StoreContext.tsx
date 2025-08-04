@@ -1,7 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useAuth } from './AuthContext';
+import React, { createContext, useContext, useState } from 'react';
 import { supabase } from '../lib/supabase';
 
 interface Store {
@@ -32,7 +31,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [store, setStore] = useState<Store | null>(null);
   const [loading, setLoading] = useState(false);
   const [currentSlug, setCurrentSlug] = useState<string | null>(null);
-  const { user } = useAuth();
 
   // Wrapper para setCurrentSlug com logs
   const setCurrentSlugWithLog = (slug: string) => {

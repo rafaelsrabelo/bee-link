@@ -4,15 +4,16 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
     const supabase = createRouteHandlerClient({ cookies });
+    const { slug } = await params;
     
     const { data: store, error } = await supabase
       .from('stores')
       .select('*')
-      .eq('slug', params.slug)
+      .eq('slug', slug)
       .single();
 
     if (error || !store) {
@@ -28,10 +29,11 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
     const supabase = createRouteHandlerClient({ cookies });
+    const { slug } = await params;
     
     // Verificar se o usuário está autenticado
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -56,7 +58,7 @@ export async function PUT(
     const { data: existingStore, error: checkError } = await supabase
       .from('stores')
       .select('user_id')
-      .eq('slug', params.slug)
+      .eq('slug', slug)
       .single();
 
     if (checkError || !existingStore) {
@@ -82,7 +84,7 @@ export async function PUT(
         social_networks: social_networks || {},
         updated_at: new Date().toISOString()
       })
-      .eq('slug', params.slug)
+      .eq('slug', slug)
       .select()
       .single();
 

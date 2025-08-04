@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { stores } from '../data';
+import { supabase } from '../../../lib/supabase';
 import CartPageClient from './cart-page-client';
 
 interface CartPageProps {
@@ -10,11 +10,32 @@ interface CartPageProps {
 
 export default async function CartPage({ params }: CartPageProps) {
   const { slug } = await params;
-  const store = Object.values(stores).find(s => s.slug === slug);
   
-  if (!store) {
+  try {
+    // Buscar a store pelo slug
+    const { data: store, error: storeError } = await supabase
+      .from('stores')
+      .select('*')
+      .eq('slug', slug)
+      .single();
+
+    if (storeError || !store) {
+      notFound();
+    }
+
+    // Formatar os dados para o componente
+    const formattedStore = {
+      store_name: store.name,
+      description: store.description,
+      slug: store.slug,
+      logo: store.logo,
+      colors: store.colors,
+      social_networks: store.social_networks,
+      products: [] // Array vazio pois os produtos são carregados separadamente
+    };
+
+    return <CartPageClient store={formattedStore} />;
+  } catch {
     notFound();
   }
-
-  return <CartPageClient store={store} />;
 } 

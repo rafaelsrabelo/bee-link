@@ -4,7 +4,7 @@ import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
-import { Package, Settings, Store, BarChart3, Users, ShoppingCart, Plus, LogOut, User } from 'lucide-react';
+import { Package, Settings, Store } from 'lucide-react';
 import ProtectedRoute from '../../../components/auth/ProtectedRoute';
 import LottieLoader from '../../../components/ui/lottie-loader';
 import AdminHeader from '../../../components/ui/admin-header';
@@ -132,7 +132,8 @@ export default function AdminDashboardPage({ params }: { params: Promise<{ slug:
                   if (card.external) {
                     window.open(card.href, '_blank');
                   } else {
-                    router.push(card.href as any);
+                    // @ts-expect-error - href é uma string válida
+                    router.push(card.href);
                   }
                 }}
               >
