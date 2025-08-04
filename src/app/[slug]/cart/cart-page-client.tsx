@@ -5,7 +5,8 @@ import Image from 'next/image';
 import { useEffect } from 'react';
 
 import { useCartStore } from '../../stores/cartStore';
-import type { StoreData } from '../data';
+import { getLessariProducts } from '../data';
+import type { Product, StoreData } from '../data';
 
 interface CartPageClientProps {
   store: StoreData;
@@ -129,10 +130,10 @@ export default function CartPageClient({ store }: CartPageClientProps) {
       <div className="pt-20 pb-32 px-4 relative z-10">
         {/* Lista de produtos */}
         <div className="space-y-4 mb-8">
-          {cart.map((item) => {
-            // Encontrar a imagem do produto baseado no nome
-            const product = store.products.find(p => p.name === item.name);
-            const productImage = product?.image || '/logo.png';
+                      {cart.map((item) => {
+              // Encontrar a imagem do produto baseado no nome
+              const product = getLessariProducts().find((p: Product) => p.name === item.name);
+              const productImage = product?.image || '/logo.png';
             
             return (
               <div
@@ -181,7 +182,7 @@ export default function CartPageClient({ store }: CartPageClientProps) {
                         <button
                           type="button"
                           onClick={() => {
-                            const product = store.products.find(p => p.name === item.name);
+                            const product = getLessariProducts().find((p: Product) => p.name === item.name);
                             if (product) {
                               addToCart(product);
                             }

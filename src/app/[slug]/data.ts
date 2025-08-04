@@ -107,4 +107,16 @@ export interface Product {
   category: string;
   description: string;
   readyToShip?: boolean;
+  available?: boolean;
+}
+
+// Função para obter produtos (com suporte ao admin)
+export function getLessariProducts() {
+  if (typeof window !== 'undefined') {
+    const savedProducts = localStorage.getItem('lessari-products');
+    if (savedProducts) {
+      return JSON.parse(savedProducts);
+    }
+  }
+  return stores.lessari.products;
 } 

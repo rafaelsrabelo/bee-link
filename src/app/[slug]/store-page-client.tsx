@@ -7,7 +7,8 @@ import { useEffect, useState } from "react";
 import CartControlsCompactLoading from '../components/cart-controls-compact-loading';
 import CartHeader from '../components/cart-header';
 import { useCartStore } from '../stores/cartStore';
-import type { StoreData } from './data';
+import { getLessariProducts } from './data';
+import type { Product, StoreData } from './data';
 
 interface StorePageClientProps {
   store: StoreData;
@@ -115,7 +116,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
         {/* Products Grid */}
         <div className="px-4 pb-20 pt-4">
           <div className="grid grid-cols-2 gap-3">
-            {store.products.map((product, index) => {
+            {getLessariProducts().filter((p: Product) => p.available !== false).map((product: Product, index: number) => {
               const quantity = getCartItemQuantity(product.name);
               const productId = generateProductId(product.name);
 
