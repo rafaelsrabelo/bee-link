@@ -28,7 +28,6 @@ export const stores = {
         name: "Bolsa baguete marrom", 
         category: "bag",
         description: "Bolsa baguete elegante em tom marrom, compacta e sofisticada. Ideal para carregar seus itens essenciais com muito estilo e charme.",
-        readyToShip: true
       },
       { 
         image: "/lessari/media-terracota.JPG", 
@@ -36,7 +35,6 @@ export const stores = {
         name: "Bolsa média terracota", 
         category: "bag",
         description: "Bolsa média em cor terracota, espaçosa e confortável. Cada peça é única e confeccionada com muito carinho e dedicação artesanal.",
-        readyToShip: true
       },
       { 
         image: "/lessari/round-bag.JPG", 
