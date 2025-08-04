@@ -8,7 +8,6 @@ import CartControls from '../../components/cart-controls';
 import CartHeader from '../../components/cart-header';
 
 import { useCartStore } from '../../stores/cartStore';
-import { getLessariProducts } from '../data';
 import type { StoreData } from '../data';
 
 interface ProductPageClientProps {

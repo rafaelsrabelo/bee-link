@@ -14,60 +14,7 @@ export const stores = {
       instagram: "lessaricroche",
       whatsapp: "+558594100683"
     },
-    products: [
-      { 
-        image: "/lessari/media-alca-removivel.JPG", 
-        price: "R$ 69,99", 
-        name: "Bolsa média alça removível", 
-        category: "bag",
-        description: "Bolsa média versátil com alça removível, perfeita para o dia a dia. Confeccionada à mão com fios de crochê de alta qualidade, oferece praticidade e estilo único."
-      },
-      { 
-        image: "/lessari/baguete-marrom.JPG", 
-        price: "R$ 49,99", 
-        name: "Bolsa baguete marrom", 
-        category: "bag",
-        description: "Bolsa baguete elegante em tom marrom, compacta e sofisticada. Ideal para carregar seus itens essenciais com muito estilo e charme."
-      },
-      { 
-        image: "/lessari/media-terracota.JPG", 
-        price: "R$ 69,99", 
-        name: "Bolsa média terracota", 
-        category: "bag",
-        description: "Bolsa média em cor terracota, espaçosa e confortável. Cada peça é única e confeccionada com muito carinho e dedicação artesanal."
-      },
-      { 
-        image: "/lessari/round-bag.JPG", 
-        price: "R$ 99,99", 
-        name: "Round bag", 
-        category: "bag",
-        description: "Round bag com design circular moderno e charmoso. Feita à mão com técnicas tradicionais, combina tradição e contemporaneidade.",
-        readyToShip: true
-      },
-      { 
-        image: "/lessari/shoulder-bag.JPG", 
-        price: "R$ 49,99", 
-        name: "Shoulder bag", 
-        category: "bag",
-        description: "Shoulder bag confortável e estilosa, perfeita para o uso diário. Confeccionada manualmente com atenção aos detalhes.",
-        readyToShip: true
-      },
-      { 
-        image: "/lessari/media-off-white.JPG", 
-        price: "R$ 69,99", 
-        name: "Bolsa média off white", 
-        category: "bag",
-        description: "Bolsa média em cor off white, elegante e versátil. Cada peça é única e traz consigo a dedicação de horas de trabalho manual."
-      },
-      { 
-        image: "/lessari/baguete-terracota.JPG", 
-        price: "R$ 49,99", 
-        name: "Bolsa baguete terracota", 
-        category: "bag",
-        description: "Bolsa baguete em cor terracota, compacta e charmosa. Ideal para quem busca praticidade sem abrir mão do estilo artesanal.",
-        readyToShip: true
-      }
-    ]
+    products: []
   },
   "dindin-da-leia": {
     store_name: "Dindin da Leia",
@@ -108,20 +55,4 @@ export interface Product {
   available?: boolean;
 }
 
-// Função para obter produtos (com suporte ao admin)
-export async function getLessariProducts() {
-  try {
-    const response = await fetch('/api/products');
-    if (response.ok) {
-      const products = await response.json();
-      if (products && products.length > 0) {
-        return products;
-      }
-    }
-  } catch (error) {
-    console.error('Erro ao buscar produtos da API:', error);
-  }
-  
-  // Fallback para produtos padrão
-  return stores.lessari.products;
-} 
+ 

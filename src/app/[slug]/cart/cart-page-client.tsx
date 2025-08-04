@@ -5,8 +5,18 @@ import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
 import { useCartStore } from '../../stores/cartStore';
-import { getLessariProducts } from '../data';
-import type { Product, StoreData } from '../data';
+import type { StoreData } from '../data';
+
+interface Product {
+  id: string;
+  name: string;
+  price: string;
+  image: string;
+  category: string;
+  description: string;
+  readyToShip?: boolean;
+  available?: boolean;
+}
 
 interface CartPageClientProps {
   store: StoreData;
@@ -22,10 +32,14 @@ export default function CartPageClient({ store }: CartPageClientProps) {
     const loadProducts = async () => {
       try {
         setLoading(true);
-        const productsData = await getLessariProducts();
-        setProducts(productsData);
+        const response = await fetch('/api/products');
+        if (response.ok) {
+          const productsData = await response.json();
+          setProducts(productsData || []);
+        }
       } catch (error) {
         console.error('Erro ao carregar produtos:', error);
+        setProducts([]);
       } finally {
         setLoading(false);
       }

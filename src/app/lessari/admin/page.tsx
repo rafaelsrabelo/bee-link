@@ -20,6 +20,7 @@ export default function AdminPage() {
   const [isEditing, setIsEditing] = useState<string | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [newProduct, setNewProduct] = useState<Partial<Product>>({
     name: '',
     price: '',
@@ -37,90 +38,15 @@ export default function AdminPage() {
         const response = await fetch('/api/products');
         if (response.ok) {
           const apiProducts = await response.json();
-          if (apiProducts && apiProducts.length > 0) {
-            setProducts(apiProducts);
-            return;
-          }
+          setProducts(apiProducts || []);
         }
       } catch (error) {
         console.error('Erro ao carregar produtos da API:', error);
+        setProducts([]);
       }
-      
-      // Fallback para produtos padrão
-      const defaultProducts: Product[] = [
-        {
-          id: '1',
-          image: "/lessari/media-alca-removivel.JPG",
-          price: "R$ 69,99",
-          name: "Bolsa média alça removível",
-          category: "bag",
-          description: "Bolsa média versátil com alça removível, perfeita para o dia a dia. Confeccionada à mão com fios de crochê de alta qualidade, oferece praticidade e estilo único.",
-          readyToShip: false,
-          available: true
-        },
-        {
-          id: '2',
-          image: "/lessari/baguete-marrom.JPG",
-          price: "R$ 49,99",
-          name: "Bolsa baguete marrom",
-          category: "bag",
-          description: "Bolsa baguete elegante em tom marrom, compacta e sofisticada. Ideal para carregar seus itens essenciais com muito estilo e charme.",
-          readyToShip: true,
-          available: true
-        },
-        {
-          id: '3',
-          image: "/lessari/media-terracota.JPG",
-          price: "R$ 69,99",
-          name: "Bolsa média terracota",
-          category: "bag",
-          description: "Bolsa média em cor terracota, espaçosa e confortável. Cada peça é única e confeccionada com muito carinho e dedicação artesanal.",
-          readyToShip: true,
-          available: true
-        },
-        {
-          id: '4',
-          image: "/lessari/round-bag.JPG",
-          price: "R$ 99,99",
-          name: "Round bag",
-          category: "bag",
-          description: "Round bag com design circular moderno e charmoso. Feita à mão com técnicas tradicionais, combina tradição e contemporaneidade.",
-          readyToShip: true,
-          available: true
-        },
-        {
-          id: '5',
-          image: "/lessari/shoulder-bag.JPG",
-          price: "R$ 49,99",
-          name: "Shoulder bag",
-          category: "bag",
-          description: "Shoulder bag confortável e estilosa, perfeita para o uso diário. Confeccionada manualmente com atenção aos detalhes.",
-          readyToShip: true,
-          available: true
-        },
-        {
-          id: '6',
-          image: "/lessari/media-off-white.JPG",
-          price: "R$ 69,99",
-          name: "Bolsa média off white",
-          category: "bag",
-          description: "Bolsa média em cor off white, elegante e versátil. Cada peça é única e traz consigo a dedicação de horas de trabalho manual.",
-          readyToShip: false,
-          available: true
-        },
-        {
-          id: '7',
-          image: "/lessari/baguete-terracota.JPG",
-          price: "R$ 49,99",
-          name: "Bolsa baguete terracota",
-          category: "bag",
-          description: "Bolsa baguete em cor terracota, compacta e charmosa. Ideal para quem busca praticidade sem abrir mão do estilo artesanal.",
-          readyToShip: true,
-          available: true
-        }
-      ];
-      setProducts(defaultProducts);
-    }
+    };
+    
+    loadProducts();
   }, []);
 
   const saveProducts = async (newProducts: Product[]) => {
@@ -140,6 +66,34 @@ export default function AdminPage() {
     } catch (error) {
       console.error('Erro ao salvar produtos:', error);
       alert('Erro ao salvar produtos. Tente novamente.');
+    }
+  };
+
+  const handleImageUpload = async (file: File) => {
+    if (!file) return;
+    
+    setUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      
+      const response = await fetch('/api/upload-image', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        setNewProduct({ ...newProduct, image: result.imageUrl });
+      } else {
+        const error = await response.json();
+        alert(`Erro no upload: ${error.error}`);
+      }
+    } catch (error) {
+      console.error('Erro no upload:', error);
+      alert('Erro ao fazer upload da imagem. Tente novamente.');
+    } finally {
+      setUploadingImage(false);
     }
   };
 
@@ -210,7 +164,7 @@ export default function AdminPage() {
   };
 
   const handleReset = async () => {
-    if (confirm('Tem certeza que deseja resetar todos os produtos para os dados originais? Isso removerá todos os produtos adicionados via admin.')) {
+    if (confirm('Tem certeza que deseja limpar todos os produtos? Isso removerá todos os produtos adicionados via admin.')) {
       try {
         const response = await fetch('/api/products', {
           method: 'POST',
@@ -221,13 +175,13 @@ export default function AdminPage() {
         });
         
         if (response.ok) {
-          window.location.reload();
+          setProducts([]);
         } else {
-          alert('Erro ao resetar produtos. Tente novamente.');
+          alert('Erro ao limpar produtos. Tente novamente.');
         }
       } catch (error) {
-        console.error('Erro ao resetar produtos:', error);
-        alert('Erro ao resetar produtos. Tente novamente.');
+        console.error('Erro ao limpar produtos:', error);
+        alert('Erro ao limpar produtos. Tente novamente.');
       }
     }
   };
@@ -265,36 +219,10 @@ export default function AdminPage() {
                 type="button"
                 className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
               >
-                <span className="hidden sm:inline">Resetar</span>
-                <span className="sm:hidden">Reset</span>
-              </button>
-              <button
-                onClick={async () => {
-                  try {
-                    const response = await fetch('/api/products', {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                      },
-                      body: JSON.stringify([]),
-                    });
-                    
-                    if (response.ok) {
-                      window.location.reload();
-                    } else {
-                      alert('Erro ao limpar produtos. Tente novamente.');
-                    }
-                  } catch (error) {
-                    console.error('Erro ao limpar produtos:', error);
-                    alert('Erro ao limpar produtos. Tente novamente.');
-                  }
-                }}
-                type="button"
-                className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
-              >
-                <span className="hidden sm:inline">Limpar Tudo</span>
+                <span className="hidden sm:inline">Limpar Produtos</span>
                 <span className="sm:hidden">Limpar</span>
               </button>
+
             </div>
           </div>
         </div>
@@ -390,14 +318,29 @@ export default function AdminPage() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">URL da Imagem *</label>
-                <input
-                  type="text"
-                  value={newProduct.image}
-                  onChange={(e) => setNewProduct({...newProduct, image: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#856342] focus:border-transparent"
-                  placeholder="Ex: /lessari/nome-da-imagem.jpg"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-2">Imagem do Produto *</label>
+                <div className="space-y-2">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        handleImageUpload(file);
+                      }
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#856342] focus:border-transparent"
+                    disabled={uploadingImage}
+                  />
+                  {uploadingImage && (
+                    <div className="text-sm text-blue-600">Fazendo upload da imagem...</div>
+                  )}
+                  {newProduct.image && (
+                    <div className="text-sm text-green-600">
+                      ✅ Imagem carregada: {newProduct.image}
+                    </div>
+                  )}
+                </div>
               </div>
               
               <div>
@@ -476,8 +419,18 @@ export default function AdminPage() {
             <div className="min-w-full">
               {products.length === 0 ? (
                 <div className="text-center py-12">
-                  <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">Nenhum produto encontrado</p>
+                  <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-8 mx-4 max-w-md mx-auto">
+                    <div className="w-20 h-20 bg-[#856342]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Package className="w-10 h-10 text-[#856342]" />
+                    </div>
+                    <h3 className="text-[#856342] text-lg font-medium mb-2">Catálogo Vazio</h3>
+                    <p className="text-gray-600 text-sm mb-4">
+                      Nenhum produto cadastrado ainda.
+                    </p>
+                    <div className="text-gray-500 text-xs">
+                      Clique em "Adicionar Produto" para começar! ✨
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 p-6">

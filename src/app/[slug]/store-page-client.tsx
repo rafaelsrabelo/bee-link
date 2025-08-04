@@ -1,14 +1,24 @@
 "use client";
 
-import { ArrowLeft, Instagram, MessageCircle, Minus, Phone, Plus, ShoppingCart } from "lucide-react";
+import { ArrowLeft, Instagram, MessageCircle, Minus, Package, Phone, Plus, ShoppingCart } from "lucide-react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import CartControlsCompactLoading from '../components/cart-controls-compact-loading';
 import CartHeader from '../components/cart-header';
 import { useCartStore } from '../stores/cartStore';
-import { getLessariProducts } from './data';
-import type { Product, StoreData } from './data';
+import type { StoreData } from './data';
+
+interface Product {
+  id: string;
+  name: string;
+  price: string;
+  image: string;
+  category: string;
+  description: string;
+  readyToShip?: boolean;
+  available?: boolean;
+}
 
 interface StorePageClientProps {
   store: StoreData;
@@ -44,10 +54,14 @@ export default function StorePageClient({ store }: StorePageClientProps) {
     const loadProducts = async () => {
       try {
         setLoading(true);
-        const productsData = await getLessariProducts();
-        setProducts(productsData);
+        const response = await fetch('/api/products');
+        if (response.ok) {
+          const productsData = await response.json();
+          setProducts(productsData || []);
+        }
       } catch (error) {
         console.error('Erro ao carregar produtos:', error);
+        setProducts([]);
       } finally {
         setLoading(false);
       }
@@ -122,6 +136,21 @@ export default function StorePageClient({ store }: StorePageClientProps) {
             <div className="text-center py-8">
               <div className="text-white">Carregando produtos...</div>
             </div>
+          ) : products.filter((p: Product) => p.available !== false).length === 0 ? (
+            <div className="text-center py-12">
+              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 mx-4">
+                <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Package className="w-10 h-10 text-white/70" />
+                </div>
+                <h3 className="text-white text-lg font-medium mb-2">Catálogo Vazio</h3>
+                <p className="text-white/70 text-sm mb-4">
+                  Nenhum produto disponível no momento.
+                </p>
+                <div className="text-white/50 text-xs">
+                  Em breve teremos novidades para você! ✨
+                </div>
+              </div>
+            </div>
           ) : (
             <div className="grid grid-cols-2 gap-3">
               {products.filter((p: Product) => p.available !== false).map((product: Product, index: number) => {
@@ -183,7 +212,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
                       {isLoading ? (
                         <CartControlsCompactLoading />
                       ) : (
-                        <div className="flex items-center justify-center gap-4">
+                        <div className="flex items-center justify-center gap-2">
                           {quantity > 0 && (
                             <button
                               type="button"
@@ -195,6 +224,12 @@ export default function StorePageClient({ store }: StorePageClientProps) {
                             >
                               <Minus className="w-4 h-4 text-white" />
                             </button>
+                          )}
+                          
+                          {quantity > 0 && (
+                            <span className="text-white font-medium text-sm min-w-[20px] text-center">
+                              {quantity}
+                            </span>
                           )}
                           
                           <button

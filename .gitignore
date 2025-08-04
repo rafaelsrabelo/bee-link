@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# uploaded images (keep products.json but ignore uploaded images)
+/public/uploads/*
+!/public/uploads/.gitkeep
