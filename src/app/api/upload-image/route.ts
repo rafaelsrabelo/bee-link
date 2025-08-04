@@ -1,12 +1,22 @@
+import { v2 as cloudinary } from 'cloudinary';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { v2 as cloudinary } from 'cloudinary';
 
 // Configurar Cloudinary
+const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+const apiKey = process.env.CLOUDINARY_API_KEY;
+const apiSecret = process.env.CLOUDINARY_API_SECRET;
+
+console.log('Cloudinary Config:', {
+  cloudName: cloudName ? '✅ Set' : '❌ Missing',
+  apiKey: apiKey ? '✅ Set' : '❌ Missing',
+  apiSecret: apiSecret ? '✅ Set' : '❌ Missing'
+});
+
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'demo',
-  api_key: process.env.CLOUDINARY_API_KEY || 'demo',
-  api_secret: process.env.CLOUDINARY_API_SECRET || 'demo'
+  cloud_name: cloudName || 'demo',
+  api_key: apiKey || 'demo',
+  api_secret: apiSecret || 'demo'
 });
 
 export async function POST(request: NextRequest) {
