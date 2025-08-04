@@ -7,14 +7,14 @@ async function readProducts() {
   try {
     const { data, error } = await supabase
       .from('products')
-      .select('*')
-      .order('created_at', { ascending: false });
+      .select('*');
     
     if (error) {
       console.error('Erro ao ler produtos:', error);
       return [];
     }
     
+    console.log('Debug - Produtos lidos com sucesso:', data);
     return data || [];
   } catch (error) {
     console.error('Erro ao ler produtos:', error);
@@ -25,7 +25,10 @@ async function readProducts() {
 // Salvar produtos no Supabase
 async function saveProducts(products: any[]) {
   try {
+    console.log('Debug - Tentando salvar produtos:', products);
+    
     // Primeiro, deletar todos os produtos existentes
+    console.log('Debug - Deletando produtos existentes...');
     const { error: deleteError } = await supabase
       .from('products')
       .delete()
@@ -36,16 +39,22 @@ async function saveProducts(products: any[]) {
       return false;
     }
     
+    console.log('Debug - Produtos deletados com sucesso');
+    
     // Depois, inserir os novos produtos
     if (products.length > 0) {
-      const { error: insertError } = await supabase
+      console.log('Debug - Inserindo novos produtos...');
+      const { data, error: insertError } = await supabase
         .from('products')
-        .insert(products);
+        .insert(products)
+        .select();
       
       if (insertError) {
         console.error('Erro ao inserir produtos:', insertError);
         return false;
       }
+      
+      console.log('Debug - Produtos inseridos com sucesso:', data);
     }
     
     return true;
