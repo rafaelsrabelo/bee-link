@@ -40,14 +40,14 @@ export default function CreateAccountPage() {
       const stores = await response.json();
       
       // Buscar a store do usuário logado (deveria ser apenas uma por usuário)
-      const userStore = stores.find((store: any) => store.user_id === user?.id);
+      const userStore = stores.find((store: { user_id: string }) => store.user_id === user?.id);
       
-             if (userStore) {
-         router.push(`/admin/${userStore.slug}`);
-       } else {
-         router.push('/create-store');
-       }
-    } catch (error) {
+      if (userStore) {
+        router.push(`/admin/${userStore.slug}`);
+      } else {
+        router.push('/create-store');
+      }
+    } catch {
       // Erro silencioso ao verificar loja
     }
   };

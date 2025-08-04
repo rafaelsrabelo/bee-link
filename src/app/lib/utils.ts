@@ -26,7 +26,7 @@ export function isMobileWebView(): boolean {
   return isMobile && isInApp;
 }
 
-export function openWhatsAppWithFallback(phoneNumber: string, message: string, fallbackUrl: string): void {
+export function openWhatsAppWithFallback(phoneNumber: string, message: string): void {
   if (typeof window === 'undefined') return;
   
   const whatsappUrl = `https://wa.me/${phoneNumber.replace(/[^\d]/g, '')}?text=${encodeURIComponent(message)}`;
@@ -39,7 +39,7 @@ export function openWhatsAppWithFallback(phoneNumber: string, message: string, f
     if (!newWindow) {
       window.location.href = whatsappUrl;
     }
-  } catch (error) {
+  } catch {
     // Fallback para qualquer erro
     window.location.href = whatsappUrl;
   }

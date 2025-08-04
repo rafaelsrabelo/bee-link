@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
-import { Store, Palette, Upload, Loader2, ArrowLeft, Sparkles } from 'lucide-react';
+import { Store, Upload, Loader2, ArrowLeft, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import ProtectedRoute from '../../components/auth/ProtectedRoute';
 
@@ -52,12 +52,12 @@ export default function CreateStorePage() {
       const stores = await response.json();
       
       // Buscar a store do usuário logado (deveria ser apenas uma por usuário)
-      const userStore = stores.find((store: any) => store.user_id === user?.id);
+      const userStore = stores.find((store: { user_id: string }) => store.user_id === user?.id);
       
       if (userStore) {
         router.push(`/admin/${userStore.slug}/products`);
       }
-    } catch (error) {
+    } catch {
       // Usuário não tem loja, pode continuar
     }
   };
@@ -99,7 +99,7 @@ export default function CreateStorePage() {
       } else {
         throw new Error('Erro ao enviar imagem');
       }
-    } catch (error) {
+    } catch {
       toast.error('Erro ao enviar logo');
     } finally {
       setUploadingLogo(false);
@@ -136,7 +136,7 @@ export default function CreateStorePage() {
         const error = await response.json();
         toast.error(error.message || 'Erro ao criar loja');
       }
-    } catch (error) {
+    } catch {
       toast.error('Erro inesperado. Tente novamente.');
     } finally {
       setIsLoading(false);

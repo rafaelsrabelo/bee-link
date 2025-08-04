@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
@@ -16,14 +16,7 @@ export default function HomePage() {
   const { signIn, user, loading } = useAuth();
   const router = useRouter();
 
-  useEffect(() => {
-    if (user && !loading && user.id) {
-      // Só verificar loja se o usuário estiver logado e tiver ID
-      checkUserStore();
-    }
-  }, [user, loading]);
-
-  const checkUserStore = async () => {
+  const checkUserStore = useCallback(async () => {
     // Verificar se o usuário ainda existe antes de fazer a requisição
     if (!user?.id) {
       return;
@@ -44,17 +37,24 @@ export default function HomePage() {
       const stores = await response.json();
       
       // Buscar a store do usuário logado (deveria ser apenas uma por usuário)
-      const userStore = stores.find((store: any) => store.user_id === user?.id);
+      const userStore = stores.find((store: { user_id: string }) => store.user_id === user?.id);
       
       if (userStore) {
         router.push(`/admin/${userStore.slug}`);
       } else {
         router.push('/create-store');
       }
-    } catch (error) {
+    } catch {
       // Erro silencioso ao verificar loja
     }
-  };
+  }, [user?.id, router]);
+
+  useEffect(() => {
+    if (user && !loading && user.id) {
+      // Só verificar loja se o usuário estiver logado e tiver ID
+      checkUserStore();
+    }
+  }, [user, loading, checkUserStore]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

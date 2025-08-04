@@ -8,9 +8,9 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string) => Promise<{ error: any }>;
-  signInWithGoogle: () => Promise<{ error: any }>;
+  signIn: (email: string, password: string) => Promise<{ error: { message: string } | null }>;
+  signUp: (email: string, password: string) => Promise<{ error: { message: string } | null }>;
+  signInWithGoogle: () => Promise<{ error: { message: string } | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -73,7 +73,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       return { error: null };
-    } catch (error) {
+    } catch {
       // Capturar erros inesperados e retornar como erro
       return { 
         error: { 
@@ -113,7 +113,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       return { error: null };
-    } catch (error) {
+    } catch {
       // Capturar erros inesperados e retornar como erro
       return { 
         error: { 
@@ -149,7 +149,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Redirecionar para login
         window.location.href = '/';
       }
-    } catch (error) {
+    } catch {
       // Mesmo com erro, tentar redirecionar
       if (typeof window !== 'undefined') {
         window.location.href = '/';
