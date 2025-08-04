@@ -413,15 +413,15 @@ export default function StorePageClient({ store }: StorePageClientProps) {
           <button
             type="button"
             onClick={() => setShowCatalog(true)}
-            className="w-full bg-white/90 hover:bg-white font-medium py-4 rounded-full text-lg backdrop-blur-sm flex items-center justify-between transition-all duration-300 shadow-lg hover:shadow-xl"
+            className="w-full bg-white/90 hover:bg-white font-medium py-4 rounded-full text-lg backdrop-blur-sm flex items-center justify-center transition-all duration-300 shadow-lg hover:shadow-xl"
             style={{ color: store.colors.primary }}
           >
-            <span className="flex-1">COMPRE AQUI</span>
-            <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center" style={{ 
-              background: `linear-gradient(to bottom right, ${store.colors.secondary}, ${store.colors.accent})`
+            <div className="w-8 h-8 rounded-full mr-3 flex items-center justify-center" style={{ 
+              backgroundColor: store.colors.primary
             }}>
               <ShoppingCart className="w-4 h-4 text-white" />
             </div>
+            COMPRE AQUI
           </button>
         </div>
 

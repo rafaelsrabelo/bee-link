@@ -311,8 +311,9 @@ export default function ProductsPage({ params }: { params: { slug: string } }) {
         <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-violet-50 flex items-center justify-center">
           <LottieLoader 
             animationData={loadingAnimation}
-            size={200}
+            size="lg"
             text="Carregando..."
+            color={store?.colors?.primary || "#8B5CF6"}
           />
         </div>
       </ProtectedRoute>

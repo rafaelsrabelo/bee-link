@@ -61,7 +61,6 @@ export default function DashboardPage() {
 
   const handleSignOut = async () => {
     await signOut();
-    router.push('/login');
     toast.success('Logout realizado com sucesso!');
   };
 

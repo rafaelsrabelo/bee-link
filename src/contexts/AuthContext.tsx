@@ -46,33 +46,115 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [supabase.auth]);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { error };
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      // Se há erro, retornar com mensagem amigável
+      if (error) {
+        let userMessage = 'Credenciais inválidas';
+        
+        if (error.message.includes('Invalid login credentials')) {
+          userMessage = 'Email ou senha incorretos';
+        } else if (error.message.includes('Email not confirmed')) {
+          userMessage = 'Email não confirmado. Verifique sua caixa de entrada';
+        } else if (error.message.includes('Too many requests')) {
+          userMessage = 'Muitas tentativas. Tente novamente em alguns minutos';
+        }
+        
+        return { 
+          error: { 
+            ...error, 
+            message: userMessage 
+          } 
+        };
+      }
+      
+      return { error: null };
+    } catch (error) {
+      // Capturar erros inesperados e retornar como erro
+      return { 
+        error: { 
+          message: 'Erro inesperado. Tente novamente' 
+        } 
+      };
+    }
   };
 
   const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-    return { error };
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+      
+      // Se há erro, retornar com mensagem amigável
+      if (error) {
+        let userMessage = 'Erro ao criar conta';
+        
+        if (error.message.includes('User already registered')) {
+          userMessage = 'Este email já está cadastrado';
+        } else if (error.message.includes('Password should be at least')) {
+          userMessage = 'A senha deve ter pelo menos 6 caracteres';
+        } else if (error.message.includes('Invalid email')) {
+          userMessage = 'Email inválido';
+        } else if (error.message.includes('Too many requests')) {
+          userMessage = 'Muitas tentativas. Tente novamente em alguns minutos';
+        }
+        
+        return { 
+          error: { 
+            ...error, 
+            message: userMessage 
+          } 
+        };
+      }
+      
+      return { error: null };
+    } catch (error) {
+      // Capturar erros inesperados e retornar como erro
+      return { 
+        error: { 
+          message: 'Erro inesperado. Tente novamente' 
+        } 
+      };
+    }
   };
 
   const signInWithGoogle = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-    return { error };
+    return { 
+      error: { 
+        message: 'Login com Google não está disponível no momento' 
+      } 
+    };
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      // Limpar a sessão do Supabase
+      await supabase.auth.signOut();
+      
+      // Limpar o estado local
+      setUser(null);
+      setSession(null);
+      
+      // Forçar redirecionamento para login
+      if (typeof window !== 'undefined') {
+        // Limpar qualquer cache ou estado persistente
+        window.localStorage.clear();
+        window.sessionStorage.clear();
+        
+        // Redirecionar para login
+        window.location.href = '/';
+      }
+    } catch (error) {
+      // Mesmo com erro, tentar redirecionar
+      if (typeof window !== 'undefined') {
+        window.location.href = '/';
+      }
+    }
   };
 
   const value = {

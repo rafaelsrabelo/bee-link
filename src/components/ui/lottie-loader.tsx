@@ -7,13 +7,15 @@ interface LottieLoaderProps {
   size?: 'sm' | 'md' | 'lg';
   text?: string;
   className?: string;
+  color?: string; // Cor personalizada para a animação
 }
 
 export default function LottieLoader({ 
   animationData, 
   size = 'md', 
   text,
-  className = ''
+  className = '',
+  color = '#8B5CF6' // Cor padrão roxa
 }: LottieLoaderProps) {
   // Animação padrão simples (será substituída pelo JSON que você baixar)
   const defaultAnimation = {
@@ -53,7 +55,7 @@ export default function LottieLoader({
               },
               {
                 ty: "st",
-                c: { a: 0, k: [0.52, 0.39, 0.26, 1] },
+                c: { a: 0, k: [0.545, 0.361, 0.965, 1] }, // Cor roxa padrão
                 o: { a: 0, k: 100 },
                 w: { a: 0, k: 8 },
                 lc: 2,
@@ -90,11 +92,42 @@ export default function LottieLoader({
     lg: 'w-24 h-24'
   };
 
+  // Função para converter hex para RGB
+  const hexToRgb = (hex: string) => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? [
+      parseInt(result[1], 16) / 255,
+      parseInt(result[2], 16) / 255,
+      parseInt(result[3], 16) / 255
+    ] : [0.545, 0.361, 0.965]; // Cor padrão roxa
+  };
+
+  // Aplicar cor personalizada à animação
+  const customAnimation = animationData || {
+    ...defaultAnimation,
+    layers: defaultAnimation.layers.map(layer => ({
+      ...layer,
+      shapes: layer.shapes?.map(shape => ({
+        ...shape,
+        it: shape.it?.map(item => {
+          if (item.ty === "st") {
+            const [r, g, b] = hexToRgb(color);
+            return {
+              ...item,
+              c: { a: 0, k: [r, g, b, 1] }
+            };
+          }
+          return item;
+        })
+      }))
+    }))
+  };
+
   return (
     <div className={`flex flex-col items-center justify-center gap-3 ${className}`}>
       <div className={sizeClasses[size]}>
         <Lottie 
-          animationData={animationData || defaultAnimation}
+          animationData={customAnimation}
           loop={true}
           autoplay={true}
         />
