@@ -1,8 +1,9 @@
-import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'node:fs/promises';
-import path from 'node:path';
-import { existsSync } from 'node:fs';
+// Configurar Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'demo',
+  api_key: process.env.CLOUDINARY_API_KEY || 'demo',
+  api_secret: process.env.CLOUDINARY_API_SECRET || 'demo'
+});
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,34 +33,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Criar nome único para o arquivo
-    const timestamp = Date.now();
-    const extension = file.name.split('.').pop();
-    const fileName = `product-${timestamp}.${extension}`;
-    
-    // Caminho para salvar
-    const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
-    const filePath = path.join(uploadsDir, fileName);
-    
-    // Criar diretório se não existir
-    if (!existsSync(uploadsDir)) {
-      await mkdir(uploadsDir, { recursive: true });
-    }
-
-    // Converter File para Buffer
+    // Converter File para base64
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
+    const base64Image = `data:${file.type};base64,${buffer.toString('base64')}`;
 
-    // Salvar arquivo
-    await writeFile(filePath, buffer);
-
-    // Retornar URL da imagem
-    const imageUrl = `/uploads/${fileName}`;
+    // Upload para Cloudinary
+    const result = await cloudinary.uploader.upload(base64Image, {
+      folder: 'bee-link-products',
+      resource_type: 'image',
+      transformation: [
+        { width: 800, height: 800, crop: 'limit' },
+        { quality: 'auto' }
+      ]
+    });
 
     return NextResponse.json({
       success: true,
-      imageUrl,
-      fileName
+      imageUrl: result.secure_url,
+      fileName: result.public_id
     });
 
   } catch (error) {

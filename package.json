@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@types/multer": "^2.0.0",
+    "cloudinary": "^2.7.0",
     "clsx": "^2.1.1",
     "lucide-react": "^0.454.0",
     "multer": "^2.0.2",
