@@ -363,7 +363,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
           {/* Action Buttons */}
-          <div className="flex flex-wrap gap-3 mb-8">
+          <div className="flex flex-col sm:flex-row gap-3 mb-8">
             <button
               type="button"
               onClick={() => {
@@ -378,7 +378,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
                   }
                 }, 100);
               }}
-              className="text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg font-medium"
+              className="w-full sm:w-auto text-white px-6 py-3 rounded-lg flex items-center justify-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg font-medium"
               style={{ backgroundColor: `${store.colors.accent}CC` }}
             >
               <Plus className="w-5 h-5" />
@@ -387,10 +387,10 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
             <button
               onClick={handleReset}
               type="button"
-              className="bg-red-500/80 hover:bg-red-500 text-white px-6 py-3 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg font-medium"
+              className="w-full sm:w-auto bg-red-500/80 hover:bg-red-500 text-white px-6 py-3 rounded-lg flex items-center justify-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg font-medium"
             >
-              <Trash2 className="w-5 h-5 inline mr-2" />
-              Limpar Produtos
+              <Trash2 className="w-5 h-5" />
+              <span>Limpar Produtos</span>
             </button>
           </div>
 
