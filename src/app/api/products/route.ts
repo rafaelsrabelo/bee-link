@@ -23,7 +23,7 @@ async function readProducts() {
 }
 
 // Salvar produtos no Supabase
-async function saveProducts(products: any[]) {
+async function saveProducts(products: unknown[]) {
   try {
     console.log('Debug - Tentando salvar produtos:', products);
     
