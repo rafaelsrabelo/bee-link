@@ -27,14 +27,14 @@ export const stores = {
         price: "R$ 49,99", 
         name: "Bolsa baguete marrom", 
         category: "bag",
-        description: "Bolsa baguete elegante em tom marrom, compacta e sofisticada. Ideal para carregar seus itens essenciais com muito estilo e charme.",
+        description: "Bolsa baguete elegante em tom marrom, compacta e sofisticada. Ideal para carregar seus itens essenciais com muito estilo e charme."
       },
       { 
         image: "/lessari/media-terracota.JPG", 
         price: "R$ 69,99", 
         name: "Bolsa média terracota", 
         category: "bag",
-        description: "Bolsa média em cor terracota, espaçosa e confortável. Cada peça é única e confeccionada com muito carinho e dedicação artesanal.",
+        description: "Bolsa média em cor terracota, espaçosa e confortável. Cada peça é única e confeccionada com muito carinho e dedicação artesanal."
       },
       { 
         image: "/lessari/round-bag.JPG", 
