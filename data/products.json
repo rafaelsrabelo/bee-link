@@ -8,5 +8,15 @@
     "description": "Bolsa média versátil com alça removível, perfeita para o dia a dia. Confeccionada à mão com fios de crochê de alta qualidade, oferece praticidade e estilo único.",
     "readyToShip": false,
     "available": true
+  },
+  {
+    "id": "1754278279716",
+    "name": "Bolsa baguete marrom",
+    "price": "R$ 49,99",
+    "image": "https://res.cloudinary.com/dkd3ajw3s/image/upload/v1754278275/bee-link-products/u7jh7qwxgh5rhwzeomct.jpg",
+    "category": "bag",
+    "description": "Bolsa baguete elegante em tom marrom, compacta e sofisticada. Ideal para carregar seus itens essenciais com muito estilo e charme.",
+    "readyToShip": false,
+    "available": true
   }
 ]
