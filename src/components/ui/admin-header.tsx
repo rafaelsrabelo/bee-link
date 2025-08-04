@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, LogOut, ChevronDown } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useStore } from '@/contexts/StoreContext';
+import { User, LogOut, ChevronDown, Menu, X } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+import { useStore } from '../../contexts/StoreContext';
 
 interface Store {
   id: string;
@@ -30,15 +30,19 @@ export default function AdminHeader({ store: propStore, currentPage, title, icon
   const { store: contextStore } = useStore();
   const store = propStore || contextStore;
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const { user, signOut } = useAuth();
   const router = useRouter();
 
-  // Fechar menu do usuário quando clicar fora
+  // Fechar menus quando clicar fora
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Element;
       if (!target.closest('.user-menu')) {
         setShowUserMenu(false);
+      }
+      if (!target.closest('.mobile-menu')) {
+        setShowMobileMenu(false);
       }
     };
 
@@ -50,18 +54,26 @@ export default function AdminHeader({ store: propStore, currentPage, title, icon
 
   const isActive = (page: string) => currentPage === page;
 
+  const handleNavigation = (path: string) => {
+    // @ts-expect-error - Next.js router type issue
+    router.push(path);
+    setShowMobileMenu(false);
+  };
+
   // Se a loja ainda não foi carregada, mostrar loading
   if (!store) {
     return (
       <div className="bg-gradient-to-r from-purple-600 to-violet-600 shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center gap-3">
-            <div className="bg-white/20 p-2 rounded-lg">
-              <Icon className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-white">{title}</h1>
-              <p className="text-purple-100 text-sm sm:text-base">Carregando...</p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="bg-white/20 p-2 rounded-lg">
+                <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white">{title}</h1>
+                <p className="text-purple-100 text-xs sm:text-sm lg:text-base">Carregando...</p>
+              </div>
             </div>
           </div>
         </div>
@@ -73,20 +85,21 @@ export default function AdminHeader({ store: propStore, currentPage, title, icon
     <div className="bg-gradient-to-r from-purple-600 to-violet-600 shadow-lg" style={{
       background: `linear-gradient(to right, ${store.colors.primary}, ${store.colors.secondary})`
     }}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+        {/* Desktop Header */}
+        <div className="hidden lg:flex justify-between items-center">
           <div className="flex items-center gap-3">
             <div className="bg-white/20 p-2 rounded-lg">
               <Icon className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-white">{title}</h1>
-              <p className="text-purple-100 text-sm sm:text-base">{store.name} - Gerencie sua loja</p>
+              <h1 className="text-3xl font-bold text-white">{title}</h1>
+              <p className="text-purple-100 text-base">{store.name} - Gerencie sua loja</p>
             </div>
           </div>
           
           <div className="flex items-center space-x-4">
-            {/* Navegação */}
+            {/* Navegação Desktop */}
             <div className="flex items-center space-x-2">
               <button
                 onClick={() => router.push(`/admin/${store.slug}`)}
@@ -120,7 +133,7 @@ export default function AdminHeader({ store: propStore, currentPage, title, icon
               </button>
             </div>
 
-            {/* User Menu */}
+            {/* User Menu Desktop */}
             <div className="relative user-menu">
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
@@ -149,6 +162,102 @@ export default function AdminHeader({ store: propStore, currentPage, title, icon
               )}
             </div>
           </div>
+        </div>
+
+        {/* Mobile Header */}
+        <div className="lg:hidden">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="bg-white/20 p-2 rounded-lg">
+                <Icon className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-white">{title}</h1>
+                <p className="text-purple-100 text-xs">{store.name}</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              {/* User Menu Mobile */}
+              <div className="relative user-menu">
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center space-x-1 p-2 text-white hover:bg-white/20 transition-colors rounded-lg"
+                >
+                  <User className="w-4 h-4" />
+                  <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${showUserMenu ? 'rotate-180' : ''}`} />
+                </button>
+                
+                {showUserMenu && (
+                  <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                    <div className="px-3 py-2 border-b border-gray-100">
+                      <p className="text-xs font-medium text-gray-900">{store.name}</p>
+                      <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                    </div>
+                    <button
+                      onClick={async () => {
+                        await signOut();
+                      }}
+                      className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>Sair</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Menu Hambúrguer */}
+              <button
+                onClick={() => setShowMobileMenu(!showMobileMenu)}
+                className="p-2 text-white hover:bg-white/20 transition-colors rounded-lg mobile-menu"
+              >
+                {showMobileMenu ? (
+                  <X className="w-5 h-5" />
+                ) : (
+                  <Menu className="w-5 h-5" />
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Mobile Menu Dropdown */}
+          {showMobileMenu && (
+            <div className="mt-4 bg-white/10 backdrop-blur-sm rounded-lg p-4 mobile-menu">
+              <div className="space-y-2">
+                <button
+                  onClick={() => handleNavigation(`/admin/${store.slug}`)}
+                  className={`w-full px-3 py-2 rounded-lg text-sm transition-all duration-200 text-left ${
+                    isActive('dashboard') 
+                      ? 'text-white bg-white/20 border-l-4 border-white' 
+                      : 'text-white/80 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  Dashboard
+                </button>
+                <button
+                  onClick={() => handleNavigation(`/admin/${store.slug}/products`)}
+                  className={`w-full px-3 py-2 rounded-lg text-sm transition-all duration-200 text-left ${
+                    isActive('products') 
+                      ? 'text-white bg-white/20 border-l-4 border-white' 
+                      : 'text-white/80 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  Produtos
+                </button>
+                <button
+                  onClick={() => handleNavigation(`/admin/${store.slug}/store`)}
+                  className={`w-full px-3 py-2 rounded-lg text-sm transition-all duration-200 text-left ${
+                    isActive('store') 
+                      ? 'text-white bg-white/20 border-l-4 border-white' 
+                      : 'text-white/80 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  Configurações
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
