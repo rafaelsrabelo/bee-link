@@ -52,7 +52,7 @@ export default function DeleteModal({
           <p className="text-gray-600 mb-4">
             {message}
             {itemName && (
-              <span className="font-medium text-gray-900"> "{itemName}"</span>
+              <span className="font-medium text-gray-900"> &quot;{itemName}&quot;</span>
             )}
             ?
           </p>

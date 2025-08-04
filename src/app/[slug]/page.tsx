@@ -34,8 +34,7 @@ export default async function StorePage({ params }: StorePageProps) {
     };
 
     return <StorePageClient store={formattedStore} />;
-  } catch (error) {
-    console.error('Erro ao carregar loja:', error);
+  } catch {
     notFound();
   }
 }

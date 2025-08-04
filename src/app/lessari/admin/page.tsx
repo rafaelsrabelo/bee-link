@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import DeleteModal from '../../../components/ui/delete-modal';
 import LottieLoader from '../../../components/ui/lottie-loader';
-import UploadLoading from '../../../components/ui/upload-loading';
+
 import DotsLoading from '../../../components/ui/dots-loading';
 import MobileImageUpload from '../../../components/ui/mobile-image-upload';
 import loadingAnimation from '../../../../public/animations/loading-dots-blue.json';

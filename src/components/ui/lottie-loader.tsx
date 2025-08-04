@@ -3,7 +3,7 @@
 import Lottie from 'lottie-react';
 
 interface LottieLoaderProps {
-  animationData?: any; // JSON do Lottie
+  animationData?: unknown; // JSON do Lottie
   size?: 'sm' | 'md' | 'lg';
   text?: string;
   className?: string;

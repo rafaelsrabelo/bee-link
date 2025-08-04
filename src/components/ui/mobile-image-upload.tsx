@@ -1,6 +1,7 @@
 'use client';
 
-import { Camera, Upload, X } from 'lucide-react';
+import { Camera, Upload } from 'lucide-react';
+import Image from 'next/image';
 import { useState, useRef } from 'react';
 
 interface MobileImageUploadProps {
@@ -81,10 +82,11 @@ export default function MobileImageUpload({
         {currentImage ? (
           <div className="space-y-3">
             <div className="relative w-32 h-32 mx-auto">
-              <img
+              <Image
                 src={currentImage}
                 alt="Preview"
-                className="w-full h-full object-cover rounded-lg"
+                fill
+                className="object-cover rounded-lg"
               />
               {!disabled && (
                 <button
