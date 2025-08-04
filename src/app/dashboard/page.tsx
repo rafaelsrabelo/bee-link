@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
-import { Plus, Store, LogOut, Settings, User } from 'lucide-react';
+import { Plus, Store, LogOut, Settings, User, Package, Users, Eye } from 'lucide-react';
 import Link from 'next/link';
 
 interface Store {
@@ -24,6 +24,7 @@ interface Store {
 export default function DashboardPage() {
   const { user, signOut, loading } = useAuth();
   const [stores, setStores] = useState<Store[]>([]);
+  const [totalProducts, setTotalProducts] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
@@ -35,6 +36,7 @@ export default function DashboardPage() {
 
     if (user) {
       fetchStores();
+      fetchTotalProducts();
     }
   }, [user, loading, router]);
 
@@ -56,6 +58,52 @@ export default function DashboardPage() {
       toast.error('Erro ao carregar lojas');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchTotalProducts = async () => {
+    try {
+      console.log('🔍 Buscando produtos para usuário:', user?.id);
+      
+      // Buscar todas as lojas do usuário
+      const { data: userStores, error: storesError } = await supabase
+        .from('stores')
+        .select('id')
+        .eq('user_id', user?.id);
+
+      if (storesError) {
+        console.error('Erro ao buscar lojas:', storesError);
+        return;
+      }
+
+      console.log('📊 Lojas encontradas:', userStores);
+
+      if (!userStores || userStores.length === 0) {
+        console.log('❌ Nenhuma loja encontrada para o usuário');
+        setTotalProducts(0);
+        return;
+      }
+
+      // Buscar produtos de todas as lojas do usuário
+      const storeIds = userStores.map(store => store.id);
+      console.log('🏪 IDs das lojas:', storeIds);
+      
+      // Buscar produtos usando a query correta
+      const { data: products, error: productsError } = await supabase
+        .from('products')
+        .select('id')
+        .in('store_id', storeIds);
+
+      if (productsError) {
+        console.error('Erro ao buscar produtos:', productsError);
+        return;
+      }
+
+      console.log('📦 Produtos encontrados:', products);
+      console.log('📦 Total de produtos:', products?.length || 0);
+      setTotalProducts(products?.length || 0);
+    } catch (error) {
+      console.error('Erro ao buscar total de produtos:', error);
     }
   };
 
@@ -194,15 +242,15 @@ export default function DashboardPage() {
         </div>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-white rounded-lg shadow-sm border p-6">
             <div className="flex items-center">
               <div className="p-2 bg-blue-100 rounded-lg">
-                <Store className="w-6 h-6 text-blue-600" />
+                <Package className="w-6 h-6 text-blue-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total de Lojas</p>
-                <p className="text-2xl font-semibold text-gray-900">{stores.length}</p>
+                <p className="text-sm font-medium text-gray-600">Produtos</p>
+                <p className="text-2xl font-semibold text-gray-900">{totalProducts}</p>
               </div>
             </div>
           </div>
@@ -210,23 +258,11 @@ export default function DashboardPage() {
           <div className="bg-white rounded-lg shadow-sm border p-6">
             <div className="flex items-center">
               <div className="p-2 bg-green-100 rounded-lg">
-                <Settings className="w-6 h-6 text-green-600" />
+                <Users className="w-6 h-6 text-green-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Lojas Ativas</p>
-                <p className="text-2xl font-semibold text-gray-900">{stores.length}</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <User className="w-6 h-6 text-purple-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Conta</p>
-                <p className="text-2xl font-semibold text-gray-900">Ativa</p>
+                <p className="text-sm font-medium text-gray-600">Visitantes</p>
+                <p className="text-2xl font-semibold text-gray-900">0</p>
               </div>
             </div>
           </div>

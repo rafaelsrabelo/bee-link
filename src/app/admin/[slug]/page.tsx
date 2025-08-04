@@ -12,7 +12,7 @@ import loadingAnimation from '../../../../public/animations/loading-dots-blue.js
 
 interface Store {
   id: string;
-  store_name: string;
+  name: string;
   slug: string;
   logo: string;
   colors: {
@@ -108,7 +108,6 @@ export default function AdminDashboardPage({ params }: { params: Promise<{ slug:
           store={store}
           currentPage="dashboard"
           title="Painel Administrativo"
-          subtitle={`${store.store_name} - Gerencie sua loja`}
           icon={Store}
         />
 
@@ -179,49 +178,6 @@ export default function AdminDashboardPage({ params }: { params: Promise<{ slug:
                 </div>
               </div>
             ))}
-          </div>
-
-          {/* Quick Stats */}
-          <div className="bg-white rounded-xl shadow-lg p-8">
-            <h3 className="text-2xl font-bold text-gray-900 mb-6">Resumo da Loja</h3>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="text-center p-4 rounded-lg bg-gradient-to-br from-blue-50 to-blue-100">
-                <div className="w-12 h-12 mx-auto mb-3 bg-blue-500 rounded-lg flex items-center justify-center">
-                  <Package className="w-6 h-6 text-white" />
-                </div>
-                <h4 className="text-lg font-semibold text-blue-900">Produtos</h4>
-                <p className="text-2xl font-bold text-blue-600">0</p>
-                <p className="text-sm text-blue-700">Cadastrados</p>
-              </div>
-              
-              <div className="text-center p-4 rounded-lg bg-gradient-to-br from-green-50 to-green-100">
-                <div className="w-12 h-12 mx-auto mb-3 bg-green-500 rounded-lg flex items-center justify-center">
-                  <ShoppingCart className="w-6 h-6 text-white" />
-                </div>
-                <h4 className="text-lg font-semibold text-green-900">Vendas</h4>
-                <p className="text-2xl font-bold text-green-600">0</p>
-                <p className="text-sm text-green-700">Realizadas</p>
-              </div>
-              
-              <div className="text-center p-4 rounded-lg bg-gradient-to-br from-purple-50 to-purple-100">
-                <div className="w-12 h-12 mx-auto mb-3 bg-purple-500 rounded-lg flex items-center justify-center">
-                  <Users className="w-6 h-6 text-white" />
-                </div>
-                <h4 className="text-lg font-semibold text-purple-900">Visitantes</h4>
-                <p className="text-2xl font-bold text-purple-600">0</p>
-                <p className="text-sm text-purple-700">Este mês</p>
-              </div>
-              
-              <div className="text-center p-4 rounded-lg bg-gradient-to-br from-orange-50 to-orange-100">
-                <div className="w-12 h-12 mx-auto mb-3 bg-orange-500 rounded-lg flex items-center justify-center">
-                  <BarChart3 className="w-6 h-6 text-white" />
-                </div>
-                <h4 className="text-lg font-semibold text-orange-900">Visualizações</h4>
-                <p className="text-2xl font-bold text-orange-600">0</p>
-                <p className="text-sm text-orange-700">De produtos</p>
-              </div>
-            </div>
           </div>
 
           {/* Quick Actions */}

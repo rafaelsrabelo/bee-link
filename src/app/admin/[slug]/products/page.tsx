@@ -3,6 +3,7 @@
 import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../../contexts/AuthContext';
+import { useStore } from '../../../../contexts/StoreContext';
 import { toast } from 'react-hot-toast';
 import { Edit, Eye, EyeOff, Package, Plus, Settings, Trash2, X, Store, LogOut, User } from 'lucide-react';
 import Image from 'next/image';
@@ -28,7 +29,7 @@ interface Product {
 
 interface Store {
   id: string;
-  store_name: string;
+  name: string;
   slug: string;
   logo: string;
   colors: {
@@ -83,19 +84,23 @@ export default function ProductsPage({ params }: { params: { slug: string } }) {
 
 
 
-  // Carregar dados da loja e produtos
+  // Carregar tudo de uma vez
   useEffect(() => {
-    if (user) {
+    console.log('🔍 useEffect principal - user:', user?.id, 'slug:', slug);
+    if (user && slug) {
+      console.log('✅ Iniciando carregamento completo');
       loadStoreAndProducts();
     }
   }, [user, slug]);
 
-
-
   const loadStoreAndProducts = async () => {
+    if (!slug) return;
+    
     setLoading(true);
     try {
-      // Carregar dados da loja
+      console.log('🔍 Carregando loja diretamente com slug:', slug);
+      
+      // Carregar loja diretamente
       const storeResponse = await fetch(`/api/stores/${slug}`);
       if (!storeResponse.ok) {
         toast.error('Loja não encontrada');
@@ -103,25 +108,22 @@ export default function ProductsPage({ params }: { params: { slug: string } }) {
         return;
       }
       const storeData = await storeResponse.json();
-      setStore(storeData);
-
-      // Verificar se o usuário é dono da loja
+      console.log('✅ Loja carregada:', storeData);
+      
+      // Verificar permissão
       if (storeData.user_id !== user?.id) {
         toast.error('Você não tem permissão para acessar esta loja');
         router.push('/');
         return;
       }
-
-      // Carregar produtos da loja
-      const productsResponse = await fetch(`/api/stores/${slug}/products`);
-      if (productsResponse.ok) {
-        const apiProducts = await productsResponse.json();
-        setProducts(apiProducts || []);
-      } else {
-        setProducts([]);
-      }
+      
+      // Definir a loja no estado local
+      setStore(storeData);
+      
+      // Carregar produtos
+      await loadProducts();
     } catch (error) {
-      console.error('Erro ao carregar dados:', error);
+      console.error('❌ Erro ao carregar dados:', error);
       toast.error('Erro ao carregar dados da loja');
     } finally {
       setTimeout(() => {
@@ -131,7 +133,35 @@ export default function ProductsPage({ params }: { params: { slug: string } }) {
     }
   };
 
+
+
+  const loadProducts = async () => {
+    if (!slug) return;
+    
+    setLoading(true);
+    try {
+      // Carregar produtos da loja
+      const productsResponse = await fetch(`/api/stores/${slug}/products`);
+      if (productsResponse.ok) {
+        const apiProducts = await productsResponse.json();
+        setProducts(apiProducts || []);
+      } else {
+        setProducts([]);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar produtos:', error);
+      toast.error('Erro ao carregar produtos');
+    } finally {
+      setTimeout(() => {
+        setLoading(false);
+        setProductsLoaded(true);
+      }, 500);
+    }
+  };
+
   const saveProducts = async (newProducts: Product[]) => {
+    if (!slug) return;
+    
     setProducts(newProducts);
     try {
       const response = await fetch(`/api/stores/${slug}/products`, {
@@ -313,15 +343,14 @@ export default function ProductsPage({ params }: { params: { slug: string } }) {
             animationData={loadingAnimation}
             size="lg"
             text="Carregando..."
-            color={store?.colors?.primary || "#8B5CF6"}
+            color="#8B5CF6"
           />
         </div>
       </ProtectedRoute>
     );
   }
 
-  const availableProducts = products.filter(p => p.available);
-  const unavailableProducts = products.filter(p => !p.available);
+
 
   return (
     <ProtectedRoute>
@@ -330,61 +359,10 @@ export default function ProductsPage({ params }: { params: { slug: string } }) {
           store={store}
           currentPage="products"
           title="Gerenciar Produtos"
-          subtitle={`${store.store_name} - Gerencie seus produtos`}
           icon={Package}
         />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white rounded-xl shadow-md p-6 border-l-4" style={{ borderLeftColor: store.colors.primary }}>
-              <div className="flex items-center">
-                <div className="p-2 rounded-lg" style={{ backgroundColor: `${store.colors.primary}10` }}>
-                  <Package className="w-6 h-6" style={{ color: store.colors.primary }} />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total de Produtos</p>
-                  <p className="text-2xl font-bold" style={{ color: store.colors.primary }}>{products.length}</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-green-500">
-              <div className="flex items-center">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <Eye className="w-6 h-6 text-green-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Disponíveis</p>
-                  <p className="text-2xl font-bold text-green-600">{availableProducts.length}</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-orange-500">
-              <div className="flex items-center">
-                <div className="p-2 bg-orange-100 rounded-lg">
-                  <EyeOff className="w-6 h-6 text-orange-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Indisponíveis</p>
-                  <p className="text-2xl font-bold text-orange-600">{unavailableProducts.length}</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-xl shadow-md p-6 border-l-4" style={{ borderLeftColor: store.colors.accent }}>
-              <div className="flex items-center">
-                <div className="p-2 rounded-lg" style={{ backgroundColor: `${store.colors.accent}10` }}>
-                  <Package className="w-6 h-6" style={{ color: store.colors.accent }} />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Pronta Entrega</p>
-                  <p className="text-2xl font-bold" style={{ color: store.colors.accent }}>{products.filter(p => p.readyToShip).length}</p>
-                </div>
-              </div>
-            </div>
-          </div>
 
           {/* Action Buttons */}
           <div className="flex flex-wrap gap-3 mb-8">
@@ -448,7 +426,14 @@ export default function ProductsPage({ params }: { params: { slug: string } }) {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {products.map((product) => (
-                <div key={product.id} className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100">
+                <div 
+                  key={product.id} 
+                  className={`bg-white rounded-xl shadow-md overflow-hidden border ${
+                    product.available 
+                      ? 'border-gray-100' 
+                      : 'border-red-300 border-dashed'
+                  }`}
+                >
                   <div className="relative h-48 bg-gray-100">
                     {product.image ? (
                       <Image
@@ -478,13 +463,39 @@ export default function ProductsPage({ params }: { params: { slug: string } }) {
                   
                   <div className="p-4">
                     <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-semibold text-gray-900 truncate">{product.name}</h3>
+                      <h3 className={`font-semibold truncate ${
+                        product.available ? 'text-gray-900' : 'text-gray-500'
+                      }`}>
+                        {product.name}
+                      </h3>
                       <span className="text-lg font-bold" style={{ color: store.colors.primary }}>
                         R$ {product.price}
                       </span>
                     </div>
                     
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">{product.description}</p>
+                    <p className={`text-sm mb-3 line-clamp-2 ${
+                      product.available ? 'text-gray-600' : 'text-gray-400'
+                    }`}>
+                      {product.description}
+                    </p>
+                    
+                    <div className="mb-3 flex flex-wrap gap-2">
+                      {product.available ? (
+                        <span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">
+                          Disponível
+                        </span>
+                      ) : (
+                        <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full">
+                          Indisponível
+                        </span>
+                      )}
+                      
+                      {product.readyToShip && (
+                        <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full">
+                          Disponível para entrega
+                        </span>
+                      )}
+                    </div>
                     
                     <div className="flex items-center justify-between">
                       <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">

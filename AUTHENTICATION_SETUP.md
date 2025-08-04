@@ -35,9 +35,9 @@
 3. Adicione o **Client ID** e **Client Secret** do Google
 4. Salve as configurações
 
-### 4. Executar Scripts SQL
+### 4. Configurar Banco de Dados
 
-Execute o script `update-stores-table.sql` no **SQL Editor** do Supabase:
+Execute os seguintes comandos no **SQL Editor** do Supabase:
 
 ```sql
 -- Adicionar coluna user_id na tabela stores

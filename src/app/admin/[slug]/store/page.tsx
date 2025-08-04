@@ -224,7 +224,6 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
             store={store}
             currentPage="store"
             title="Configurações da Loja"
-            subtitle="Gerencie as informações da sua loja"
             icon={Settings}
           />
         )}
