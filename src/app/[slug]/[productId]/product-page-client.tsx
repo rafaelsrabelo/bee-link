@@ -236,7 +236,9 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
                 clearCart();
                 
                 // Abrir WhatsApp diretamente
-                const whatsappUrl = `https://wa.me/${store.social_networks.whatsapp.replace(/[^\d]/g, '')}?text=${encodeURIComponent(message)}`;
+                const whatsappUrl = store.social_networks?.whatsapp 
+                  ? `https://wa.me/${store.social_networks.whatsapp.replace(/[^\d]/g, '')}?text=${encodeURIComponent(message)}`
+                  : '#';
                 
                 // Para WebViews do Instagram, usar location.href é mais confiável
                 if (typeof window !== 'undefined' && window.navigator.userAgent.toLowerCase().includes('instagram')) {
@@ -271,22 +273,26 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
 
         {/* Social Links */}
         <div className="mt-8 flex justify-center gap-6">
-          <a
-            href={`https://instagram.com/${store.social_networks.instagram}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-white hover:bg-white/10 w-12 h-12 rounded-full flex items-center justify-center transition-all"
-          >
-            <Instagram className="w-6 h-6" />
-          </a>
-          <a
-            href={`https://wa.me/${store.social_networks.whatsapp.replace(/[^\d]/g, '')}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-white hover:bg-white/10 w-12 h-12 rounded-full flex items-center justify-center transition-all"
-          >
-            <MessageCircle className="w-6 h-6" />
-          </a>
+          {store.social_networks?.instagram && (
+            <a
+              href={`https://instagram.com/${store.social_networks.instagram}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-white hover:bg-white/10 w-12 h-12 rounded-full flex items-center justify-center transition-all"
+            >
+              <Instagram className="w-6 h-6" />
+            </a>
+          )}
+          {store.social_networks?.whatsapp && (
+            <a
+              href={`https://wa.me/${store.social_networks.whatsapp.replace(/[^\d]/g, '')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-white hover:bg-white/10 w-12 h-12 rounded-full flex items-center justify-center transition-all"
+            >
+              <MessageCircle className="w-6 h-6" />
+            </a>
+          )}
         </div>
 
         {/* Bio Site Promotion */}

@@ -68,7 +68,9 @@ export default function CartPageClient({ store }: CartPageClientProps) {
     clearCart();
     
     // Abrir WhatsApp diretamente
-    const whatsappUrl = `https://wa.me/${store.social_networks.whatsapp.replace(/[^\d]/g, '')}?text=${encodeURIComponent(message)}`;
+                    const whatsappUrl = store.social_networks?.whatsapp 
+                  ? `https://wa.me/${store.social_networks.whatsapp.replace(/[^\d]/g, '')}?text=${encodeURIComponent(message)}`
+                  : '#';
     
     // Para WebViews do Instagram, usar location.href é mais confiável
     if (typeof window !== 'undefined' && window.navigator.userAgent.toLowerCase().includes('instagram')) {

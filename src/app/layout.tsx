@@ -2,6 +2,7 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { Red_Hat_Display } from "next/font/google";
 import { Toaster } from 'react-hot-toast';
+import { AuthProvider } from '../contexts/AuthContext';
 
 const redHatDisplay = Red_Hat_Display({
   subsets: ["latin"],
@@ -21,31 +22,33 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body className={`${redHatDisplay.className} bg-background-primary text-content-body`} suppressHydrationWarning={true}>
-        {children}
-        <Toaster 
-          position="top-right"
-          toastOptions={{
-            duration: 4000,
-            style: {
-              background: '#363636',
-              color: '#fff',
-            },
-            success: {
-              duration: 3000,
-              iconTheme: {
-                primary: '#4ade80',
-                secondary: '#fff',
+        <AuthProvider>
+          {children}
+          <Toaster 
+            position="top-right"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                background: '#363636',
+                color: '#fff',
               },
-            },
-            error: {
-              duration: 5000,
-              iconTheme: {
-                primary: '#ef4444',
-                secondary: '#fff',
+              success: {
+                duration: 3000,
+                iconTheme: {
+                  primary: '#4ade80',
+                  secondary: '#fff',
+                },
               },
-            },
-          }}
-        />
+              error: {
+                duration: 5000,
+                iconTheme: {
+                  primary: '#ef4444',
+                  secondary: '#fff',
+                },
+              },
+            }}
+          />
+        </AuthProvider>
       </body>
     </html>
   );

@@ -6,9 +6,9 @@ import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import DeleteModal from '../../../components/ui/delete-modal';
 import LottieLoader from '../../../components/ui/lottie-loader';
-
 import DotsLoading from '../../../components/ui/dots-loading';
 import MobileImageUpload from '../../../components/ui/mobile-image-upload';
+import ProtectedRoute from '../../../components/auth/ProtectedRoute';
 import loadingAnimation from '../../../../public/animations/loading-dots-blue.json';
 
 interface Product {
@@ -280,7 +280,8 @@ export default function AdminPage() {
   const unavailableProducts = products.filter(p => !p.available);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50">
+    <ProtectedRoute>
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50">
       {/* Header */}
       <div className="bg-gradient-to-r from-[#856342] to-[#6B4F35] shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -755,6 +756,7 @@ export default function AdminPage() {
         }
         itemName={deleteModal.productName}
       />
-    </div>
+      </div>
+    </ProtectedRoute>
   );
 } 
