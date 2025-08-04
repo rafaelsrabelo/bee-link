@@ -25,13 +25,11 @@ interface CartPageClientProps {
 export default function CartPageClient({ store }: CartPageClientProps) {
   const { cart, getCartTotal, getCartItemCount, clearCart, removeFromCart, addToCart } = useCartStore();
   const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
 
   // Carregar produtos da API
   useEffect(() => {
     const loadProducts = async () => {
       try {
-        setLoading(true);
         const response = await fetch('/api/products');
         if (response.ok) {
           const productsData = await response.json();
@@ -40,8 +38,6 @@ export default function CartPageClient({ store }: CartPageClientProps) {
       } catch (error) {
         console.error('Erro ao carregar produtos:', error);
         setProducts([]);
-      } finally {
-        setLoading(false);
       }
     };
     

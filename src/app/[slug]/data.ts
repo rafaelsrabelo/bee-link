@@ -42,7 +42,29 @@ export const stores = {
   }
 };
 
-export type StoreData = typeof stores.lessari;
+export type StoreData = {
+  store_name: string;
+  description: string;
+  slug: string;
+  logo: string;
+  colors: {
+    primary: string;
+    secondary: string;
+    accent: string;
+  };
+  social_networks: {
+    instagram: string;
+    whatsapp: string;
+  };
+  products: Array<{
+    name: string;
+    price: string;
+    image: string;
+    category: string;
+    description: string;
+    readyToShip?: boolean;
+  }>;
+};
 
 // Tipo para produto com descrição
 export interface Product {

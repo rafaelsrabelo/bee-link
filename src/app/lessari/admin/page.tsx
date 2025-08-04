@@ -428,7 +428,7 @@ export default function AdminPage() {
                       Nenhum produto cadastrado ainda.
                     </p>
                     <div className="text-gray-500 text-xs">
-                      Clique em "Adicionar Produto" para começar! ✨
+                      Clique em &quot;Adicionar Produto&quot; para começar! ✨
                     </div>
                   </div>
                 </div>

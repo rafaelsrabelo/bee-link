@@ -26,7 +26,7 @@ async function readProducts() {
     
     // Retornar produtos ou array vazio
     return products || [];
-  } catch (error) {
+  } catch {
     // Se o arquivo não existe, retornar array vazio
     return [];
   }
@@ -34,8 +34,12 @@ async function readProducts() {
 
 // Salvar produtos no arquivo JSON
 async function saveProducts(products: unknown[]) {
-  await ensureDataDirectory();
-  await fs.writeFile(productsFilePath, JSON.stringify(products, null, 2));
+  try {
+    await ensureDataDirectory();
+    await fs.writeFile(productsFilePath, JSON.stringify(products, null, 2));
+  } catch {
+    // Ignorar erros de escrita
+  }
 }
 
 // GET - Buscar produtos
@@ -43,7 +47,7 @@ export async function GET() {
   try {
     const products = await readProducts();
     return NextResponse.json(products);
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Erro ao buscar produtos' },
       { status: 500 }
@@ -57,7 +61,7 @@ export async function POST(request: NextRequest) {
     const products = await request.json();
     await saveProducts(products);
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Erro ao salvar produtos' },
       { status: 500 }
