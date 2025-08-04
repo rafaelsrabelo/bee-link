@@ -21,6 +21,7 @@ export default function AdminPage() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingEditImage, setUploadingEditImage] = useState(false);
   const [newProduct, setNewProduct] = useState<Partial<Product>>({
     name: '',
     price: '',
@@ -94,6 +95,34 @@ export default function AdminPage() {
       alert('Erro ao fazer upload da imagem. Tente novamente.');
     } finally {
       setUploadingImage(false);
+    }
+  };
+
+  const handleEditImageUpload = async (file: File) => {
+    if (!file || !editingProduct) return;
+    
+    setUploadingEditImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      
+      const response = await fetch('/api/upload-image', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        setEditingProduct({ ...editingProduct, image: result.imageUrl });
+      } else {
+        const error = await response.json();
+        alert(`Erro no upload: ${error.error}`);
+      }
+    } catch (error) {
+      console.error('Erro no upload:', error);
+      alert('Erro ao fazer upload da imagem. Tente novamente.');
+    } finally {
+      setUploadingEditImage(false);
     }
   };
 
@@ -565,13 +594,29 @@ export default function AdminPage() {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">URL da Imagem</label>
-                  <input
-                    type="text"
-                    value={editingProduct.image}
-                    onChange={(e) => setEditingProduct({...editingProduct, image: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#856342] focus:border-transparent"
-                  />
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Imagem do Produto</label>
+                  <div className="space-y-2">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          handleEditImageUpload(file);
+                        }
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#856342] focus:border-transparent"
+                      disabled={uploadingEditImage}
+                    />
+                    {uploadingEditImage && (
+                      <div className="text-sm text-blue-600">Fazendo upload da imagem...</div>
+                    )}
+                    {editingProduct.image && (
+                      <div className="text-sm text-green-600">
+                        ✅ Imagem atual: {editingProduct.image}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 
                 <div>
