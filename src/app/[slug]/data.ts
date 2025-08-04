@@ -12,7 +12,10 @@ export const stores = {
     },
     social_networks: {
       instagram: "lessaricroche",
-      whatsapp: "+558594100683"
+      whatsapp: "+558594100683",
+      tiktok: "",
+      spotify: "",
+      youtube: ""
     },
     products: []
   },

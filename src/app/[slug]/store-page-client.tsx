@@ -7,7 +7,24 @@ import { useEffect, useState } from "react";
 import CartControlsCompactLoading from '../components/cart-controls-compact-loading';
 import CartHeader from '../components/cart-header';
 import { useCartStore } from '../stores/cartStore';
-import type { StoreData } from './data';
+interface StoreData {
+  store_name: string;
+  description: string;
+  slug: string;
+  logo: string;
+  colors: {
+    primary: string;
+    secondary: string;
+    accent: string;
+  };
+  social_networks: {
+    instagram: string;
+    whatsapp: string;
+    tiktok?: string;
+    spotify?: string;
+    youtube?: string;
+  };
+}
 
 interface Product {
   id: string;
@@ -37,10 +54,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
     setStoreSlug(store.slug);
   }, [store.slug, setStoreSlug]);
 
-  // Função para gerar ID do produto baseado no nome
-  const generateProductId = (productName: string) => {
-    return productName.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
-  };
+
 
   // Verificar se deve mostrar o catálogo baseado na URL
   useEffect(() => {
@@ -155,7 +169,6 @@ export default function StorePageClient({ store }: StorePageClientProps) {
             <div className="grid grid-cols-2 gap-3">
               {products.filter((p: Product) => p.available !== false).map((product: Product, index: number) => {
                 const quantity = getCartItemQuantity(product.name);
-                const productId = generateProductId(product.name);
 
                 return (
                   <div
@@ -163,7 +176,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
                     className="relative rounded-lg overflow-hidden bg-white/10 backdrop-blur-sm"
                   >
                     {/* Product Image - Clickable Link */}
-                    <a href={`/${store.slug}/${productId}`} className="block">
+                    <a href={`/${store.slug}/${product.id}`} className="block">
                       <div className="aspect-square relative cursor-pointer group">
                         <Image
                           src={product.image}
@@ -199,7 +212,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
                     
                     {/* Product Info */}
                     <div className="p-3 pb-4">
-                      <a href={`/${store.slug}/${productId}`} className="block">
+                      <a href={`/${store.slug}/${product.id}`} className="block">
                         <h3 className="text-white font-medium text-sm mb-1 truncate hover:text-white/80 transition-colors">
                           {product.name}
                         </h3>

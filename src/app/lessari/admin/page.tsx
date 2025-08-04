@@ -4,6 +4,12 @@ import { Edit, Eye, EyeOff, Package, Plus, Settings, Trash2, X } from 'lucide-re
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
+import DeleteModal from '../../../components/ui/delete-modal';
+import LottieLoader from '../../../components/ui/lottie-loader';
+import UploadLoading from '../../../components/ui/upload-loading';
+import DotsLoading from '../../../components/ui/dots-loading';
+import MobileImageUpload from '../../../components/ui/mobile-image-upload';
+import loadingAnimation from '../../../../public/animations/loading-dots-blue.json';
 
 interface Product {
   id: string;
@@ -23,6 +29,17 @@ export default function AdminPage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingEditImage, setUploadingEditImage] = useState(false);
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean;
+    productId: string | null;
+    productName: string;
+  }>({
+    isOpen: false,
+    productId: null,
+    productName: ''
+  });
+  const [loading, setLoading] = useState(true);
+  const [productsLoaded, setProductsLoaded] = useState(false);
   const [newProduct, setNewProduct] = useState<Partial<Product>>({
     name: '',
     price: '',
@@ -33,18 +50,33 @@ export default function AdminPage() {
     available: true
   });
 
+  // Verificar se todos os campos obrigatórios estão preenchidos
+  const isFormValid = newProduct.name?.trim() && 
+                     newProduct.price?.trim() && 
+                     newProduct.image?.trim() && 
+                     newProduct.description?.trim();
+
   // Carregar produtos da API
   useEffect(() => {
     const loadProducts = async () => {
+      setLoading(true);
       try {
         const response = await fetch('/api/products');
         if (response.ok) {
           const apiProducts = await response.json();
           setProducts(apiProducts || []);
+        } else {
+          setProducts([]);
         }
       } catch (error) {
         console.error('Erro ao carregar produtos da API:', error);
         setProducts([]);
+      } finally {
+        // Pequeno delay para garantir que o loading seja visível
+        setTimeout(() => {
+          setLoading(false);
+          setProductsLoaded(true);
+        }, 500);
       }
     };
     
@@ -67,7 +99,7 @@ export default function AdminPage() {
       }
     } catch (error) {
       console.error('Erro ao salvar produtos:', error);
-      alert('Erro ao salvar produtos. Tente novamente.');
+      toast.error('Erro ao salvar produtos. Tente novamente.');
     }
   };
 
@@ -187,10 +219,22 @@ export default function AdminPage() {
   };
 
   const handleDeleteProduct = async (id: string) => {
-    if (confirm('Tem certeza que deseja deletar este produto?')) {
-      const updatedProducts = products.filter(p => p.id !== id);
+    const product = products.find(p => p.id === id);
+    if (product) {
+      setDeleteModal({
+        isOpen: true,
+        productId: id,
+        productName: product.name
+      });
+    }
+  };
+
+  const confirmDeleteProduct = async () => {
+    if (deleteModal.productId) {
+      const updatedProducts = products.filter(p => p.id !== deleteModal.productId);
       await saveProducts(updatedProducts);
       toast.success('Produto deletado com sucesso!');
+      setDeleteModal({ isOpen: false, productId: null, productName: '' });
     }
   };
 
@@ -202,27 +246,34 @@ export default function AdminPage() {
   };
 
   const handleReset = async () => {
-    if (confirm('Tem certeza que deseja limpar todos os produtos? Isso removerá todos os produtos adicionados via admin.')) {
-      try {
-        const response = await fetch('/api/products', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify([]),
-        });
-        
-        if (response.ok) {
-          setProducts([]);
-          toast.success('Produtos limpos com sucesso!');
-        } else {
-          toast.error('Erro ao limpar produtos. Tente novamente.');
-        }
-      } catch (error) {
-        console.error('Erro ao limpar produtos:', error);
+    setDeleteModal({
+      isOpen: true,
+      productId: 'all',
+      productName: 'todos os produtos'
+    });
+  };
+
+  const confirmReset = async () => {
+    try {
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify([]),
+      });
+      
+      if (response.ok) {
+        setProducts([]);
+        toast.success('Produtos limpos com sucesso!');
+      } else {
         toast.error('Erro ao limpar produtos. Tente novamente.');
       }
+    } catch (error) {
+      console.error('Erro ao limpar produtos:', error);
+      toast.error('Erro ao limpar produtos. Tente novamente.');
     }
+    setDeleteModal({ isOpen: false, productId: null, productName: '' });
   };
 
   const availableProducts = products.filter(p => p.available);
@@ -242,26 +293,6 @@ export default function AdminPage() {
                 <h1 className="text-2xl sm:text-3xl font-bold text-white">Painel Administrativo</h1>
                 <p className="text-amber-100 text-sm sm:text-base">Lessari - Gerencie seus produtos</p>
               </div>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => setShowAddForm(true)}
-                className="bg-[#A67C52] hover:bg-[#856342] text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg"
-              >
-                <Plus className="w-4 h-4" />
-                <span className="hidden sm:inline">Adicionar Produto</span>
-                <span className="sm:hidden">Adicionar</span>
-              </button>
-              <button
-                onClick={handleReset}
-                type="button"
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
-              >
-                <span className="hidden sm:inline">Limpar Produtos</span>
-                <span className="sm:hidden">Limpar</span>
-              </button>
-
             </div>
           </div>
         </div>
@@ -319,9 +350,40 @@ export default function AdminPage() {
           </div>
         </div>
 
+        {/* Action Buttons */}
+        <div className="flex flex-wrap gap-3 mb-8">
+          <button
+            type="button"
+            onClick={() => {
+              setShowAddForm(true);
+              // Scroll para o formulário no mobile
+              setTimeout(() => {
+                const formElement = document.getElementById('add-product-form');
+                if (formElement) {
+                  formElement.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start' 
+                  });
+                }
+              }, 100);
+            }}
+            className="bg-[#A67C52] hover:bg-[#856342] text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg font-medium"
+          >
+            <Plus className="w-5 h-5" />
+            <span>Adicionar Produto</span>
+          </button>
+          <button
+            onClick={handleReset}
+            type="button"
+            className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg font-medium"
+          >
+            <span>Limpar Todos os Produtos</span>
+          </button>
+        </div>
+
         {/* Add Product Form */}
         {showAddForm && (
-          <div className="bg-white rounded-xl shadow-lg p-6 mb-8 border border-gray-200">
+          <div id="add-product-form" className="bg-white rounded-xl shadow-lg p-6 mb-8 border border-gray-200">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-semibold text-[#856342]">Adicionar Novo Produto</h2>
               <button
@@ -358,28 +420,12 @@ export default function AdminPage() {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Imagem do Produto *</label>
-                <div className="space-y-2">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        handleImageUpload(file);
-                      }
-                    }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#856342] focus:border-transparent"
-                    disabled={uploadingImage}
-                  />
-                  {uploadingImage && (
-                    <div className="text-sm text-blue-600">Fazendo upload da imagem...</div>
-                  )}
-                  {newProduct.image && (
-                    <div className="text-sm text-green-600">
-                      ✅ Imagem carregada: {newProduct.image}
-                    </div>
-                  )}
-                </div>
+                <MobileImageUpload
+                  onImageSelect={handleImageUpload}
+                  currentImage={newProduct.image}
+                  disabled={uploadingImage}
+                  loading={uploadingImage}
+                />
               </div>
               
               <div>
@@ -440,10 +486,19 @@ export default function AdminPage() {
                <button
                  type="button"
                  onClick={handleAddProduct}
-                 className="px-6 py-2 bg-[#856342] text-white rounded-lg hover:bg-[#6B4F35] transition-colors"
-               >
-                 Adicionar Produto
-               </button>
+                 disabled={!isFormValid || uploadingImage}
+                 className={`px-6 py-2 rounded-lg transition-colors ${
+                   isFormValid && !uploadingImage
+                     ? 'bg-[#856342] hover:bg-[#6B4F35] text-white'
+                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                 }`}
+                                >
+                   {uploadingImage ? (
+                     <DotsLoading text="Fazendo upload" size="sm" />
+                   ) : (
+                     'Adicionar Produto'
+                   )}
+                 </button>
              </div>
           </div>
         )}
@@ -456,7 +511,15 @@ export default function AdminPage() {
           
           <div className="overflow-x-auto">
             <div className="min-w-full">
-              {products.length === 0 ? (
+              {loading || !productsLoaded ? (
+                <div className="flex justify-center py-16">
+                  <LottieLoader 
+                    animationData={loadingAnimation}
+                    text="Carregando produtos..." 
+                    size="lg"
+                  />
+                </div>
+              ) : products.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-8 mx-4 max-w-md mx-auto">
                     <div className="w-20 h-20 bg-[#856342]/10 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -605,28 +668,12 @@ export default function AdminPage() {
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Imagem do Produto</label>
-                  <div className="space-y-2">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          handleEditImageUpload(file);
-                        }
-                      }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#856342] focus:border-transparent"
-                      disabled={uploadingEditImage}
-                    />
-                    {uploadingEditImage && (
-                      <div className="text-sm text-blue-600">Fazendo upload da imagem...</div>
-                    )}
-                    {editingProduct.image && (
-                      <div className="text-sm text-green-600">
-                        ✅ Imagem atual: {editingProduct.image}
-                      </div>
-                    )}
-                  </div>
+                  <MobileImageUpload
+                    onImageSelect={handleEditImageUpload}
+                    currentImage={editingProduct.image}
+                    disabled={uploadingEditImage}
+                    loading={uploadingEditImage}
+                  />
                 </div>
                 
                 <div>
@@ -695,6 +742,19 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+
+      {/* Modal de Deletar */}
+      <DeleteModal
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ isOpen: false, productId: null, productName: '' })}
+        onConfirm={deleteModal.productId === 'all' ? confirmReset : confirmDeleteProduct}
+        title={deleteModal.productId === 'all' ? 'Limpar Todos os Produtos' : 'Deletar Produto'}
+        message={deleteModal.productId === 'all' 
+          ? 'Tem certeza que deseja limpar todos os produtos? Isso removerá todos os produtos adicionados via admin.'
+          : 'Tem certeza que deseja deletar o produto'
+        }
+        itemName={deleteModal.productName}
+      />
     </div>
   );
 } 

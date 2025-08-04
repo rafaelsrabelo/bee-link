@@ -8,7 +8,24 @@ import CartControls from '../../components/cart-controls';
 import CartHeader from '../../components/cart-header';
 
 import { useCartStore } from '../../stores/cartStore';
-import type { StoreData } from '../data';
+interface StoreData {
+  store_name: string;
+  description: string;
+  slug: string;
+  logo: string;
+  colors: {
+    primary: string;
+    secondary: string;
+    accent: string;
+  };
+  social_networks: {
+    instagram: string;
+    whatsapp: string;
+    tiktok?: string;
+    spotify?: string;
+    youtube?: string;
+  };
+}
 
 interface ProductPageClientProps {
   store: StoreData;
