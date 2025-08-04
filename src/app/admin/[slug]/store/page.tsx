@@ -138,12 +138,12 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
           secondary: '#7C3AED',
           accent: '#A855F7'
         },
-        social_networks: storeData.social_networks || {
-          instagram: '',
-          whatsapp: '',
-          tiktok: '',
-          spotify: '',
-          youtube: ''
+        social_networks: {
+          instagram: storeData.social_networks?.instagram || '',
+          whatsapp: storeData.social_networks?.whatsapp || '',
+          tiktok: storeData.social_networks?.tiktok || '',
+          spotify: storeData.social_networks?.spotify || '',
+          youtube: storeData.social_networks?.youtube || ''
         }
       });
     } catch (error) {
@@ -192,15 +192,15 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
       });
 
       if (response.ok) {
-        toast.success('Configurações salvas com sucesso!');
+        toast.success('Loja atualizada com sucesso!');
         await loadStore(); // Recarregar dados
       } else {
         const error = await response.json();
-        toast.error(error.error || 'Erro ao salvar configurações');
+        toast.error(error.error || 'Erro ao salvar loja');
       }
     } catch (error) {
       console.error('Erro ao salvar:', error);
-      toast.error('Erro ao salvar configurações');
+      toast.error('Erro ao salvar loja');
     } finally {
       setSaving(false);
     }
@@ -223,7 +223,7 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
           <AdminHeader
             store={store}
             currentPage="store"
-            title="Configurações da Loja"
+            title="Minha Loja"
             icon={Settings}
           />
         )}

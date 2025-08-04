@@ -92,7 +92,7 @@ export default function AdminDashboardPage({ params }: { params: Promise<{ slug:
       color: store.colors.secondary
     },
     {
-      title: 'Visualizar Loja',
+      title: 'Minha Loja',
       description: 'Veja como sua loja aparece para os clientes',
       icon: Store,
       href: `/${slug}`,

@@ -78,6 +78,11 @@ export default function CreateAccountPage() {
       }
     } else {
       toast.success('Conta criada com sucesso! Verifique seu email para confirmar.');
+      
+      // Limpar formulário após sucesso
+      setEmail('');
+      setPassword('');
+      setConfirmPassword('');
     }
     
     setIsLoading(false);

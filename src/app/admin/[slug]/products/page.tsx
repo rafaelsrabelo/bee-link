@@ -412,14 +412,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
               <p className="text-gray-600 mb-6">
                 Adicione seu primeiro produto para começar a vender.
               </p>
-              <button
-                onClick={() => setShowAddForm(true)}
-                className="w-full sm:w-auto text-white px-6 py-3 rounded-lg flex items-center justify-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg font-medium"
-                style={{ backgroundColor: `${store.colors.primary}CC` }}
-              >
-                <Plus className="w-5 h-5" />
-                <span>Adicionar Primeiro Produto</span>
-              </button>
+
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

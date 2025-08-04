@@ -129,7 +129,7 @@ export default function AdminHeader({ store: propStore, currentPage, title, icon
                     : 'text-white/80 hover:text-white hover:bg-white/10'
                 }`}
               >
-                Configurações
+                Minha Loja
               </button>
             </div>
 
@@ -253,7 +253,7 @@ export default function AdminHeader({ store: propStore, currentPage, title, icon
                       : 'text-white/80 hover:text-white hover:bg-white/10'
                   }`}
                 >
-                  Configurações
+                  Minha Loja
                 </button>
               </div>
             </div>
