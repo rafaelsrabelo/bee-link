@@ -30,7 +30,7 @@ export default function CartPageClient({ store }: CartPageClientProps) {
   useEffect(() => {
     const loadProducts = async () => {
       try {
-        const response = await fetch('/api/products');
+        const response = await fetch(`/api/stores/${store.slug}/products`);
         if (response.ok) {
           const productsData = await response.json();
           setProducts(productsData || []);
@@ -42,7 +42,7 @@ export default function CartPageClient({ store }: CartPageClientProps) {
     };
     
     loadProducts();
-  }, []);
+  }, [store.slug]);
 
   // Verificar se o carrinho pertence à loja atual
   useEffect(() => {
