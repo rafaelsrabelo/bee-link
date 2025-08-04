@@ -1,1 +1,12 @@
-[]
+[
+  {
+    "id": "1754277702600",
+    "name": "Bolsa média alça removível",
+    "price": "R$ 69,99",
+    "image": "https://res.cloudinary.com/dkd3ajw3s/image/upload/v1754277692/bee-link-products/a6e6ejkmxmghqlymnmiu.jpg",
+    "category": "bag",
+    "description": "Bolsa média versátil com alça removível, perfeita para o dia a dia. Confeccionada à mão com fios de crochê de alta qualidade, oferece praticidade e estilo único.",
+    "readyToShip": false,
+    "available": true
+  }
+]

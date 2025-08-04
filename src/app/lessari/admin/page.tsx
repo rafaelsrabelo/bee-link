@@ -3,6 +3,7 @@
 import { Edit, Eye, EyeOff, Package, Plus, Settings, Trash2, X } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 
 interface Product {
   id: string;
@@ -88,11 +89,11 @@ export default function AdminPage() {
         setNewProduct({ ...newProduct, image: result.imageUrl });
       } else {
         const error = await response.json();
-        alert(`Erro no upload: ${error.error}`);
+        toast.error(`Erro no upload: ${error.error}`);
       }
     } catch (error) {
       console.error('Erro no upload:', error);
-      alert('Erro ao fazer upload da imagem. Tente novamente.');
+      toast.error('Erro ao fazer upload da imagem. Tente novamente.');
     } finally {
       setUploadingImage(false);
     }
@@ -116,19 +117,25 @@ export default function AdminPage() {
         setEditingProduct({ ...editingProduct, image: result.imageUrl });
       } else {
         const error = await response.json();
-        alert(`Erro no upload: ${error.error}`);
+        toast.error(`Erro no upload: ${error.error}`);
       }
     } catch (error) {
       console.error('Erro no upload:', error);
-      alert('Erro ao fazer upload da imagem. Tente novamente.');
+      toast.error('Erro ao fazer upload da imagem. Tente novamente.');
     } finally {
       setUploadingEditImage(false);
     }
   };
 
   const handleAddProduct = async () => {
+    console.log('Debug - newProduct:', newProduct);
+    console.log('Debug - name:', newProduct.name, 'length:', newProduct.name?.length);
+    console.log('Debug - price:', newProduct.price, 'length:', newProduct.price?.length);
+    console.log('Debug - image:', newProduct.image, 'length:', newProduct.image?.length);
+    console.log('Debug - description:', newProduct.description, 'length:', newProduct.description?.length);
+    
     if (!newProduct.name || !newProduct.price || !newProduct.image || !newProduct.description) {
-      alert('Por favor, preencha todos os campos obrigatórios');
+      toast.error('Por favor, preencha todos os campos obrigatórios');
       return;
     }
 
@@ -155,6 +162,7 @@ export default function AdminPage() {
       available: true
     });
     setShowAddForm(false);
+    toast.success('Produto adicionado com sucesso!');
   };
 
   const handleEditProduct = (product: Product) => {
@@ -182,6 +190,7 @@ export default function AdminPage() {
     if (confirm('Tem certeza que deseja deletar este produto?')) {
       const updatedProducts = products.filter(p => p.id !== id);
       await saveProducts(updatedProducts);
+      toast.success('Produto deletado com sucesso!');
     }
   };
 
@@ -205,12 +214,13 @@ export default function AdminPage() {
         
         if (response.ok) {
           setProducts([]);
+          toast.success('Produtos limpos com sucesso!');
         } else {
-          alert('Erro ao limpar produtos. Tente novamente.');
+          toast.error('Erro ao limpar produtos. Tente novamente.');
         }
       } catch (error) {
         console.error('Erro ao limpar produtos:', error);
-        alert('Erro ao limpar produtos. Tente novamente.');
+        toast.error('Erro ao limpar produtos. Tente novamente.');
       }
     }
   };
