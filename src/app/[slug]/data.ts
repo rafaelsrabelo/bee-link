@@ -111,12 +111,19 @@ export interface Product {
 }
 
 // Função para obter produtos (com suporte ao admin)
-export function getLessariProducts() {
-  if (typeof window !== 'undefined') {
-    const savedProducts = localStorage.getItem('lessari-products');
-    if (savedProducts) {
-      return JSON.parse(savedProducts);
+export async function getLessariProducts() {
+  try {
+    const response = await fetch('/api/products');
+    if (response.ok) {
+      const products = await response.json();
+      if (products && products.length > 0) {
+        return products;
+      }
     }
+  } catch (error) {
+    console.error('Erro ao buscar produtos da API:', error);
   }
+  
+  // Fallback para produtos padrão
   return stores.lessari.products;
 } 

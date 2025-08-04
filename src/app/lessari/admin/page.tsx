@@ -30,13 +30,23 @@ export default function AdminPage() {
     available: true
   });
 
-  // Carregar produtos do localStorage
+  // Carregar produtos da API
   useEffect(() => {
-    const savedProducts = localStorage.getItem('lessari-products');
-    if (savedProducts) {
-      setProducts(JSON.parse(savedProducts));
-    } else {
-      // Produtos padrão
+    const loadProducts = async () => {
+      try {
+        const response = await fetch('/api/products');
+        if (response.ok) {
+          const apiProducts = await response.json();
+          if (apiProducts && apiProducts.length > 0) {
+            setProducts(apiProducts);
+            return;
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao carregar produtos da API:', error);
+      }
+      
+      // Fallback para produtos padrão
       const defaultProducts: Product[] = [
         {
           id: '1',
@@ -113,12 +123,27 @@ export default function AdminPage() {
     }
   }, []);
 
-  const saveProducts = (newProducts: Product[]) => {
+  const saveProducts = async (newProducts: Product[]) => {
     setProducts(newProducts);
-    localStorage.setItem('lessari-products', JSON.stringify(newProducts));
+    try {
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newProducts),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Erro ao salvar produtos');
+      }
+    } catch (error) {
+      console.error('Erro ao salvar produtos:', error);
+      alert('Erro ao salvar produtos. Tente novamente.');
+    }
   };
 
-  const handleAddProduct = () => {
+  const handleAddProduct = async () => {
     if (!newProduct.name || !newProduct.price || !newProduct.image || !newProduct.description) {
       alert('Por favor, preencha todos os campos obrigatórios');
       return;
@@ -136,7 +161,7 @@ export default function AdminPage() {
     };
 
     const updatedProducts = [...products, product];
-    saveProducts(updatedProducts);
+    await saveProducts(updatedProducts);
     setNewProduct({
       name: '',
       price: '',
@@ -154,13 +179,13 @@ export default function AdminPage() {
     setEditingProduct({ ...product });
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editingProduct) return;
 
     const updatedProducts = products.map(p =>
       p.id === editingProduct.id ? editingProduct : p
     );
-    saveProducts(updatedProducts);
+    await saveProducts(updatedProducts);
     setIsEditing(null);
     setEditingProduct(null);
   };
@@ -170,24 +195,40 @@ export default function AdminPage() {
     setEditingProduct(null);
   };
 
-  const handleDeleteProduct = (id: string) => {
+  const handleDeleteProduct = async (id: string) => {
     if (confirm('Tem certeza que deseja deletar este produto?')) {
       const updatedProducts = products.filter(p => p.id !== id);
-      saveProducts(updatedProducts);
+      await saveProducts(updatedProducts);
     }
   };
 
-  const toggleAvailability = (id: string) => {
+  const toggleAvailability = async (id: string) => {
     const updatedProducts = products.map(p =>
       p.id === id ? { ...p, available: !p.available } : p
     );
-    saveProducts(updatedProducts);
+    await saveProducts(updatedProducts);
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
     if (confirm('Tem certeza que deseja resetar todos os produtos para os dados originais? Isso removerá todos os produtos adicionados via admin.')) {
-      localStorage.removeItem('lessari-products');
-      window.location.reload();
+      try {
+        const response = await fetch('/api/products', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify([]),
+        });
+        
+        if (response.ok) {
+          window.location.reload();
+        } else {
+          alert('Erro ao resetar produtos. Tente novamente.');
+        }
+      } catch (error) {
+        console.error('Erro ao resetar produtos:', error);
+        alert('Erro ao resetar produtos. Tente novamente.');
+      }
     }
   };
 
@@ -228,9 +269,25 @@ export default function AdminPage() {
                 <span className="sm:hidden">Reset</span>
               </button>
               <button
-                onClick={() => {
-                  localStorage.clear();
-                  window.location.reload();
+                onClick={async () => {
+                  try {
+                    const response = await fetch('/api/products', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify([]),
+                    });
+                    
+                    if (response.ok) {
+                      window.location.reload();
+                    } else {
+                      alert('Erro ao limpar produtos. Tente novamente.');
+                    }
+                  } catch (error) {
+                    console.error('Erro ao limpar produtos:', error);
+                    alert('Erro ao limpar produtos. Tente novamente.');
+                  }
                 }}
                 type="button"
                 className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"

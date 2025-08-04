@@ -1,0 +1,12 @@
+[
+  {
+    "id": "1754268713056",
+    "name": "teste",
+    "price": "R$ 90,00",
+    "image": "/lessarie/image.png",
+    "category": "bag",
+    "description": "nao tem",
+    "readyToShip": true,
+    "available": true
+  }
+]

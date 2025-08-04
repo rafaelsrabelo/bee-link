@@ -2,7 +2,7 @@
 
 import { ArrowLeft, MessageCircle, ShoppingCart, Trash2 } from 'lucide-react';
 import Image from 'next/image';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import { useCartStore } from '../../stores/cartStore';
 import { getLessariProducts } from '../data';
@@ -14,6 +14,25 @@ interface CartPageClientProps {
 
 export default function CartPageClient({ store }: CartPageClientProps) {
   const { cart, getCartTotal, getCartItemCount, clearCart, removeFromCart, addToCart } = useCartStore();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Carregar produtos da API
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        setLoading(true);
+        const productsData = await getLessariProducts();
+        setProducts(productsData);
+      } catch (error) {
+        console.error('Erro ao carregar produtos:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadProducts();
+  }, []);
 
   // Verificar se o carrinho pertence à loja atual
   useEffect(() => {
@@ -132,7 +151,7 @@ export default function CartPageClient({ store }: CartPageClientProps) {
         <div className="space-y-4 mb-8">
                       {cart.map((item) => {
               // Encontrar a imagem do produto baseado no nome
-              const product = getLessariProducts().find((p: Product) => p.name === item.name);
+              const product = products.find((p: Product) => p.name === item.name);
               const productImage = product?.image || '/logo.png';
             
             return (
@@ -182,7 +201,7 @@ export default function CartPageClient({ store }: CartPageClientProps) {
                         <button
                           type="button"
                           onClick={() => {
-                            const product = getLessariProducts().find((p: Product) => p.name === item.name);
+                            const product = products.find((p: Product) => p.name === item.name);
                             if (product) {
                               addToCart(product);
                             }

@@ -17,6 +17,8 @@ interface StorePageClientProps {
 export default function StorePageClient({ store }: StorePageClientProps) {
   const [showCatalog, setShowCatalog] = useState(false);
   const [error] = useState<string | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const searchParams = useSearchParams();
   const { cart, addToCart, removeFromCart, getCartItemQuantity, setStoreSlug, isLoading } = useCartStore();
 
@@ -37,11 +39,22 @@ export default function StorePageClient({ store }: StorePageClientProps) {
     }
   }, [searchParams]);
 
-
-
-
-
-
+  // Carregar produtos da API
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        setLoading(true);
+        const productsData = await getLessariProducts();
+        setProducts(productsData);
+      } catch (error) {
+        console.error('Erro ao carregar produtos:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadProducts();
+  }, []);
 
   // Verificar se o carrinho pertence à loja atual
   useEffect(() => {
@@ -72,12 +85,6 @@ export default function StorePageClient({ store }: StorePageClientProps) {
     );
   }
 
-
-
-
-
-
-
   if (showCatalog) {
     return (
       <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: store.colors.primary }}>
@@ -99,11 +106,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
           />
         </div>
 
-
-
         {/* Catalog Header */}
-
-
         <div className="px-4 mb-6 pt-20">
           <div className="bg-white/90 backdrop-blur-sm rounded-full px-6 py-4 flex items-center justify-between">
             <span className="font-medium text-lg" style={{ color: store.colors.primary }}>CATÁLOGO</span>
@@ -115,106 +118,104 @@ export default function StorePageClient({ store }: StorePageClientProps) {
 
         {/* Products Grid */}
         <div className="px-4 pb-20 pt-4">
-          <div className="grid grid-cols-2 gap-3">
-            {getLessariProducts().filter((p: Product) => p.available !== false).map((product: Product, index: number) => {
-              const quantity = getCartItemQuantity(product.name);
-              const productId = generateProductId(product.name);
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="text-white">Carregando produtos...</div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              {products.filter((p: Product) => p.available !== false).map((product: Product, index: number) => {
+                const quantity = getCartItemQuantity(product.name);
+                const productId = generateProductId(product.name);
 
-              return (
-                <div
-                  key={`product-${product.name}-${index}`}
-                  className="relative rounded-lg overflow-hidden bg-white/10 backdrop-blur-sm"
-                >
-                  {/* Product Image - Clickable Link */}
-                  <a href={`/${store.slug}/${productId}`} className="block">
-                    <div className="aspect-square relative cursor-pointer group">
-                      <Image
-                        src={product.image}
-                        alt={product.name}
-                        fill
-                        className="object-cover transition-transform group-hover:scale-105"
-                      />
-                      <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-all" />
-                      
-                      {/* Pronta Entrega Tag */}
-                      {product.readyToShip && (
-                        <div className="absolute top-2 left-2 z-10">
-                          <div 
-                            className="bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-medium shadow-sm border"
-                            style={{ 
-                              color: store.colors.primary,
-                              borderColor: store.colors.secondary 
-                            }}
-                          >
-                            ✓ Pronta entrega
+                return (
+                  <div
+                    key={`product-${product.name}-${index}`}
+                    className="relative rounded-lg overflow-hidden bg-white/10 backdrop-blur-sm"
+                  >
+                    {/* Product Image - Clickable Link */}
+                    <a href={`/${store.slug}/${productId}`} className="block">
+                      <div className="aspect-square relative cursor-pointer group">
+                        <Image
+                          src={product.image}
+                          alt={product.name}
+                          fill
+                          className="object-cover transition-transform group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-all" />
+                        
+                        {/* Pronta Entrega Tag */}
+                        {product.readyToShip && (
+                          <div className="absolute top-2 left-2 z-10">
+                            <div 
+                              className="bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-medium shadow-sm border"
+                              style={{ 
+                                color: store.colors.primary,
+                                borderColor: store.colors.secondary 
+                              }}
+                            >
+                              ✓ Pronta entrega
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Hover overlay with "Ver detalhes" text */}
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium" style={{ color: store.colors.primary }}>
+                            Ver detalhes
                           </div>
                         </div>
-                      )}
-                      
-                      {/* Hover overlay with "Ver detalhes" text */}
-                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <div className="bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium" style={{ color: store.colors.primary }}>
-                          Ver detalhes
-                        </div>
                       </div>
-                    </div>
-                  </a>
-                  
-                  {/* Product Info */}
-                  <div className="p-3 pb-4">
-                    <a href={`/${store.slug}/${productId}`} className="block">
-                      <h3 className="text-white font-medium text-sm mb-1 truncate hover:text-white/80 transition-colors">
-                        {product.name}
-                      </h3>
-                      <p className="text-white/90 font-bold text-lg mb-3">
-                        {product.price}
-                      </p>
                     </a>
+                    
+                    {/* Product Info */}
+                    <div className="p-3 pb-4">
+                      <a href={`/${store.slug}/${productId}`} className="block">
+                        <h3 className="text-white font-medium text-sm mb-1 truncate hover:text-white/80 transition-colors">
+                          {product.name}
+                        </h3>
+                        <p className="text-white/90 font-bold text-lg mb-3">
+                          {product.price}
+                        </p>
+                      </a>
 
-                    {/* Cart Controls */}
-                    {isLoading ? (
-                      <CartControlsCompactLoading />
-                    ) : (
-                      <div className="flex items-center justify-center gap-4">
-                        {quantity > 0 && (
+                      {/* Cart Controls */}
+                      {isLoading ? (
+                        <CartControlsCompactLoading />
+                      ) : (
+                        <div className="flex items-center justify-center gap-4">
+                          {quantity > 0 && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeFromCart(product.name);
+                              }}
+                              className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-white/30 transition-all border border-white/30"
+                            >
+                              <Minus className="w-4 h-4 text-white" />
+                            </button>
+                          )}
+                          
                           <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              removeFromCart(product.name);
+                              addToCart(product);
                             }}
                             className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-white/30 transition-all border border-white/30"
                           >
-                            <Minus className="w-4 h-4 text-white" />
+                            <Plus className="w-4 h-4 text-white" />
                           </button>
-                        )}
-                        
-                        {quantity > 0 && (
-                          <span className="bg-white/95 backdrop-blur-sm text-sm font-medium px-3 py-1 rounded-full min-w-[28px] text-center shadow-sm" style={{ color: store.colors.primary }}>
-                            {quantity}
-                          </span>
-                        )}
-                        
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            addToCart(product);
-                          }}
-                          className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-white/30 transition-all border border-white/30"
-                        >
-                          <Plus className="w-4 h-4 text-white" />
-                        </button>
-                      </div>
-                    )}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
-
-
       </div>
     );
   }
@@ -222,7 +223,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
   return (
     <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: store.colors.primary }}>
       {/* Background Image */}
-      <div className="absolute ">
+      <div className="absolute inset-0">
         <Image
           src={store.logo.replace('/logo.png', '/background.png')}
           alt="Background"
@@ -250,10 +251,6 @@ export default function StorePageClient({ store }: StorePageClientProps) {
       <div className="flex justify-between items-center px-4 pb-8 relative z-10">
        
       </div>
-
-
-
-
 
       {/* Main Content */}
       <div className="flex flex-col items-center px-6 relative z-10">
@@ -345,8 +342,6 @@ export default function StorePageClient({ store }: StorePageClientProps) {
           </p>
         </div>
       </div>
-
-      
     </div>
   );
 } 
