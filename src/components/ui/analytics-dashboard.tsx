@@ -51,7 +51,7 @@ export default function AnalyticsDashboard({ storeSlug }: AnalyticsDashboardProp
 
   const handlePeriodChange = (period: '7d' | '30d' | '90d' | '1y') => {
     const today = new Date();
-    let startDate = new Date();
+    const startDate = new Date();
 
     switch (period) {
       case '7d':

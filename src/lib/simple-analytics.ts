@@ -1,7 +1,7 @@
 // Utilitário simples para tracking de analytics
 
 export const trackEvent = async (eventData: {
-  event_type: 'page_view' | 'product_click' | 'add_to_cart';
+  event_type: 'page_view' | 'product_click' | 'add_to_cart' | 'header_cart_click';
   store_slug: string;
   product_id?: string;
   product_name?: string;

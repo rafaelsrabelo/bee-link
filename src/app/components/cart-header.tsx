@@ -26,9 +26,9 @@ export default function CartHeader({ storeSlug, className = "" }: CartHeaderProp
       trackEvent({
         event_type: 'header_cart_click',
         store_slug: storeSlug,
-        product_id: null,
-        product_name: null,
-        product_price: null
+        product_id: undefined,
+        product_name: undefined,
+        product_price: undefined
       });
       
       router.push(`/${storeSlug}/cart`);

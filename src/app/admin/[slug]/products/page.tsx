@@ -41,7 +41,20 @@ interface Store {
 export default function ProductsPage({ params }: { params: Promise<{ slug: string }> }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [store, setStore] = useState<Store | null>(null);
-  const [analytics, setAnalytics] = useState<any>(null);
+  const [analytics, setAnalytics] = useState<{
+    top_products: Array<{
+      product_id: string;
+      product_name: string;
+      clicks: number;
+      rank: number;
+    }>;
+    top_cart_products: Array<{
+      product_id: string;
+      product_name: string;
+      cart_clicks: number;
+      rank: number;
+    }>;
+  } | null>(null);
   const [isEditing, setIsEditing] = useState<string | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -349,13 +362,13 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
 
                 const getProductClicks = (productId: string) => {
                 if (!analytics?.top_products) return 0;
-                const product = analytics.top_products.find((p: any) => p.product_id === productId);
+                const product = analytics.top_products.find((p) => p.product_id === productId);
                 return product?.clicks || 0;
               };
 
               const getProductCartClicks = (productId: string) => {
                 if (!analytics?.top_cart_products) return 0;
-                const product = analytics.top_cart_products.find((p: any) => p.product_id === productId);
+                const product = analytics.top_cart_products.find((p) => p.product_id === productId);
                 return product?.cart_clicks || 0;
               };
             

@@ -276,7 +276,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
                               
                               // Tracking de clique no carrinho
                               trackEvent({
-                                event_type: 'cart_click',
+                                event_type: 'add_to_cart',
                                 store_slug: store.slug,
                                 product_id: product.id,
                                 product_name: product.name,

@@ -1,6 +1,15 @@
 // Sistema híbrido de analytics
 // GA4 para análises avançadas + dados básicos locais para dashboard
 
+// Extend Window interface for dataLayer
+declare global {
+  interface Window {
+    dataLayer: unknown[];
+  }
+  
+  function gtag(...args: unknown[]): void;
+}
+
 export interface AnalyticsConfig {
   ga4Id?: string;
   enableLocalTracking: boolean;
@@ -43,7 +52,7 @@ class Analytics {
       document.head.appendChild(script);
 
       window.dataLayer = window.dataLayer || [];
-      function gtag(...args: any[]) {
+      function gtag(...args: unknown[]) {
         window.dataLayer.push(args);
       }
       gtag('js', new Date());
@@ -109,7 +118,15 @@ class Analytics {
   }
 
   // Enviar dados para API local
-  private async sendToLocalAPI(data: any) {
+  private async sendToLocalAPI(data: {
+    type: string;
+    product_id?: string;
+    product_name?: string;
+    page_url?: string;
+    page_title?: string;
+    session_id: string;
+    timestamp: string;
+  }) {
     try {
       const response = await fetch('/api/analytics/track', {
         method: 'POST',

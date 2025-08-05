@@ -25,7 +25,31 @@ interface Store {
 export default function AdminDashboardPage({ params }: { params: Promise<{ slug: string }> }) {
   const [store, setStore] = useState<Store | null>(null);
   const [loading, setLoading] = useState(true);
-  const [analytics, setAnalytics] = useState<any>(null);
+  const [analytics, setAnalytics] = useState<{
+    total_views: number;
+    total_clicks: number;
+    total_cart_clicks: number;
+    total_header_cart_clicks: number;
+    unique_visitors: number;
+    avg_views_per_session: number;
+    top_products: Array<{
+      product_id: string;
+      product_name: string;
+      clicks: number;
+      rank: number;
+    }>;
+    top_cart_products: Array<{
+      product_id: string;
+      product_name: string;
+      cart_clicks: number;
+      rank: number;
+    }>;
+    daily_stats: Array<{
+      date: string;
+      views: number;
+      unique_sessions: number;
+    }>;
+  } | null>(null);
   const [period, setPeriod] = useState<'7d' | '30d' | '90d'>('30d');
 
   const { user } = useAuth();
@@ -71,7 +95,17 @@ export default function AdminDashboardPage({ params }: { params: Promise<{ slug:
         const data = await response.json();
         setAnalytics(data);
       } else {
-        setAnalytics({ total_views: 0, total_clicks: 0, unique_visitors: 0, avg_views_per_session: 0, top_products: [], daily_stats: [] });
+        setAnalytics({ 
+          total_views: 0, 
+          total_clicks: 0, 
+          total_cart_clicks: 0,
+          total_header_cart_clicks: 0,
+          unique_visitors: 0, 
+          avg_views_per_session: 0, 
+          top_products: [], 
+          top_cart_products: [],
+          daily_stats: [] 
+        });
       }
     } catch (error) {
       console.error('Erro ao carregar analytics:', error);
@@ -271,7 +305,7 @@ export default function AdminDashboardPage({ params }: { params: Promise<{ slug:
               <div className="mt-6">
                 <h4 className="text-lg font-semibold text-gray-900 mb-4">🏆 Produtos mais clicados</h4>
                 <div className="space-y-3">
-                  {analytics.top_products.slice(0, 5).map((product: any, index: number) => (
+                  {analytics.top_products.slice(0, 5).map((product, index: number) => (
                     <div key={product.product_id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div className="flex items-center space-x-3">
                         <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center relative">
@@ -322,7 +356,7 @@ export default function AdminDashboardPage({ params }: { params: Promise<{ slug:
               <div className="mt-6">
                 <h4 className="text-lg font-semibold text-gray-900 mb-4">🛒 Produtos mais adicionados ao carrinho</h4>
                 <div className="space-y-3">
-                  {analytics.top_cart_products.slice(0, 5).map((product: any, index: number) => (
+                  {analytics.top_cart_products.slice(0, 5).map((product, index: number) => (
                     <div key={product.product_id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div className="flex items-center space-x-3">
                         <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center relative">
@@ -368,7 +402,7 @@ export default function AdminDashboardPage({ params }: { params: Promise<{ slug:
               <div className="mt-6">
                 <h4 className="text-lg font-semibold text-gray-900 mb-4">Atividade diária</h4>
                 <div className="space-y-2">
-                  {analytics.daily_stats.slice(0, 7).map((stat: any) => (
+                  {analytics.daily_stats.slice(0, 7).map((stat) => (
                     <div key={stat.date} className="flex items-center justify-between p-2">
                       <div className="flex items-center space-x-3">
                         <span className="text-sm text-gray-600">

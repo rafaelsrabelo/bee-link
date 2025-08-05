@@ -23,7 +23,7 @@ export default function ProductAnalytics({ productId, storeSlug }: ProductAnalyt
         const response = await fetch(`/api/stores/${storeSlug}/analytics?period=30d`);
         if (response.ok) {
           const data = await response.json();
-          const product = data.top_products.find((p: any) => p.product_id === productId);
+          const product = data.top_products.find((p: { product_id: string; views?: number; clicks?: number }) => p.product_id === productId);
           if (product) {
             setStats({
               views: product.views || 0,
