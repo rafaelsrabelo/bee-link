@@ -30,13 +30,11 @@ export async function GET(
       .order('created_at', { ascending: false });
 
     if (productsError) {
-      console.error('Erro ao buscar produtos:', productsError);
       return NextResponse.json({ error: 'Erro ao buscar produtos' }, { status: 500 });
     }
 
     return NextResponse.json(products || []);
   } catch (error) {
-    console.error('Erro interno:', error);
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 }
@@ -82,7 +80,6 @@ export async function POST(
       .eq('store_id', store.id);
 
     if (deleteError) {
-      console.error('Erro ao deletar produtos:', deleteError);
       return NextResponse.json({ error: 'Erro ao salvar produtos' }, { status: 500 });
     }
 
@@ -99,14 +96,12 @@ export async function POST(
         .insert(productsWithStoreId);
 
       if (insertError) {
-        console.error('Erro ao inserir produtos:', insertError);
         return NextResponse.json({ error: 'Erro ao salvar produtos' }, { status: 500 });
       }
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Erro interno:', error);
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 } 

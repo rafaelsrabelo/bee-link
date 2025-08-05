@@ -17,10 +17,8 @@ export const trackEvent = async (eventData: {
     });
 
     if (!response.ok) {
-      console.error('Erro ao registrar evento:', response.statusText);
     }
-  } catch (error) {
-    console.error('Erro ao enviar evento de analytics:', error);
+  } catch {
   }
 };
 

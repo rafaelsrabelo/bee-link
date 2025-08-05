@@ -80,7 +80,6 @@ export default function StorePageClient({ store }: StorePageClientProps) {
           setProducts(productsData || []);
         }
       } catch (error) {
-        console.error('Erro ao carregar produtos:', error);
         setProducts([]);
       } finally {
         setLoading(false);

@@ -19,8 +19,7 @@ export function StoreHeader({ store }: StoreHeaderProps) {
           text: store.description,
           url: window.location.href,
         });
-      } catch (error) {
-        console.log('Erro ao compartilhar:', error);
+      } catch {
       }
     } else {
       // Fallback: copiar para clipboard

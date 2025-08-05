@@ -63,7 +63,6 @@ export default function DashboardPage() {
 
   const fetchTotalProducts = async () => {
     try {
-      console.log('🔍 Buscando produtos para usuário:', user?.id);
       
       // Buscar todas as lojas do usuário
       const { data: userStores, error: storesError } = await supabase
@@ -72,21 +71,17 @@ export default function DashboardPage() {
         .eq('user_id', user?.id);
 
       if (storesError) {
-        console.error('Erro ao buscar lojas:', storesError);
         return;
       }
 
-      console.log('📊 Lojas encontradas:', userStores);
 
       if (!userStores || userStores.length === 0) {
-        console.log('❌ Nenhuma loja encontrada para o usuário');
         setTotalProducts(0);
         return;
       }
 
       // Buscar produtos de todas as lojas do usuário
       const storeIds = userStores.map(store => store.id);
-      console.log('🏪 IDs das lojas:', storeIds);
       
       // Buscar produtos usando a query correta
       const { data: products, error: productsError } = await supabase
@@ -95,15 +90,11 @@ export default function DashboardPage() {
         .in('store_id', storeIds);
 
       if (productsError) {
-        console.error('Erro ao buscar produtos:', productsError);
         return;
       }
 
-      console.log('📦 Produtos encontrados:', products);
-      console.log('📦 Total de produtos:', products?.length || 0);
       setTotalProducts(products?.length || 0);
-    } catch (error) {
-      console.error('Erro ao buscar total de produtos:', error);
+    } catch {
     }
   };
 

@@ -10,14 +10,11 @@ async function readProducts() {
       .select('*');
     
     if (error) {
-      console.error('Erro ao ler produtos:', error);
       return [];
     }
     
-    console.log('Debug - Produtos lidos com sucesso:', data);
     return data || [];
   } catch (error) {
-    console.error('Erro ao ler produtos:', error);
     return [];
   }
 }
@@ -25,41 +22,33 @@ async function readProducts() {
 // Salvar produtos no Supabase
 async function saveProducts(products: unknown[]) {
   try {
-    console.log('Debug - Tentando salvar produtos:', products);
     
     // Primeiro, deletar todos os produtos existentes
-    console.log('Debug - Deletando produtos existentes...');
     const { error: deleteError } = await supabase
       .from('products')
       .delete()
       .neq('id', 0); // Deletar todos
     
     if (deleteError) {
-      console.error('Erro ao deletar produtos:', deleteError);
       return false;
     }
     
-    console.log('Debug - Produtos deletados com sucesso');
     
     // Depois, inserir os novos produtos
     if (products.length > 0) {
-      console.log('Debug - Inserindo novos produtos...');
       const { data, error: insertError } = await supabase
         .from('products')
         .insert(products)
         .select();
       
       if (insertError) {
-        console.error('Erro ao inserir produtos:', insertError);
         return false;
       }
       
-      console.log('Debug - Produtos inseridos com sucesso:', data);
     }
     
     return true;
   } catch (error) {
-    console.error('Erro ao salvar produtos:', error);
     return false;
   }
 }
@@ -70,7 +59,6 @@ export async function GET() {
     const products = await readProducts();
     return NextResponse.json(products);
   } catch (error) {
-    console.error('Erro no GET:', error);
     return NextResponse.json(
       { error: 'Erro ao buscar produtos' },
       { status: 500 }
@@ -93,7 +81,6 @@ export async function POST(request: NextRequest) {
       );
     }
   } catch (error) {
-    console.error('Erro no POST:', error);
     return NextResponse.json(
       { error: 'Erro ao salvar produtos' },
       { status: 500 }

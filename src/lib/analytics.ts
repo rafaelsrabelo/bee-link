@@ -85,8 +85,7 @@ class Analytics {
           timestamp: new Date().toISOString()
         });
       }
-    } catch (error) {
-      console.error('Erro ao rastrear clique:', error);
+    } catch {
     }
   }
 
@@ -112,8 +111,7 @@ class Analytics {
           timestamp: new Date().toISOString()
         });
       }
-    } catch (error) {
-      console.error('Erro ao rastrear visualização:', error);
+    } catch {
     }
   }
 
@@ -139,8 +137,7 @@ class Analytics {
       if (!response.ok) {
         throw new Error('Falha ao enviar dados');
       }
-    } catch (error) {
-      console.error('Erro ao enviar dados locais:', error);
+    } catch {
     }
   }
 

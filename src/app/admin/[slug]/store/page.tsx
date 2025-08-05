@@ -147,7 +147,6 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
         }
       });
     } catch (error) {
-      console.error('Erro ao carregar dados:', error);
       toast.error('Erro ao carregar dados da loja');
     } finally {
       setLoading(false);
@@ -173,7 +172,6 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
         toast.error('Erro ao enviar logo');
       }
     } catch (error) {
-      console.error('Erro ao enviar logo:', error);
       toast.error('Erro ao enviar logo');
     } finally {
       setUploadingLogo(false);
@@ -199,7 +197,6 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
         toast.error(error.error || 'Erro ao salvar loja');
       }
     } catch (error) {
-      console.error('Erro ao salvar:', error);
       toast.error('Erro ao salvar loja');
     } finally {
       setSaving(false);

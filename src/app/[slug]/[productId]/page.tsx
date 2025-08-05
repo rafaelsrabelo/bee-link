@@ -48,7 +48,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
     return <ProductPageClient store={formattedStore} product={product} />;
   } catch (error) {
-    console.error('Erro ao carregar produto:', error);
     notFound();
   }
 }
@@ -114,8 +113,7 @@ export async function generateMetadata({ params }: ProductPageProps) {
         images: [product.image],
       },
     };
-  } catch (error) {
-    console.error('Erro ao gerar metadados:', error);
+  } catch {
     return {
       title: 'Erro ao carregar produto',
       description: 'Ocorreu um erro ao carregar o produto.'

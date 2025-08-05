@@ -42,8 +42,7 @@ export default function AnalyticsDashboard({ storeSlug }: AnalyticsDashboardProp
         const data = await response.json();
         setAnalytics(data);
       }
-    } catch (error) {
-      console.error('Erro ao carregar analytics:', error);
+    } catch {
     } finally {
       setLoading(false);
     }

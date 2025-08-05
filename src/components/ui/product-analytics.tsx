@@ -31,8 +31,7 @@ export default function ProductAnalytics({ productId, storeSlug }: ProductAnalyt
             });
           }
         }
-      } catch (error) {
-        console.error('Erro ao carregar stats do produto:', error);
+      } catch {
       } finally {
         setLoading(false);
       }

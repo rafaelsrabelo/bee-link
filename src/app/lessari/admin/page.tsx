@@ -69,7 +69,6 @@ export default function AdminPage() {
           setProducts([]);
         }
       } catch (error) {
-        console.error('Erro ao carregar produtos da API:', error);
         setProducts([]);
       } finally {
         // Pequeno delay para garantir que o loading seja visível
@@ -98,7 +97,6 @@ export default function AdminPage() {
         throw new Error('Erro ao salvar produtos');
       }
     } catch (error) {
-      console.error('Erro ao salvar produtos:', error);
       toast.error('Erro ao salvar produtos. Tente novamente.');
     }
   };
@@ -124,7 +122,6 @@ export default function AdminPage() {
         toast.error(`Erro no upload: ${error.error}`);
       }
     } catch (error) {
-      console.error('Erro no upload:', error);
       toast.error('Erro ao fazer upload da imagem. Tente novamente.');
     } finally {
       setUploadingImage(false);
@@ -152,7 +149,6 @@ export default function AdminPage() {
         toast.error(`Erro no upload: ${error.error}`);
       }
     } catch (error) {
-      console.error('Erro no upload:', error);
       toast.error('Erro ao fazer upload da imagem. Tente novamente.');
     } finally {
       setUploadingEditImage(false);
@@ -160,12 +156,6 @@ export default function AdminPage() {
   };
 
   const handleAddProduct = async () => {
-    console.log('Debug - newProduct:', newProduct);
-    console.log('Debug - name:', newProduct.name, 'length:', newProduct.name?.length);
-    console.log('Debug - price:', newProduct.price, 'length:', newProduct.price?.length);
-    console.log('Debug - image:', newProduct.image, 'length:', newProduct.image?.length);
-    console.log('Debug - description:', newProduct.description, 'length:', newProduct.description?.length);
-    
     if (!newProduct.name || !newProduct.price || !newProduct.image || !newProduct.description) {
       toast.error('Por favor, preencha todos os campos obrigatórios');
       return;
@@ -270,7 +260,6 @@ export default function AdminPage() {
         toast.error('Erro ao limpar produtos. Tente novamente.');
       }
     } catch (error) {
-      console.error('Erro ao limpar produtos:', error);
       toast.error('Erro ao limpar produtos. Tente novamente.');
     }
     setDeleteModal({ isOpen: false, productId: null, productName: '' });

@@ -35,8 +35,7 @@ export default function CartPageClient({ store }: CartPageClientProps) {
           const productsData = await response.json();
           setProducts(productsData || []);
         }
-      } catch (error) {
-        console.error('Erro ao carregar produtos:', error);
+      } catch {
         setProducts([]);
       }
     };

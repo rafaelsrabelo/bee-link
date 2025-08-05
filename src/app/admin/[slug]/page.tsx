@@ -81,7 +81,6 @@ export default function AdminDashboardPage({ params }: { params: Promise<{ slug:
       const storeData = await response.json();
       setStore(storeData);
     } catch (error) {
-      console.error('Erro ao carregar loja:', error);
       toast.error('Erro ao carregar dados da loja');
     } finally {
       setLoading(false);
@@ -108,7 +107,6 @@ export default function AdminDashboardPage({ params }: { params: Promise<{ slug:
         });
       }
     } catch (error) {
-      console.error('Erro ao carregar analytics:', error);
       toast.error('Erro ao carregar dados de analytics');
     }
   };

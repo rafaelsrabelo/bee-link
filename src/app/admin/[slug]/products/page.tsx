@@ -98,9 +98,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
 
   // Carregar tudo de uma vez
   useEffect(() => {
-    console.log('🔍 useEffect principal - user:', user?.id, 'slug:', slug);
     if (user && slug) {
-      console.log('✅ Iniciando carregamento completo');
       loadStoreAndProducts();
     }
   }, [user, slug]);
@@ -110,7 +108,6 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
     
     setLoading(true);
     try {
-      console.log('🔍 Carregando loja diretamente com slug:', slug);
       
       // Carregar analytics
       await loadAnalytics();
@@ -123,7 +120,6 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
         return;
       }
       const storeData = await storeResponse.json();
-      console.log('✅ Loja carregada:', storeData);
       
       // Verificar permissão
       if (storeData.user_id !== user?.id) {
@@ -138,7 +134,6 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
       // Carregar produtos
       await loadProducts();
     } catch (error) {
-      console.error('❌ Erro ao carregar dados:', error);
       toast.error('Erro ao carregar dados da loja');
     } finally {
       setTimeout(() => {
@@ -155,8 +150,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
         const data = await response.json();
         setAnalytics(data);
       }
-    } catch (error) {
-      console.error('Erro ao carregar analytics:', error);
+    } catch {
     }
   };
 
@@ -174,7 +168,6 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
         setProducts([]);
       }
     } catch (error) {
-      console.error('Erro ao carregar produtos:', error);
       toast.error('Erro ao carregar produtos');
     } finally {
       setTimeout(() => {
@@ -201,7 +194,6 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
         throw new Error('Erro ao salvar produtos');
       }
     } catch (error) {
-      console.error('Erro ao salvar produtos:', error);
       toast.error('Erro ao salvar produtos');
     }
   };
@@ -227,7 +219,6 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
         throw new Error('Erro ao enviar imagem');
       }
     } catch (error) {
-      console.error('Erro ao enviar imagem:', error);
       toast.error('Erro ao enviar imagem');
       setSelectedImage(null); // Limpa em caso de erro
     } finally {
@@ -254,7 +245,6 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
         throw new Error('Erro ao enviar imagem');
       }
     } catch (error) {
-      console.error('Erro ao enviar imagem:', error);
       toast.error('Erro ao enviar imagem');
     } finally {
       setUploadingEditImage(false);

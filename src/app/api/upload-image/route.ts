@@ -7,12 +7,6 @@ const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
 const apiKey = process.env.CLOUDINARY_API_KEY;
 const apiSecret = process.env.CLOUDINARY_API_SECRET;
 
-console.log('Cloudinary Config:', {
-  cloudName: cloudName ? '✅ Set' : '❌ Missing',
-  apiKey: apiKey ? '✅ Set' : '❌ Missing',
-  apiSecret: apiSecret ? '✅ Set' : '❌ Missing'
-});
-
 cloudinary.config({
   cloud_name: cloudName || 'demo',
   api_key: apiKey || 'demo',
@@ -69,7 +63,6 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Erro no upload:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

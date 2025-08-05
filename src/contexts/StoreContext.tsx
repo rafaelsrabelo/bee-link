@@ -34,20 +34,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   // Wrapper para setCurrentSlug com logs
   const setCurrentSlugWithLog = (slug: string) => {
-    console.log('🔄 setCurrentSlug chamado com:', slug);
     setCurrentSlug(slug);
   };
 
   const loadStore = async () => {
-    console.log('🔄 loadStore chamado com currentSlug:', currentSlug);
     if (!currentSlug) {
-      console.log('❌ currentSlug é null, retornando');
       return;
     }
     
     setLoading(true);
     try {
-      console.log('🔍 Buscando loja no Supabase com slug:', currentSlug);
       const { data, error } = await supabase
         .from('stores')
         .select('*')
@@ -55,15 +51,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         .single();
 
       if (error) {
-        console.error('❌ Erro ao carregar loja:', error);
         setStore(null);
         return;
       }
 
-      console.log('✅ Loja carregada com sucesso:', data);
       setStore(data);
     } catch (error) {
-      console.error('❌ Erro ao carregar loja:', error);
       setStore(null);
     } finally {
       setLoading(false);
@@ -82,13 +75,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         .single();
 
       if (error) {
-        console.error('Erro ao atualizar loja:', error);
         return;
       }
 
       setStore(data);
     } catch (error) {
-      console.error('Erro ao atualizar loja:', error);
     }
   };
 

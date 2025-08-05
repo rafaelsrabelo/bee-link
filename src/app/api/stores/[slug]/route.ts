@@ -22,7 +22,6 @@ export async function GET(
 
     return NextResponse.json(store);
   } catch (error) {
-    console.error('Erro ao buscar loja:', error);
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 }
@@ -89,13 +88,11 @@ export async function PUT(
       .single();
 
     if (updateError) {
-      console.error('Erro ao atualizar loja:', updateError);
       return NextResponse.json({ error: 'Erro ao atualizar loja' }, { status: 500 });
     }
 
     return NextResponse.json(updatedStore);
   } catch (error) {
-    console.error('Erro interno:', error);
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 } 

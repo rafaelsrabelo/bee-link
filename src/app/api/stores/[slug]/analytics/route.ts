@@ -41,7 +41,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     });
 
     if (error) {
-      console.error('Erro ao obter analytics:', error);
       return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
     }
 
@@ -60,7 +59,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     return NextResponse.json(analyticsData);
   } catch (error) {
-    console.error('Erro na API de analytics:', error);
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 } 
