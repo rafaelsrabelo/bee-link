@@ -11,6 +11,8 @@ import ProtectedRoute from '../../../../components/auth/ProtectedRoute';
 import LottieLoader from '../../../../components/ui/lottie-loader';
 import AdminHeader from '../../../../components/ui/admin-header';
 import CategorySelector from '../../../../components/ui/category-selector';
+import LayoutSelector from '../../../../components/ui/layout-selector';
+import StorePreview from '../../../../components/ui/store-preview';
 import loadingAnimation from '../../../../../public/animations/loading-dots-blue.json';
 
 interface Store {
@@ -29,6 +31,9 @@ interface Store {
     icon: string;
     color: string;
   };
+  layout_type?: 'default' | 'banner';
+  banner_image?: string;
+  show_products_by_category?: boolean;
   colors: {
     primary: string;
     secondary: string;
@@ -49,6 +54,7 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -56,6 +62,9 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
     description: '',
     logo: '',
     category_id: undefined as number | undefined,
+    layout_type: 'default' as 'default' | 'banner',
+    banner_image: '',
+    show_products_by_category: false,
     colors: {
       primary: '#8B5CF6',
       secondary: '#7C3AED',
@@ -145,6 +154,9 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
         description: storeData.description || '',
         logo: storeData.logo || '',
         category_id: storeData.category_id || undefined,
+        layout_type: storeData.layout_type || 'default',
+        banner_image: storeData.banner_image || '',
+        show_products_by_category: storeData.show_products_by_category || false,
         colors: storeData.colors || {
           primary: '#8B5CF6',
           secondary: '#7C3AED',
@@ -187,6 +199,31 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
       toast.error('Erro ao enviar logo');
     } finally {
       setUploadingLogo(false);
+    }
+  };
+
+  const handleBannerUpload = async (file: File) => {
+    setUploadingBanner(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const response = await fetch('/api/upload-image', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setFormData(prev => ({ ...prev, banner_image: data.imageUrl }));
+        toast.success('Banner enviado com sucesso!');
+      } else {
+        toast.error('Erro ao enviar banner');
+      }
+    } catch (error) {
+      toast.error('Erro ao enviar banner');
+    } finally {
+      setUploadingBanner(false);
     }
   };
 
@@ -500,6 +537,8 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
                 </div>
               </div>
 
+
+
               {/* Redes Sociais */}
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Redes Sociais</h2>
@@ -607,136 +646,65 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
               </div>
             </div>
 
-            {/* Coluna Direita - Preview da Vitrine */}
-            <div className="bg-white rounded-xl shadow-sm border p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-6">Preview da sua Vitrine</h2>
-              
-              {/* Preview da página da loja */}
-              <div className="border border-gray-200 rounded-lg overflow-hidden">
-                {/* Header da vitrine */}
-                <div 
-                  className="h-40 flex flex-col items-center justify-center text-white font-bold text-xl relative"
-                  style={{ 
-                    background: `linear-gradient(135deg, ${formData.colors.primary}, ${formData.colors.secondary})`
-                  }}
-                >
-                  {/* Logo */}
-                  {formData.logo && (
-                    <div className="mb-3">
-                      <Image
-                        src={formData.logo}
-                        alt="Logo"
-                        width={60}
-                        height={60}
-                        className="rounded-full"
-                      />
-                    </div>
-                  )}
-                  
-                  {/* Nome da loja */}
-                  <div className="text-center">
-                    <h1 className="text-xl font-bold">{formData.name || 'Nome da Loja'}</h1>
-                    {formData.description && (
-                      <p className="text-sm opacity-90 mt-1">{formData.description}</p>
-                    )}
-                  </div>
-                </div>
+            {/* Coluna Direita - Layout e Preview */}
+            <div className="bg-white rounded-xl shadow-sm border p-6 space-y-8">
+              {/* Layout da Loja */}
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Layout da Loja</h2>
+                <LayoutSelector
+                  value={formData.layout_type}
+                  onChange={(layoutType) => setFormData(prev => ({ ...prev, layout_type: layoutType }))}
+                  showCategory={formData.show_products_by_category}
+                  onShowCategoryChange={(show) => setFormData(prev => ({ ...prev, show_products_by_category: show }))}
+                  bannerImage={formData.banner_image}
+                  className="mb-6"
+                />
 
-                {/* Conteúdo da vitrine */}
-                <div className="p-6 bg-gray-50">
-                  {/* Botões de ação */}
-                  <div className="flex flex-col gap-3 mb-6">
-                    <button 
-                      className="w-full bg-white/90 hover:bg-white font-medium py-3 rounded-full text-sm backdrop-blur-sm flex items-center justify-center transition-all duration-300 shadow-lg"
-                      style={{ color: formData.colors.primary }}
-                    >
-                      <div className="w-6 h-6 rounded-full mr-2 flex items-center justify-center" style={{ 
-                        backgroundColor: formData.colors.primary
-                      }}>
-                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M7 11V7a5 5 0 0110 0v4h2a2 2 0 012 2v7a2 2 0 01-2 2H5a2 2 0 01-2-2v-7a2 2 0 012-2h2zm2-2h6V7a3 3 0 00-6 0v2z"/>
-                        </svg>
+                {/* Upload de Banner (apenas se layout for banner) */}
+                {formData.layout_type === 'banner' && (
+                  <div className="mt-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Banner da Loja
+                    </label>
+                    <div className="flex items-center space-x-6">
+                      <div className="w-48 h-24 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
+                        {formData.banner_image ? (
+                          <Image
+                            src={formData.banner_image}
+                            alt="Banner"
+                            width={192}
+                            height={96}
+                            className="object-cover w-full h-full"
+                          />
+                        ) : (
+                          <Upload className="w-8 h-8 text-gray-400" />
+                        )}
                       </div>
-                      Fale com a gente
-                    </button>
-                    
-                    <button 
-                      className="w-full bg-white/90 hover:bg-white font-medium py-3 rounded-full text-sm backdrop-blur-sm flex items-center justify-center transition-all duration-300 shadow-lg"
-                      style={{ color: formData.colors.primary }}
-                    >
-                      <div className="w-6 h-6 rounded-full mr-2 flex items-center justify-center" style={{ 
-                        backgroundColor: formData.colors.primary
-                      }}>
-                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m6 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01"/>
-                        </svg>
-                      </div>
-                      COMPRE AQUI
-                    </button>
-                  </div>
-
-                  {/* Redes sociais */}
-                  <div className="flex justify-center space-x-3">
-                    {formData.social_networks.instagram && (
-                      <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: formData.colors.primary }}>
-                        <Instagram className="w-5 h-5 text-white" />
-                      </div>
-                    )}
-                    {formData.social_networks.whatsapp && (
-                      <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: formData.colors.secondary }}>
-                        <MessageCircle className="w-5 h-5 text-white" />
-                      </div>
-                    )}
-                    {formData.social_networks.tiktok && (
-                      <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: formData.colors.accent }}>
-                        <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/>
-                        </svg>
-                      </div>
-                    )}
-                    {formData.social_networks.spotify && (
-                      <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: formData.colors.primary }}>
-                        <Music className="w-5 h-5 text-white" />
-                      </div>
-                    )}
-                    {formData.social_networks.youtube && (
-                      <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: formData.colors.secondary }}>
-                        <Youtube className="w-5 h-5 text-white" />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Informações das cores */}
-                  <div className="mt-6 p-4 bg-white rounded-lg border">
-                    <h3 className="text-sm font-medium text-gray-900 mb-3">Cores da sua loja:</h3>
-                    <div className="flex space-x-2 mb-3">
-                      <div 
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold"
-                        style={{ backgroundColor: formData.colors.primary }}
-                      >
-                        P
-                      </div>
-                      <div 
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold"
-                        style={{ backgroundColor: formData.colors.secondary }}
-                      >
-                        S
-                      </div>
-                      <div 
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold"
-                        style={{ backgroundColor: formData.colors.accent }}
-                      >
-                        D
+                      <div className="flex-1">
+                        <MobileImageUpload
+                          onImageSelect={handleBannerUpload}
+                          disabled={uploadingBanner}
+                        />
+                        <p className="text-xs text-gray-500 mt-2">
+                          Envie uma imagem horizontal para o banner (recomendado: 1200x400px)
+                        </p>
                       </div>
                     </div>
-                    <div className="text-xs text-gray-600 space-y-1">
-                      <p>Primária: {formData.colors.primary}</p>
-                      <p>Secundária: {formData.colors.secondary}</p>
-                      <p>Destaque: {formData.colors.accent}</p>
-                    </div>
                   </div>
-                </div>
+                )}
               </div>
+
+              {/* Preview da Loja */}
+              {store && (
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4">Preview da Loja</h2>
+                  <StorePreview
+                    store={store}
+                    layoutType={formData.layout_type}
+                    className="max-w-md mx-auto"
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -23,6 +23,9 @@ interface Store {
     icon: string;
     color: string;
   };
+  layout_type?: 'default' | 'banner';
+  banner_image?: string;
+  show_products_by_category?: boolean;
 }
 
 interface StoreContextType {

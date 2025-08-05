@@ -14,6 +14,9 @@ interface StoreData {
   description: string;
   slug: string;
   logo: string;
+  layout_type?: 'default' | 'banner';
+  banner_image?: string;
+  show_products_by_category?: boolean;
   colors: {
     primary: string;
     secondary: string;
@@ -50,6 +53,13 @@ export default function StorePageClient({ store }: StorePageClientProps) {
   const [loading, setLoading] = useState(true);
   const searchParams = useSearchParams();
   const { cart, addToCart, removeFromCart, getCartItemQuantity, setStoreSlug, isLoading } = useCartStore();
+
+  // Debug: verificar dados de layout
+  console.log('Store layout data:', {
+    layout_type: store.layout_type,
+    banner_image: store.banner_image,
+    show_products_by_category: store.show_products_by_category
+  });
 
   // Configurar o store slug quando o componente montar
   useEffect(() => {
@@ -139,14 +149,37 @@ export default function StorePageClient({ store }: StorePageClientProps) {
           />
         </div>
 
-        {/* Catalog Header */}
+        {/* Catalog Header - Layout Condicional */}
         <div className="px-4 mb-6 pt-20">
-          <div className="bg-white/90 backdrop-blur-sm rounded-full px-6 py-4 flex items-center justify-between">
-            <span className="font-medium text-lg" style={{ color: store.colors.primary }}>CATÁLOGO</span>
-            <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center" style={{ background: `linear-gradient(to bottom right, ${store.colors.secondary}, ${store.colors.accent})` }}>
-              <span className="text-white font-bold text-lg">{store.store_name.charAt(0)}</span>
+          {store.layout_type === 'banner' ? (
+            /* Layout Banner - Mostra banner de imagem */
+            <div className="w-full h-32 rounded-lg overflow-hidden mb-4">
+              {store.banner_image ? (
+                <Image
+                  src={store.banner_image}
+                  alt="Banner da loja"
+                  width={400}
+                  height={128}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div 
+                  className="w-full h-full flex items-center justify-center text-white font-medium"
+                  style={{ backgroundColor: store.colors.primary }}
+                >
+                  Banner da Loja
+                </div>
+              )}
             </div>
-          </div>
+          ) : (
+            /* Layout Default - Mostra título "CATÁLOGO" */
+            <div className="bg-white/90 backdrop-blur-sm rounded-full px-6 py-4 flex items-center justify-between">
+              <span className="font-medium text-lg" style={{ color: store.colors.primary }}>CATÁLOGO</span>
+              <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center" style={{ background: `linear-gradient(to bottom right, ${store.colors.secondary}, ${store.colors.accent})` }}>
+                <span className="text-white font-bold text-lg">{store.store_name.charAt(0)}</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Products Grid */}

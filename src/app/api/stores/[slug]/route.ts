@@ -45,7 +45,19 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { name, description, logo, colors, social_networks, category_id } = body;
+    const { name, description, logo, colors, social_networks, category_id, layout_type, banner_image, show_products_by_category } = body;
+
+    console.log('Dados recebidos para atualização:', {
+      name,
+      description,
+      logo,
+      category_id,
+      layout_type,
+      banner_image,
+      show_products_by_category,
+      colors,
+      social_networks
+    });
 
     // Validações
     if (!name?.trim()) {
@@ -71,32 +83,45 @@ export async function PUT(
       return NextResponse.json({ error: 'Não autorizado' }, { status: 403 });
     }
 
+    // Preparar dados para atualização
+    const updateData = {
+      name: name.trim(),
+      description: description?.trim() || '',
+      logo: logo || '',
+      category_id: category_id || null,
+      layout_type: layout_type || 'default',
+      banner_image: banner_image || null,
+      show_products_by_category: show_products_by_category || false,
+      colors: colors || {
+        primary: '#8B5CF6',
+        secondary: '#7C3AED',
+        accent: '#A855F7'
+      },
+      social_networks: social_networks || {},
+      updated_at: new Date().toISOString()
+    };
+
+    console.log('Dados para atualização:', updateData);
+
     // Atualizar a loja
     const { data: updatedStore, error: updateError } = await supabase
       .from('stores')
-      .update({
-        name: name.trim(),
-        description: description?.trim() || '',
-        logo: logo || '',
-        category_id: category_id || null,
-        colors: colors || {
-          primary: '#8B5CF6',
-          secondary: '#7C3AED',
-          accent: '#A855F7'
-        },
-        social_networks: social_networks || {},
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('slug', slug)
       .select()
       .single();
 
     if (updateError) {
-      return NextResponse.json({ error: 'Erro ao atualizar loja' }, { status: 500 });
+      console.error('Erro ao atualizar loja:', updateError);
+      return NextResponse.json({ 
+        error: 'Erro ao atualizar loja',
+        details: updateError.message 
+      }, { status: 500 });
     }
 
     return NextResponse.json(updatedStore);
   } catch (error) {
+    console.error('Erro interno:', error);
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 } 

@@ -29,6 +29,9 @@ export default async function StorePage({ params }: StorePageProps) {
       description: store.description,
       slug: store.slug,
       logo: store.logo,
+      layout_type: store.layout_type,
+      banner_image: store.banner_image,
+      show_products_by_category: store.show_products_by_category,
       colors: store.colors,
       social_networks: store.social_networks
     };
