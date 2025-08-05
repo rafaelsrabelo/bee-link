@@ -99,7 +99,7 @@ export default function AdminDashboardPage({ params }: { params: Promise<{ slug:
           store={store}
           currentPage="dashboard"
           title="Painel Administrativo"
-          icon={Store}
+          icon={BarChart3}
         />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
