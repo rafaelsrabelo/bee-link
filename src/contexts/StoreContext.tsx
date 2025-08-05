@@ -69,7 +69,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       }
 
       setStore(data);
-    } catch (error) {
+    } catch {
       setStore(null);
     } finally {
       setLoading(false);
@@ -92,7 +92,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       }
 
       setStore(data);
-    } catch (error) {
+    } catch {
     }
   };
 

@@ -74,17 +74,7 @@ export default function AnalyticsDashboard({ storeSlug }: AnalyticsDashboardProp
     });
   };
 
-  const getChangeIcon = (change: number) => {
-    if (change > 0) return <ArrowUpRight className="w-4 h-4 text-green-600" />;
-    if (change < 0) return <ArrowDownRight className="w-4 h-4 text-red-600" />;
-    return <Minus className="w-4 h-4 text-gray-400" />;
-  };
 
-  const getChangeColor = (change: number) => {
-    if (change > 0) return 'text-green-600';
-    if (change < 0) return 'text-red-600';
-    return 'text-gray-500';
-  };
 
   if (loading) {
     return (
@@ -203,7 +193,7 @@ export default function AnalyticsDashboard({ storeSlug }: AnalyticsDashboardProp
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Produtos mais clicados</h3>
         <div className="space-y-3">
-          {analytics.top_products.slice(0, 5).map((product, index) => (
+          {analytics.top_products.slice(0, 5).map((product) => (
             <div key={product.product_id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">

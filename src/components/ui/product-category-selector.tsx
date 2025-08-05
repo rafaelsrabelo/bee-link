@@ -22,8 +22,9 @@ interface ProductCategorySelectorProps {
   className?: string;
   colors?: {
     primary: string;
-    secondary: string;
-    accent: string;
+    text: string;
+    header: string;
+    background: string;
   };
 }
 

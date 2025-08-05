@@ -113,7 +113,7 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
                     className="bg-white/90 backdrop-blur-sm px-3 py-2 rounded-full text-sm font-medium shadow-sm border"
                     style={{ 
                       color: store.colors.primary,
-                      borderColor: store.colors.secondary 
+                      borderColor: store.colors.primary 
                     }}
                   >
                     ✓ Pronta entrega
@@ -155,7 +155,7 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
             <h1 className="text-2xl font-bold mb-2" style={{ color: store.colors.primary }}>
               {product.name}
             </h1>
-            <div className="text-3xl font-bold" style={{ color: store.colors.accent }}>
+            <div className="text-3xl font-bold" style={{ color: store.colors.primary }}>
               {product.price}
             </div>
           </div>
@@ -164,7 +164,7 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
           <div className="mb-4">
             <span 
               className="inline-block px-3 py-1 rounded-full text-xs font-medium text-white"
-              style={{ backgroundColor: store.colors.secondary }}
+              style={{ backgroundColor: store.colors.primary }}
             >
                               {typeof product.category === 'string' ? (product.category === 'bag' ? 'Bolsa' : 'Produto') : 'Produto'}
             </span>

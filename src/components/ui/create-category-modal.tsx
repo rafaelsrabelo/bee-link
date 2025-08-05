@@ -1,16 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Plus, Package } from 'lucide-react';
+import { X, Plus } from 'lucide-react';
 
 interface CreateCategoryModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCategoryCreated: () => void;
   colors?: {
+    background: string;
     primary: string;
-    secondary: string;
-    accent: string;
+    text: string;
+    header: string;
   };
 }
 
@@ -41,7 +42,7 @@ export default function CreateCategoryModal({ isOpen, onClose, onCategoryCreated
       });
 
       if (response.ok) {
-        const newCategory = await response.json();
+        await response.json();
         setFormData({
           name: '',
           name_pt: '',
@@ -56,7 +57,7 @@ export default function CreateCategoryModal({ isOpen, onClose, onCategoryCreated
         const errorData = await response.json();
         setError(errorData.error || 'Erro ao criar categoria');
       }
-    } catch (error) {
+    } catch {
       setError('Erro interno do servidor');
     } finally {
       setLoading(false);

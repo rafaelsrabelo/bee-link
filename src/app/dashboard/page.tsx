@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
-import { Plus, Store, LogOut, Settings, User, Package, Users, Eye } from 'lucide-react';
+import { Plus, Store, LogOut, Settings, User, Package, Users } from 'lucide-react';
 import Link from 'next/link';
 
 interface Store {
@@ -54,7 +54,7 @@ export default function DashboardPage() {
       }
 
       setStores(data || []);
-    } catch (error) {
+    } catch {
       toast.error('Erro ao carregar lojas');
     } finally {
       setIsLoading(false);

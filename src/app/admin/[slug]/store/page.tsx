@@ -4,7 +4,7 @@ import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
-import { ArrowLeft, Save, Upload, Instagram, MessageCircle, Music, Youtube, Settings, Store, Palette } from 'lucide-react';
+import { Save, Upload, Instagram, MessageCircle, Music, Youtube, Settings, Store, Palette } from 'lucide-react';
 import Image from 'next/image';
 import MobileImageUpload from '../../../../components/ui/mobile-image-upload';
 import ProtectedRoute from '../../../../components/auth/ProtectedRoute';
@@ -58,7 +58,7 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingBanner, setUploadingBanner] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [originalFormData, setOriginalFormData] = useState<any>(null);
+  const [originalFormData, setOriginalFormData] = useState<typeof formData | null>(null);
   const [activeTab, setActiveTab] = useState('basic');
   
   const [formData, setFormData] = useState({
@@ -142,13 +142,13 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
   const { slug } = use(params);
 
   // Função para verificar mudanças
-  const checkForChanges = (newFormData: any) => {
+  const checkForChanges = (newFormData: typeof formData) => {
     if (!originalFormData) return false;
     return JSON.stringify(newFormData) !== JSON.stringify(originalFormData);
   };
 
   // Função para atualizar formData com verificação de mudanças
-  const updateFormData = (updates: any) => {
+  const updateFormData = (updates: Partial<typeof formData>) => {
     const newFormData = { ...formData, ...updates };
     setFormData(newFormData);
     setHasUnsavedChanges(checkForChanges(newFormData));

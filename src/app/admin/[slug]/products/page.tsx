@@ -34,9 +34,10 @@ interface Store {
   slug: string;
   logo: string;
   colors: {
+    background: string;
     primary: string;
-    secondary: string;
-    accent: string;
+    text: string;
+    header: string;
   };
   user_id: string;
 }
@@ -452,7 +453,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
                 }, 100);
               }}
               className="w-full sm:w-auto text-black px-6 py-3 rounded-lg flex items-center justify-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg font-medium"
-              style={{ backgroundColor: `${store.colors.accent}CC` }}
+              style={{ backgroundColor: `${store.colors.primary}CC` }}
             >
               <Plus className="w-5 h-5" />
               <span>Adicionar Produto</span>
