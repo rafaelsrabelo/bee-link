@@ -4,13 +4,15 @@ import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
-import { Edit, Eye, EyeOff, Package, Plus, Trash2, X, Star, MousePointer, ShoppingCart } from 'lucide-react';
+import { Edit, Eye, EyeOff, Package, Plus, Trash2, X, Star, MousePointer, ShoppingCart, FolderPlus } from 'lucide-react';
 import Image from 'next/image';
 import DeleteModal from '../../../../components/ui/delete-modal';
 import LottieLoader from '../../../../components/ui/lottie-loader';
 import MobileImageUpload from '../../../../components/ui/mobile-image-upload';
 import ProtectedRoute from '../../../../components/auth/ProtectedRoute';
 import AdminHeader from '../../../../components/ui/admin-header';
+import ProductCategorySelector from '../../../../components/ui/product-category-selector';
+import CreateCategoryModal from '../../../../components/ui/create-category-modal';
 import loadingAnimation from '../../../../../public/animations/loading-dots-blue.json';
 
 interface Product {
@@ -19,6 +21,7 @@ interface Product {
   price: string;
   image: string;
   category: string;
+  category_id?: number;
   description: string;
   readyToShip?: boolean;
   available?: boolean;
@@ -77,10 +80,23 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
     price: '',
     image: '',
     category: 'bag',
+    category_id: undefined,
     description: '',
     readyToShip: false,
     available: true
   });
+  const [showCreateCategoryModal, setShowCreateCategoryModal] = useState(false);
+  const [categories, setCategories] = useState<Array<{
+    id: number;
+    name: string;
+    name_pt: string;
+    slug: string;
+    description: string;
+    icon: string;
+    color: string;
+    is_active: boolean;
+    sort_order: number;
+  }>>([]);
 
   const { user } = useAuth();
   const router = useRouter();
@@ -100,6 +116,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
   useEffect(() => {
     if (user && slug) {
       loadStoreAndProducts();
+      loadCategories();
     }
   }, [user, slug]);
 
@@ -350,6 +367,23 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
     toast.success('Todos os produtos foram removidos!');
   };
 
+  const handleCategoryCreated = () => {
+    toast.success('Categoria criada com sucesso!');
+    loadCategories(); // Recarregar categorias
+  };
+
+  const loadCategories = async () => {
+    try {
+      const response = await fetch('/api/product-categories');
+      if (response.ok) {
+        const data = await response.json();
+        setCategories(data);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar categorias:', error);
+    }
+  };
+
                 const getProductClicks = (productId: string) => {
                 if (!analytics?.top_products) return 0;
                 const product = analytics.top_products.find((p) => p.product_id === productId);
@@ -430,6 +464,14 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
             >
               <Trash2 className="w-5 h-5" />
               <span>Limpar Produtos</span>
+            </button>
+            <button
+              onClick={() => setShowCreateCategoryModal(true)}
+              type="button"
+              className="w-full sm:w-auto bg-green-500/80 hover:bg-green-500 text-white px-6 py-3 rounded-lg flex items-center justify-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg font-medium ml-auto"
+            >
+              <FolderPlus className="w-5 h-5" />
+              <span>Criar Categoria</span>
             </button>
           </div>
 
@@ -571,7 +613,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
                     
                     <div className="flex items-center justify-between">
                       <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
-                        {product.category}
+                        {typeof product.category === 'string' ? product.category : 'Categoria'}
                       </span>
                       
                       <div className="flex space-x-2">
@@ -657,15 +699,18 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Categoria</label>
-                  <select
-                    value={newProduct.category}
-                    onChange={(e) => setNewProduct({...newProduct, category: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  >
-                    <option value="bag">Bolsa</option>
-                    <option value="accessory">Acessório</option>
-                    <option value="other">Outro</option>
-                  </select>
+                  <ProductCategorySelector
+                    value={newProduct.category_id}
+                    onChange={(categoryId) => {
+                      const selectedCategory = categories?.find(cat => cat.id === categoryId);
+                      setNewProduct({
+                        ...newProduct, 
+                        category_id: categoryId,
+                        category: selectedCategory?.name_pt || ''
+                      });
+                    }}
+                    placeholder="Selecionar categoria"
+                  />
                 </div>
                 
                 <div className="md:col-span-2">
@@ -782,15 +827,18 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Categoria</label>
-                    <select
-                      value={editingProduct.category}
-                      onChange={(e) => setEditingProduct({...editingProduct, category: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    >
-                      <option value="bag">Bolsa</option>
-                      <option value="accessory">Acessório</option>
-                      <option value="other">Outro</option>
-                    </select>
+                    <ProductCategorySelector
+                      value={editingProduct.category_id}
+                      onChange={(categoryId) => {
+                        const selectedCategory = categories?.find(cat => cat.id === categoryId);
+                        setEditingProduct({
+                          ...editingProduct, 
+                          category_id: categoryId,
+                          category: selectedCategory?.name_pt || ''
+                        });
+                      }}
+                      placeholder="Selecionar categoria"
+                    />
                   </div>
                   
                   <div className="md:col-span-2">
@@ -858,6 +906,14 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
               : 'Tem certeza que deseja deletar o produto'
             }
             itemName={deleteModal.productName}
+          />
+
+          {/* Modal de Criar Categoria */}
+          <CreateCategoryModal
+            isOpen={showCreateCategoryModal}
+            onClose={() => setShowCreateCategoryModal(false)}
+            onCategoryCreated={handleCategoryCreated}
+            colors={store?.colors}
           />
         </div>
       </div>

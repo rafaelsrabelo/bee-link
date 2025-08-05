@@ -22,10 +22,13 @@ export async function GET(
       return NextResponse.json({ error: 'Loja não encontrada' }, { status: 404 });
     }
 
-    // Buscar produtos da loja
+    // Buscar produtos da loja com dados da categoria
     const { data: products, error: productsError } = await supabase
       .from('products')
-      .select('*')
+      .select(`
+        *,
+        category:product_categories(id, name, name_pt, slug, color)
+      `)
       .eq('store_id', store.id)
       .order('created_at', { ascending: false });
 
@@ -33,7 +36,13 @@ export async function GET(
       return NextResponse.json({ error: 'Erro ao buscar produtos' }, { status: 500 });
     }
 
-    return NextResponse.json(products || []);
+    // Processar produtos para garantir compatibilidade
+    const processedProducts = (products || []).map((product: any) => ({
+      ...product,
+      category: product.category?.name_pt || product.category || 'Produto'
+    }));
+
+    return NextResponse.json(processedProducts);
   } catch (error) {
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }

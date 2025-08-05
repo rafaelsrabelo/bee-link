@@ -37,6 +37,14 @@ interface Product {
   price: string;
   image: string;
   category: string;
+  category_id?: number;
+  category_data?: {
+    id: number;
+    name: string;
+    name_pt: string;
+    slug: string;
+    color: string;
+  };
   description: string;
   readyToShip?: boolean;
   available?: boolean;
@@ -150,10 +158,10 @@ export default function StorePageClient({ store }: StorePageClientProps) {
         </div>
 
         {/* Catalog Header - Layout Condicional */}
-        <div className="px-4 mb-6 pt-20">
+        <div className="mb-6 pt-20">
           {store.layout_type === 'banner' ? (
-            /* Layout Banner - Mostra banner de imagem */
-            <div className="w-full h-32 rounded-lg overflow-hidden mb-4">
+            /* Layout Banner - Mostra banner de imagem (largura total) */
+            <div className="w-full h-32 overflow-hidden mb-4">
               {store.banner_image ? (
                 <Image
                   src={store.banner_image}
@@ -173,10 +181,12 @@ export default function StorePageClient({ store }: StorePageClientProps) {
             </div>
           ) : (
             /* Layout Default - Mostra título "CATÁLOGO" */
-            <div className="bg-white/90 backdrop-blur-sm rounded-full px-6 py-4 flex items-center justify-between">
-              <span className="font-medium text-lg" style={{ color: store.colors.primary }}>CATÁLOGO</span>
-              <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center" style={{ background: `linear-gradient(to bottom right, ${store.colors.secondary}, ${store.colors.accent})` }}>
-                <span className="text-white font-bold text-lg">{store.store_name.charAt(0)}</span>
+            <div className="px-4">
+              <div className="bg-white/90 backdrop-blur-sm rounded-full px-6 py-4 flex items-center justify-between">
+                <span className="font-medium text-lg" style={{ color: store.colors.primary }}>CATÁLOGO</span>
+                <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center" style={{ background: `linear-gradient(to bottom right, ${store.colors.secondary}, ${store.colors.accent})` }}>
+                  <span className="text-white font-bold text-lg">{store.store_name.charAt(0)}</span>
+                </div>
               </div>
             </div>
           )}
@@ -203,7 +213,157 @@ export default function StorePageClient({ store }: StorePageClientProps) {
                 </div>
               </div>
             </div>
+          ) : store.show_products_by_category ? (
+            /* Produtos organizados por categoria */
+            <div className="space-y-6">
+              {(() => {
+                const availableProducts = products.filter((p: Product) => p.available !== false);
+                // Usar category_data.name_pt se disponível, senão usar category
+                const categories = [...new Set(availableProducts.map(p => p.category_data?.name_pt || p.category))];
+
+                return categories.map(category => {
+                  const categoryProducts = availableProducts.filter(p => 
+                    (p.category_data?.name_pt || p.category) === category
+                  );
+
+                  return (
+                    <div key={`category-${category}`} className="space-y-3">
+                      {/* Título da categoria */}
+                      <div className="flex items-center space-x-2">
+                        <div className="w-1 h-6 rounded-full" style={{ backgroundColor: store.colors.accent }}></div>
+                        <h3 className="text-white font-semibold text-lg">{category}</h3>
+                      </div>
+
+                      {/* Grid de produtos da categoria */}
+                      <div className="grid grid-cols-2 gap-3">
+                        {categoryProducts.map((product: Product, index: number) => {
+                          const quantity = getCartItemQuantity(product.name);
+
+                          return (
+                            <div
+                              key={`product-${product.name}-${index}`}
+                              className="relative rounded-lg overflow-hidden bg-white/10 backdrop-blur-sm"
+                            >
+                              {/* Product Image - Clickable Link */}
+                              <a 
+                                href={`/${store.slug}/${product.id}`} 
+                                className="block"
+                                onClick={() => {
+                                  // Tracking de clique na imagem do produto
+                                  trackProductClick(store.slug, product);
+                                }}
+                              >
+                                <div className="aspect-square relative cursor-pointer group">
+                                  <Image
+                                    src={product.image}
+                                    alt={product.name}
+                                    fill
+                                    className="object-cover transition-transform group-hover:scale-105"
+                                  />
+                                  <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-all" />
+                                  
+                                  {/* Pronta Entrega Tag */}
+                                  {product.readyToShip && (
+                                    <div className="absolute top-2 left-2 z-10">
+                                      <div 
+                                        className="bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-medium shadow-sm border"
+                                        style={{ 
+                                          color: store.colors.primary,
+                                          borderColor: store.colors.secondary 
+                                        }}
+                                      >
+                                        ✓ Pronta entrega
+                                      </div>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Hover overlay with "Ver detalhes" text */}
+                                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className="bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium" style={{ color: store.colors.primary }}>
+                                      Ver detalhes
+                                    </div>
+                                  </div>
+                                </div>
+                              </a>
+                              
+                              {/* Product Info */}
+                              <div className="p-3 pb-4">
+                                <a 
+                                  href={`/${store.slug}/${product.id}`} 
+                                  className="block"
+                                  onClick={() => {
+                                    // Tracking de clique em produto
+                                    trackProductClick(store.slug, product);
+                                  }}
+                                >
+                                  <h3 className="text-white font-medium text-sm mb-1 truncate hover:text-white/80 transition-colors">
+                                    {product.name}
+                                  </h3>
+                                  <p className="text-white/90 font-bold text-lg mb-3">
+                                    {product.price}
+                                  </p>
+                                </a>
+
+                                {/* Cart Controls */}
+                                {isLoading ? (
+                                  <CartControlsCompactLoading />
+                                ) : (
+                                  <div className="flex items-center justify-center gap-2">
+                                    {quantity > 0 && (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          removeFromCart(product.name);
+                                        }}
+                                        className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-white/30 transition-all border border-white/30"
+                                      >
+                                        <Minus className="w-4 h-4 text-white" />
+                                      </button>
+                                    )}
+                                    
+                                    {quantity > 0 && (
+                                      <span className="text-white font-medium text-sm min-w-[20px] text-center">
+                                        {quantity}
+                                      </span>
+                                    )}
+                                    
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        addToCart(product);
+                                        
+                                        // Tracking de adição ao carrinho
+                                        trackAddToCart(store.slug, product);
+                                        
+                                        // Tracking de clique no carrinho
+                                        trackEvent({
+                                          event_type: 'add_to_cart',
+                                          store_slug: store.slug,
+                                          product_id: product.id,
+                                          product_name: product.name,
+                                          product_price: parseFloat(product.price.replace('R$', '').replace(',', '.').trim())
+                                        });
+                                      }}
+                                      className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-white/30 transition-all border border-white/30"
+                                    >
+                                      <Plus className="w-4 h-4 text-white" />
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
           ) : (
+            /* Produtos em grid simples */
             <div className="grid grid-cols-2 gap-3">
               {products.filter((p: Product) => p.available !== false).map((product: Product, index: number) => {
                 const quantity = getCartItemQuantity(product.name);
@@ -485,7 +645,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
             }}>
               <ShoppingCart className="w-4 h-4 text-white" />
             </div>
-            COMPRE AQUI
+            Ver Catálogo
           </button>
         </div>
 

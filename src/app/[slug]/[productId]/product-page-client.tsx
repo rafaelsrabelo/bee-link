@@ -175,7 +175,7 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
               className="inline-block px-3 py-1 rounded-full text-xs font-medium text-white"
               style={{ backgroundColor: store.colors.secondary }}
             >
-              {product.category === 'bag' ? 'Bolsa' : 'Produto'}
+                              {typeof product.category === 'string' ? (product.category === 'bag' ? 'Bolsa' : 'Produto') : 'Produto'}
             </span>
           </div>
 
