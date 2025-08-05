@@ -9,7 +9,6 @@ interface LayoutSelectorProps {
   onChange: (layoutType: LayoutType) => void;
   showCategory?: boolean;
   onShowCategoryChange?: (show: boolean) => void;
-  bannerImage?: string;
   className?: string;
 }
 
@@ -18,7 +17,6 @@ export default function LayoutSelector({
   onChange, 
   showCategory = false,
   onShowCategoryChange,
-  bannerImage = '',
   className = "" 
 }: LayoutSelectorProps) {
   const [layouts, setLayouts] = useState<StoreLayout[]>([]);
@@ -71,7 +69,7 @@ export default function LayoutSelector({
               onClick={() => onChange(layout.slug as LayoutType)}
               className={`relative p-4 border-2 rounded-lg transition-all duration-200 hover:shadow-md ${
                 value === layout.slug
-                  ? 'border-purple-500 bg-purple-50'
+                  ? 'border-gray-500 bg-gray-50'
                   : 'border-gray-200 hover:border-gray-300'
               }`}
             >
@@ -101,7 +99,7 @@ export default function LayoutSelector({
               {/* Indicador de seleção */}
               {value === layout.slug && (
                 <div className="absolute top-2 right-2">
-                  <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
+                  <div className="w-6 h-6 bg-gray-500 rounded-full flex items-center justify-center">
                     <Check className="w-4 h-4 text-white" />
                   </div>
                 </div>
@@ -123,7 +121,7 @@ export default function LayoutSelector({
               id="show-category"
               checked={showCategory}
               onChange={(e) => onShowCategoryChange(e.target.checked)}
-              className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+              className="w-4 h-4 text-gray-600 border-gray-300 rounded focus:ring-gray-500"
             />
             <label htmlFor="show-category" className="text-sm text-gray-700">
               Mostrar produtos organizados por categoria
@@ -132,37 +130,6 @@ export default function LayoutSelector({
           <p className="text-xs text-gray-500">
             Quando ativado, os produtos serão agrupados por categoria com títulos
           </p>
-        </div>
-      )}
-
-      {/* Upload de Banner (apenas se layout for banner) */}
-      {value === 'banner' && (
-        <div className="space-y-3">
-          <label className="block text-sm font-medium text-gray-700">
-            Banner da Loja
-          </label>
-          <div className="space-y-3">
-            {/* Preview do Banner */}
-            <div className="w-full h-24 rounded-lg overflow-hidden bg-gray-100 border-2 border-dashed border-gray-300">
-              {bannerImage ? (
-                <img
-                  src={bannerImage}
-                  alt="Banner Preview"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <div className="text-center">
-                    <Image className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                    <p className="text-sm text-gray-500">Banner não definido</p>
-                  </div>
-                </div>
-              )}
-            </div>
-            <p className="text-xs text-gray-500">
-              O banner será exibido no topo da loja. Recomendado: 1200x400px
-            </p>
-          </div>
         </div>
       )}
     </div>

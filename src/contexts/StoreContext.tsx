@@ -9,9 +9,10 @@ export interface Store {
   slug: string;
   logo: string;
   colors: {
+    background: string;
     primary: string;
-    secondary: string;
-    accent: string;
+    text: string;
+    header: string;
   };
   user_id: string;
   category_id?: number;

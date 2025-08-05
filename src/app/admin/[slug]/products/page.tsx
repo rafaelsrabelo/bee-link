@@ -451,7 +451,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
                   }
                 }, 100);
               }}
-              className="w-full sm:w-auto text-white px-6 py-3 rounded-lg flex items-center justify-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg font-medium"
+              className="w-full sm:w-auto text-black px-6 py-3 rounded-lg flex items-center justify-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg font-medium"
               style={{ backgroundColor: `${store.colors.accent}CC` }}
             >
               <Plus className="w-5 h-5" />
@@ -752,7 +752,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
                   type="button"
                   onClick={handleAddProduct}
                   disabled={!isFormValid}
-                  className="w-full sm:w-auto px-6 py-3 text-white rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-md hover:shadow-lg order-1 sm:order-2"
+                  className="w-full sm:w-auto px-6 py-3 text-black rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-md hover:shadow-lg order-1 sm:order-2"
                   style={{ backgroundColor: store.colors.primary }}
                 >
                   {isFormValid ? 'Adicionar Produto' : 'Preencha todos os campos'}

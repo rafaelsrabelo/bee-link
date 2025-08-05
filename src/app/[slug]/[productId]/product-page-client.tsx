@@ -14,9 +14,10 @@ interface StoreData {
   slug: string;
   logo: string;
   colors: {
+    background: string;
     primary: string;
-    secondary: string;
-    accent: string;
+    text: string;
+    header: string;
   };
   social_networks: {
     instagram: string;
@@ -58,17 +59,7 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
 
 
   return (
-    <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: store.colors.primary }}>
-      {/* Background Image */}
-      <div className="absolute inset-0">
-        <Image
-          src={store.logo.replace('/logo.png', '/background.png').replace('/logo.jpeg', '/background.png')}
-          alt="Background"
-          fill
-          className="object-cover"
-        />
-        <div className="absolute inset-0" style={{ backgroundColor: `${store.colors.primary}80` }} />
-      </div>
+    <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: store.colors.background }}>
 
       {/* Decorative Elements */}
       <div className="absolute inset-0 overflow-hidden">
@@ -85,7 +76,7 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
       </div>
 
       {/* Header */}
-      <div className="flex justify-between items-center px-4 py-4 fixed top-0 left-0 right-0 z-50 backdrop-blur-sm border-b border-white/10" style={{ backgroundColor: `${store.colors.primary}95` }}>
+      <div className="flex justify-between items-center px-4 py-4 fixed top-0 left-0 right-0 z-50 backdrop-blur-sm border-b border-white/10" style={{ backgroundColor: `${store.colors.header}95` }}>
         <Link
           href={`/${store.slug}?showCatalog=true`}
           className="text-white hover:bg-white/10 p-2 rounded-full transition-all"
@@ -93,8 +84,8 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
           <ArrowLeft className="w-6 h-6" />
         </Link>
         <div className="text-center">
-          <div className="text-white font-medium text-sm truncate max-w-48">{product.name}</div>
-          <div className="text-white/70 text-xs">{store.store_name}</div>
+          <div className="font-medium text-sm truncate max-w-48" style={{ color: store.colors.text }}>{product.name}</div>
+          <div className="text-xs" style={{ color: store.colors.text }}>{store.store_name}</div>
         </div>
         <CartHeader 
           storeSlug={store.slug}

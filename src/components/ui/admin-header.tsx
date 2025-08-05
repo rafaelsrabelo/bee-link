@@ -12,9 +12,10 @@ interface Store {
   slug: string;
   logo: string;
   colors: {
+    background: string;
     primary: string;
-    secondary: string;
-    accent: string;
+    text: string;
+    header: string;
   };
   user_id: string;
 }
@@ -63,7 +64,7 @@ export default function AdminHeader({ store: propStore, currentPage, title, icon
   // Se a loja ainda não foi carregada, mostrar loading
   if (!store) {
     return (
-      <div className="bg-gradient-to-r from-purple-600 to-violet-600 shadow-lg">
+      <div className="bg-gradient-to-r from-gray-700 to-gray-800 shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -81,8 +82,8 @@ export default function AdminHeader({ store: propStore, currentPage, title, icon
   }
 
   return (
-    <div className="bg-gradient-to-r from-purple-600 to-violet-600 shadow-lg" style={{
-      background: `linear-gradient(to right, ${store.colors.primary}, ${store.colors.secondary})`
+    <div className="shadow-lg" style={{
+      backgroundColor: store.colors.primary
     }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         {/* Desktop Header */}

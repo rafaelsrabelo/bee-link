@@ -18,9 +18,10 @@ interface StoreData {
   banner_image?: string;
   show_products_by_category?: boolean;
   colors: {
+    background: string;
     primary: string;
-    secondary: string;
-    accent: string;
+    text: string;
+    header: string;
   };
   social_networks: {
     instagram: string;
@@ -138,9 +139,9 @@ export default function StorePageClient({ store }: StorePageClientProps) {
 
   if (showCatalog) {
     return (
-      <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: store.colors.primary }}>
+      <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: store.colors.background }}>
         {/* Header */}
-        <div className="flex justify-between items-center px-4 py-4 fixed top-0 left-0 right-0 z-50 backdrop-blur-sm border-b border-white/10" style={{ backgroundColor: `${store.colors.primary}95` }}>
+        <div className="flex justify-between items-center px-4 py-4 fixed top-0 left-0 right-0 z-50 backdrop-blur-sm border-b border-white/10" style={{ backgroundColor: `${store.colors.header}` }}>
           <button
             type="button"
             className="text-white hover:bg-white/10 p-2 rounded-full"
@@ -184,7 +185,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
             <div className="px-4">
               <div className="bg-white/90 backdrop-blur-sm rounded-full px-6 py-4 flex items-center justify-between">
                 <span className="font-medium text-lg" style={{ color: store.colors.primary }}>CATÁLOGO</span>
-                <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center" style={{ background: `linear-gradient(to bottom right, ${store.colors.secondary}, ${store.colors.accent})` }}>
+                <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center" style={{ backgroundColor: store.colors.primary }}>
                   <span className="text-white font-bold text-lg">{store.store_name.charAt(0)}</span>
                 </div>
               </div>
@@ -196,7 +197,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
         <div className="px-4 pb-20 pt-4">
           {loading ? (
             <div className="text-center py-8">
-              <div className="text-white">Carregando produtos...</div>
+              <div style={{ color: store.colors.text }}>Carregando produtos...</div>
             </div>
           ) : products.filter((p: Product) => p.available !== false).length === 0 ? (
             <div className="text-center py-12">
@@ -204,11 +205,11 @@ export default function StorePageClient({ store }: StorePageClientProps) {
                 <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Package className="w-10 h-10 text-white/70" />
                 </div>
-                <h3 className="text-white text-lg font-medium mb-2">Catálogo Vazio</h3>
-                <p className="text-white/70 text-sm mb-4">
+                <h3 className="text-lg font-medium mb-2" style={{ color: store.colors.text }}>Catálogo Vazio</h3>
+                <p className="text-sm mb-4" style={{ color: store.colors.text }}>
                   Nenhum produto disponível no momento.
                 </p>
-                <div className="text-white/50 text-xs">
+                <div className="text-xs" style={{ color: store.colors.text }}>
                   Em breve teremos novidades para você! ✨
                 </div>
               </div>
@@ -230,8 +231,8 @@ export default function StorePageClient({ store }: StorePageClientProps) {
                     <div key={`category-${category}`} className="space-y-3">
                       {/* Título da categoria */}
                       <div className="flex items-center space-x-2">
-                        <div className="w-1 h-6 rounded-full" style={{ backgroundColor: store.colors.accent }}></div>
-                        <h3 className="text-white font-semibold text-lg">{category}</h3>
+                        <div className="w-1 h-6 rounded-full" style={{ backgroundColor: store.colors.primary }}></div>
+                        <h3 className="font-semibold text-lg" style={{ color: store.colors.text }}>{category}</h3>
                       </div>
 
                       {/* Grid de produtos da categoria */}
@@ -242,7 +243,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
                           return (
                             <div
                               key={`product-${product.name}-${index}`}
-                              className="relative rounded-lg overflow-hidden bg-white/10 backdrop-blur-sm"
+                              className="relative rounded-lg overflow-hidden bg-white shadow-sm"
                             >
                               {/* Product Image - Clickable Link */}
                               <a 
@@ -269,7 +270,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
                                         className="bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-medium shadow-sm border"
                                         style={{ 
                                           color: store.colors.primary,
-                                          borderColor: store.colors.secondary 
+                                          borderColor: store.colors.primary 
                                         }}
                                       >
                                         ✓ Pronta entrega
@@ -296,11 +297,11 @@ export default function StorePageClient({ store }: StorePageClientProps) {
                                     trackProductClick(store.slug, product);
                                   }}
                                 >
-                                  <h3 className="text-white font-medium text-sm mb-1 truncate hover:text-white/80 transition-colors">
+                                  <h3 className="font-medium text-sm mb-1 truncate transition-colors" style={{ color: store.colors.text }}>
                                     {product.name}
                                   </h3>
-                                  <p className="text-white/90 font-bold text-lg mb-3">
-                                    {product.price}
+                                  <p className="font-bold text-lg mb-3" style={{ color: store.colors.text }}>
+                                    R$ {product.price}
                                   </p>
                                 </a>
 
@@ -316,14 +317,15 @@ export default function StorePageClient({ store }: StorePageClientProps) {
                                           e.stopPropagation();
                                           removeFromCart(product.name);
                                         }}
-                                        className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-white/30 transition-all border border-white/30"
+                                        className="w-8 h-8 rounded-full flex items-center justify-center shadow-sm hover:opacity-80 transition-all"
+                                        style={{ backgroundColor: store.colors.primary }}
                                       >
                                         <Minus className="w-4 h-4 text-white" />
                                       </button>
                                     )}
                                     
                                     {quantity > 0 && (
-                                      <span className="text-white font-medium text-sm min-w-[20px] text-center">
+                                      <span className="font-medium text-sm min-w-[20px] text-center" style={{ color: store.colors.text }}>
                                         {quantity}
                                       </span>
                                     )}
@@ -346,7 +348,8 @@ export default function StorePageClient({ store }: StorePageClientProps) {
                                           product_price: parseFloat(product.price.replace('R$', '').replace(',', '.').trim())
                                         });
                                       }}
-                                      className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-white/30 transition-all border border-white/30"
+                                      className="w-8 h-8 rounded-full flex items-center justify-center shadow-sm hover:opacity-80 transition-all"
+                                      style={{ backgroundColor: store.colors.primary }}
                                     >
                                       <Plus className="w-4 h-4 text-white" />
                                     </button>
@@ -371,7 +374,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
                 return (
                   <div
                     key={`product-${product.name}-${index}`}
-                    className="relative rounded-lg overflow-hidden bg-white/10 backdrop-blur-sm"
+                    className="relative rounded-lg overflow-hidden bg-white shadow-sm"
                   >
                     {/* Product Image - Clickable Link */}
                     <a 
@@ -398,7 +401,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
                               className="bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-medium shadow-sm border"
                               style={{ 
                                 color: store.colors.primary,
-                                borderColor: store.colors.secondary 
+                                borderColor: store.colors.primary 
                               }}
                             >
                               ✓ Pronta entrega
@@ -425,11 +428,11 @@ export default function StorePageClient({ store }: StorePageClientProps) {
                           trackProductClick(store.slug, product);
                         }}
                       >
-                        <h3 className="text-white font-medium text-sm mb-1 truncate hover:text-white/80 transition-colors">
+                        <h3 className="font-medium text-sm mb-1 truncate transition-colors" style={{ color: store.colors.text }}>
                           {product.name}
                         </h3>
-                        <p className="text-white/90 font-bold text-lg mb-3">
-                          {product.price}
+                        <p className="font-bold text-lg mb-3" style={{ color: store.colors.text }}>
+                          R$ {product.price}
                         </p>
                       </a>
 
@@ -445,14 +448,15 @@ export default function StorePageClient({ store }: StorePageClientProps) {
                                 e.stopPropagation();
                                 removeFromCart(product.name);
                               }}
-                              className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-white/30 transition-all border border-white/30"
+                              className="w-8 h-8 rounded-full flex items-center justify-center shadow-sm hover:opacity-80 transition-all"
+                              style={{ backgroundColor: store.colors.primary }}
                             >
                               <Minus className="w-4 h-4 text-white" />
                             </button>
                           )}
                           
                           {quantity > 0 && (
-                            <span className="text-white font-medium text-sm min-w-[20px] text-center">
+                            <span className="font-medium text-sm min-w-[20px] text-center" style={{ color: store.colors.text }}>
                               {quantity}
                             </span>
                           )}
@@ -475,7 +479,8 @@ export default function StorePageClient({ store }: StorePageClientProps) {
                                 product_price: parseFloat(product.price.replace('R$', '').replace(',', '.').trim())
                               });
                             }}
-                            className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-white/30 transition-all border border-white/30"
+                            className="w-8 h-8 rounded-full flex items-center justify-center shadow-sm hover:opacity-80 transition-all"
+                            style={{ backgroundColor: store.colors.primary }}
                           >
                             <Plus className="w-4 h-4 text-white" />
                           </button>
@@ -494,7 +499,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
 
   return (
     <div className="min-h-screen relative overflow-hidden" style={{ 
-      background: `linear-gradient(135deg, ${store.colors.primary} 0%, ${store.colors.primary} 30%, ${store.colors.secondary} 60%, ${store.colors.accent} 100%)`
+      backgroundColor: store.colors.background
     }}>
       {/* Decorative Elements */}
       <div className="absolute inset-0 overflow-hidden">
@@ -523,7 +528,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
       <div className="flex flex-col items-center px-6 relative z-10">
         {/* Logo */}
         <div className="mb-8">
-          <div className="w-48 h-48 rounded-full flex items-center justify-center relative overflow-hidden" style={{ backgroundColor: store.colors.secondary }}>
+          <div className="w-48 h-48 rounded-full flex items-center justify-center relative overflow-hidden" style={{ backgroundColor: store.colors.primary }}>
             <Image
               src={store.logo}
               alt={`${store.store_name} Logo`}
@@ -536,8 +541,8 @@ export default function StorePageClient({ store }: StorePageClientProps) {
 
         {/* Brand Name and Tagline */}
         <div className="text-center mb-8">
-          <h1 className="text-white text-4xl font-light mb-2">{store.store_name}</h1>
-          <p className="text-white/80 text-sm tracking-wide">{store.description}</p>
+          <h1 className="text-4xl font-light mb-2" style={{ color: store.colors.text }}>{store.store_name}</h1>
+          <p className="text-sm tracking-wide" style={{ color: store.colors.text }}>{store.description}</p>
         </div>
 
         {/* Social Icons */}
