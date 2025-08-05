@@ -37,9 +37,23 @@ export async function GET(
     }
 
     // Processar produtos para garantir compatibilidade
-    const processedProducts = (products || []).map((product: any) => ({
+    const processedProducts = (products || []).map((product: { 
+      id: string; 
+      name: string; 
+      description?: string; 
+      price: number; 
+      image?: string; 
+      category?: { name_pt?: string; name?: string } | string; 
+      category_id?: string;
+      store_id: string;
+      available?: boolean;
+      created_at: string;
+      [key: string]: unknown;
+    }) => ({
       ...product,
-      category: product.category?.name_pt || product.category || 'Produto'
+      category: typeof product.category === 'object' && product.category?.name_pt 
+        ? product.category.name_pt 
+        : (typeof product.category === 'string' ? product.category : 'Produto')
     }));
 
     return NextResponse.json(processedProducts);

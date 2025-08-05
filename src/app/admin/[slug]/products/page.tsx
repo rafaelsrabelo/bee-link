@@ -710,6 +710,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
                       });
                     }}
                     placeholder="Selecionar categoria"
+                    colors={store?.colors}
                   />
                 </div>
                 
@@ -838,6 +839,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
                         });
                       }}
                       placeholder="Selecionar categoria"
+                      colors={store?.colors}
                     />
                   </div>
                   

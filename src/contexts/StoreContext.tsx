@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState } from 'react';
 import { supabase } from '../lib/supabase';
 
-interface Store {
+export interface Store {
   id: string;
   name: string;
   slug: string;
