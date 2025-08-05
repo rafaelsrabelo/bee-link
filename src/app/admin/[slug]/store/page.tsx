@@ -10,6 +10,7 @@ import MobileImageUpload from '../../../../components/ui/mobile-image-upload';
 import ProtectedRoute from '../../../../components/auth/ProtectedRoute';
 import LottieLoader from '../../../../components/ui/lottie-loader';
 import AdminHeader from '../../../../components/ui/admin-header';
+import CategorySelector from '../../../../components/ui/category-selector';
 import loadingAnimation from '../../../../../public/animations/loading-dots-blue.json';
 
 interface Store {
@@ -19,6 +20,15 @@ interface Store {
   slug: string;
   description: string;
   logo: string;
+  category_id?: number;
+  category?: {
+    id: number;
+    name: string;
+    slug: string;
+    description: string;
+    icon: string;
+    color: string;
+  };
   colors: {
     primary: string;
     secondary: string;
@@ -45,6 +55,7 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
     slug: '',
     description: '',
     logo: '',
+    category_id: undefined as number | undefined,
     colors: {
       primary: '#8B5CF6',
       secondary: '#7C3AED',
@@ -133,6 +144,7 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
         slug: storeData.slug || '',
         description: storeData.description || '',
         logo: storeData.logo || '',
+        category_id: storeData.category_id || undefined,
         colors: storeData.colors || {
           primary: '#8B5CF6',
           secondary: '#7C3AED',
@@ -300,6 +312,21 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       placeholder="Descreva sua loja..."
                     />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Categoria da Loja
+                    </label>
+                    <CategorySelector
+                      value={formData.category_id}
+                      onChange={(categoryId) => setFormData(prev => ({ ...prev, category_id: categoryId }))}
+                      placeholder="Selecione a categoria da sua loja"
+                      className="w-full"
+                    />
+                    <p className="text-sm text-gray-500 mt-1">
+                      Escolha a categoria que melhor representa sua loja.
+                    </p>
                   </div>
                 </div>
               </div>

@@ -7,6 +7,7 @@ import { toast } from 'react-hot-toast';
 import { Store, Upload, Loader2, ArrowLeft, Sparkles, MessageCircle, Instagram, Music, Youtube } from 'lucide-react';
 import Link from 'next/link';
 import ProtectedRoute from '../../components/auth/ProtectedRoute';
+import CategorySelector from '../../components/ui/category-selector';
 
 interface StoreForm {
   store_name: string;
@@ -18,6 +19,7 @@ interface StoreForm {
     accent: string;
   };
   description: string;
+  category_id?: number;
   social_networks: {
     instagram: string;
     whatsapp: string;
@@ -80,6 +82,7 @@ export default function CreateStorePage() {
     logo: '',
     colors: defaultColors,
     description: '',
+    category_id: undefined,
     social_networks: {
       instagram: '',
       whatsapp: '',
@@ -192,6 +195,7 @@ export default function CreateStorePage() {
           logo: '',
           colors: defaultColors,
           description: '',
+          category_id: undefined,
           social_networks: {
             instagram: '',
             whatsapp: '',
@@ -322,6 +326,22 @@ export default function CreateStorePage() {
                         className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
                         placeholder="Conte um pouco sobre sua loja..."
                       />
+                    </div>
+
+                    {/* Categoria */}
+                    <div>
+                      <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
+                        Categoria da Loja
+                      </label>
+                      <CategorySelector
+                        value={form.category_id}
+                        onChange={(categoryId) => setForm(prev => ({ ...prev, category_id: categoryId }))}
+                        placeholder="Selecione a categoria da sua loja"
+                        className="w-full"
+                      />
+                      <p className="text-sm text-gray-500 mt-1">
+                        Escolha a categoria que melhor representa sua loja.
+                      </p>
                     </div>
                   </div>
                 </div>

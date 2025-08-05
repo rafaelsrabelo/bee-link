@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { store_name, slug, logo, colors, description } = body;
+    const { store_name, slug, logo, colors, description, category_id } = body;
 
 
     // Validações
@@ -49,6 +49,7 @@ export async function POST(request: NextRequest) {
                    accent: '#A855F7'
                  },
                  description: description || '',
+                 category_id: category_id || null,
                  user_id: user.id
                })
                .select()

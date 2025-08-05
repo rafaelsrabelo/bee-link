@@ -14,6 +14,15 @@ interface Store {
     accent: string;
   };
   user_id: string;
+  category_id?: number;
+  category?: {
+    id: number;
+    name: string;
+    slug: string;
+    description: string;
+    icon: string;
+    color: string;
+  };
 }
 
 interface StoreContextType {

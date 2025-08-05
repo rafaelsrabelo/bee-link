@@ -12,7 +12,10 @@ export async function GET(
     
     const { data: store, error } = await supabase
       .from('stores')
-      .select('*')
+      .select(`
+        *,
+        category:store_categories(id, name, slug, description, icon, color)
+      `)
       .eq('slug', slug)
       .single();
 
@@ -42,7 +45,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { name, description, logo, colors, social_networks } = body;
+    const { name, description, logo, colors, social_networks, category_id } = body;
 
     // Validações
     if (!name?.trim()) {
@@ -75,6 +78,7 @@ export async function PUT(
         name: name.trim(),
         description: description?.trim() || '',
         logo: logo || '',
+        category_id: category_id || null,
         colors: colors || {
           primary: '#8B5CF6',
           secondary: '#7C3AED',
