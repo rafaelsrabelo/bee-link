@@ -72,7 +72,6 @@ export default function AdminHeader({ store: propStore, currentPage, title, icon
               </div>
               <div>
                 <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white">{title}</h1>
-                <p className="text-purple-100 text-xs sm:text-sm lg:text-base">Carregando...</p>
               </div>
             </div>
           </div>
@@ -131,6 +130,7 @@ export default function AdminHeader({ store: propStore, currentPage, title, icon
               >
                 Minha Loja
               </button>
+
             </div>
 
             {/* User Menu Desktop */}

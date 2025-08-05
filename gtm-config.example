@@ -1,0 +1,109 @@
+# ========================================
+# CONFIGURAÇÃO GOOGLE TAG MANAGER
+# ========================================
+
+# ID do Container GTM
+NEXT_PUBLIC_GTM_ID=GTM-KKBJV4JP
+
+# ========================================
+# COMO CONFIGURAR O GTM:
+# ========================================
+
+# 1. Acesse: https://tagmanager.google.com/
+# 2. Crie um novo container ou use um existente
+# 3. Copie o ID do container (formato: GTM-XXXXXXX)
+# 4. Adicione ao .env.local
+
+# ========================================
+# TAGS RECOMENDADAS PARA CONFIGURAR:
+# ========================================
+
+# 📊 Google Analytics 4
+# - Tipo: Google Analytics: GA4 Configuration
+# - Trigger: All Pages
+# - ID de medição: G-XXXXXXXXXX
+
+# 🛒 Enhanced E-commerce
+# - Tipo: Google Analytics: GA4 Event
+# - Event Name: purchase
+# - Trigger: Custom Event - purchase
+
+# 📧 Facebook Pixel
+# - Tipo: Facebook Pixel
+# - Trigger: All Pages + Custom Events
+
+# 🎯 Google Ads
+# - Tipo: Google Ads: Global site tag
+# - Trigger: All Pages + Conversion Events
+
+# 📱 LinkedIn Insight Tag
+# - Tipo: LinkedIn Insight Tag
+# - Trigger: All Pages
+
+# ========================================
+# TRIGGERS RECOMENDADOS:
+# ========================================
+
+# All Pages
+# - Event: Page View
+# - Fires on: All Pages
+
+# Product Click
+# - Event: product_click
+# - Fires on: Custom Event
+
+# Add to Cart
+# - Event: add_to_cart
+# - Fires on: Custom Event
+
+# Begin Checkout
+# - Event: begin_checkout
+# - Fires on: Custom Event
+
+# Purchase
+# - Event: purchase
+# - Fires on: Custom Event
+
+# Form Submit
+# - Event: form_submit
+# - Fires on: Custom Event
+
+# ========================================
+# VARIÁVEIS RECOMENDADAS:
+# ========================================
+
+# Data Layer Variable
+# - Variable Type: Data Layer Variable
+# - Data Layer Variable Name: ecommerce.items
+
+# Custom JavaScript
+# - Variable Type: Custom JavaScript
+# - Code: return {{Page URL}}.includes('/admin') ? 'admin' : 'customer';
+
+# ========================================
+# PRÓXIMOS PASSOS:
+# ========================================
+
+# 1. Copie este arquivo para .env.local
+# 2. Configure o GTM no console
+# 3. Adicione as tags recomendadas
+# 4. Teste com o componente de demonstração
+# 5. Configure conversões no Google Ads
+
+# ========================================
+# TESTANDO:
+# ========================================
+
+# 1. Use o modo Preview do GTM
+# 2. Navegue pelo site
+# 3. Verifique se os eventos estão sendo disparados
+# 4. Configure as tags conforme necessário
+
+# ========================================
+# RECURSOS ÚTEIS:
+# ========================================
+
+# - GTM Preview: https://tagmanager.google.com/
+# - GA4 DebugView: https://analytics.google.com/
+# - Facebook Events Manager: https://business.facebook.com/
+# - Google Ads: https://ads.google.com/ 

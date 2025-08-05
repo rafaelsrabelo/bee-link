@@ -4,6 +4,7 @@ import { ShoppingCart } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCartStore } from "../stores/cartStore";
 import CartLoading from "./cart-loading";
+import { trackEvent } from "../../lib/simple-analytics";
 
 interface CartHeaderProps {
   storeSlug: string;
@@ -21,6 +22,15 @@ export default function CartHeader({ storeSlug, className = "" }: CartHeaderProp
 
   const handleCartClick = () => {
     if (cart.length > 0) {
+      // Tracking de clique no carrinho do header
+      trackEvent({
+        event_type: 'header_cart_click',
+        store_slug: storeSlug,
+        product_id: null,
+        product_name: null,
+        product_price: null
+      });
+      
       router.push(`/${storeSlug}/cart`);
     }
   };

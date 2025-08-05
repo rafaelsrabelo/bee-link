@@ -4,7 +4,7 @@ import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
-import { Edit, Eye, EyeOff, Package, Plus, Trash2, X } from 'lucide-react';
+import { Edit, Eye, EyeOff, Package, Plus, Trash2, X, Star, MousePointer, ShoppingCart } from 'lucide-react';
 import Image from 'next/image';
 import DeleteModal from '../../../../components/ui/delete-modal';
 import LottieLoader from '../../../../components/ui/lottie-loader';
@@ -41,6 +41,7 @@ interface Store {
 export default function ProductsPage({ params }: { params: Promise<{ slug: string }> }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [store, setStore] = useState<Store | null>(null);
+  const [analytics, setAnalytics] = useState<any>(null);
   const [isEditing, setIsEditing] = useState<string | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -98,6 +99,9 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
     try {
       console.log('🔍 Carregando loja diretamente com slug:', slug);
       
+      // Carregar analytics
+      await loadAnalytics();
+      
       // Carregar loja diretamente
       const storeResponse = await fetch(`/api/stores/${slug}`);
       if (!storeResponse.ok) {
@@ -131,7 +135,17 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
     }
   };
 
-
+  const loadAnalytics = async () => {
+    try {
+      const response = await fetch(`/api/stores/${slug}/analytics?period=30d`);
+      if (response.ok) {
+        const data = await response.json();
+        setAnalytics(data);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar analytics:', error);
+    }
+  };
 
   const loadProducts = async () => {
     if (!slug) return;
@@ -333,6 +347,28 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
     toast.success('Todos os produtos foram removidos!');
   };
 
+                const getProductClicks = (productId: string) => {
+                if (!analytics?.top_products) return 0;
+                const product = analytics.top_products.find((p: any) => p.product_id === productId);
+                return product?.clicks || 0;
+              };
+
+              const getProductCartClicks = (productId: string) => {
+                if (!analytics?.top_cart_products) return 0;
+                const product = analytics.top_cart_products.find((p: any) => p.product_id === productId);
+                return product?.cart_clicks || 0;
+              };
+            
+              const isMostClickedProduct = (productId: string) => {
+                if (!analytics?.top_products || analytics.top_products.length === 0) return false;
+                return analytics.top_products[0]?.product_id === productId;
+              };
+
+              const isMostCartClickedProduct = (productId: string) => {
+                if (!analytics?.top_cart_products || analytics.top_cart_products.length === 0) return false;
+                return analytics.top_cart_products[0]?.product_id === productId;
+              };
+
   if (loading || !store) {
     return (
       <ProtectedRoute>
@@ -486,6 +522,48 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
                           Disponível para entrega
                         </span>
                       )}
+
+                                              {/* Analytics info */}
+                        {!analytics ? (
+                          <div className="text-xs bg-gray-100 text-gray-400 px-2 py-1 rounded-full">
+                            <div className="animate-pulse bg-gray-200 h-3 w-8 rounded"></div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 text-xs bg-purple-100 text-purple-600 px-2 py-1 rounded-full">
+                            <MousePointer className="w-3 h-3" />
+                            <span>{getProductClicks(product.id)} cliques</span>
+                            {isMostClickedProduct(product.id) && (
+                              <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Cart Analytics info */}
+                        {!analytics ? (
+                          <div className="text-xs bg-gray-100 text-gray-400 px-2 py-1 rounded-full">
+                            <div className="animate-pulse bg-gray-200 h-3 w-8 rounded"></div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full">
+                            <ShoppingCart className="w-3 h-3" />
+                            <span>{getProductCartClicks(product.id)} carrinho</span>
+                            {isMostCartClickedProduct(product.id) && (
+                              <ShoppingCart className="w-3 h-3 text-red-500 fill-red-500" />
+                            )}
+                          </div>
+                        )}
+                        
+                        {analytics && isMostClickedProduct(product.id) && (
+                          <span className="text-xs bg-yellow-100 text-yellow-600 px-2 py-1 rounded-full">
+                            ⭐ Mais clicado
+                          </span>
+                        )}
+
+                        {analytics && isMostCartClickedProduct(product.id) && (
+                          <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full">
+                            🛒 Mais carrinho
+                          </span>
+                        )}
                     </div>
                     
                     <div className="flex items-center justify-between">

@@ -7,6 +7,8 @@ import { useEffect, useState } from "react";
 import CartControlsCompactLoading from '../components/cart-controls-compact-loading';
 import CartHeader from '../components/cart-header';
 import { useCartStore } from '../stores/cartStore';
+import { trackPageView, trackProductClick, trackAddToCart, trackEvent } from '../../lib/simple-analytics';
+
 interface StoreData {
   store_name: string;
   description: string;
@@ -54,6 +56,10 @@ export default function StorePageClient({ store }: StorePageClientProps) {
     setStoreSlug(store.slug);
   }, [store.slug, setStoreSlug]);
 
+  // Tracking de visualização da página
+  useEffect(() => {
+    trackPageView(store.slug);
+  }, [store.slug]);
 
 
   // Verificar se deve mostrar o catálogo baseado na URL
@@ -176,7 +182,14 @@ export default function StorePageClient({ store }: StorePageClientProps) {
                     className="relative rounded-lg overflow-hidden bg-white/10 backdrop-blur-sm"
                   >
                     {/* Product Image - Clickable Link */}
-                    <a href={`/${store.slug}/${product.id}`} className="block">
+                    <a 
+                      href={`/${store.slug}/${product.id}`} 
+                      className="block"
+                      onClick={() => {
+                        // Tracking de clique na imagem do produto
+                        trackProductClick(store.slug, product);
+                      }}
+                    >
                       <div className="aspect-square relative cursor-pointer group">
                         <Image
                           src={product.image}
@@ -212,7 +225,14 @@ export default function StorePageClient({ store }: StorePageClientProps) {
                     
                     {/* Product Info */}
                     <div className="p-3 pb-4">
-                      <a href={`/${store.slug}/${product.id}`} className="block">
+                      <a 
+                        href={`/${store.slug}/${product.id}`} 
+                        className="block"
+                        onClick={() => {
+                          // Tracking de clique em produto
+                          trackProductClick(store.slug, product);
+                        }}
+                      >
                         <h3 className="text-white font-medium text-sm mb-1 truncate hover:text-white/80 transition-colors">
                           {product.name}
                         </h3>
@@ -250,6 +270,18 @@ export default function StorePageClient({ store }: StorePageClientProps) {
                             onClick={(e) => {
                               e.stopPropagation();
                               addToCart(product);
+                              
+                              // Tracking de adição ao carrinho
+                              trackAddToCart(store.slug, product);
+                              
+                              // Tracking de clique no carrinho
+                              trackEvent({
+                                event_type: 'cart_click',
+                                store_slug: store.slug,
+                                product_id: product.id,
+                                product_name: product.name,
+                                product_price: parseFloat(product.price.replace('R$', '').replace(',', '.').trim())
+                              });
                             }}
                             className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-white/30 transition-all border border-white/30"
                           >

@@ -1,0 +1,248 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { 
+  TrendingUp, 
+  Eye, 
+  MousePointer, 
+  Users, 
+  Calendar,
+  BarChart3,
+  ArrowUpRight,
+  ArrowDownRight,
+  Minus
+} from 'lucide-react';
+import type { StoreAnalytics, AnalyticsFilters } from '../../types/analytics';
+
+interface AnalyticsDashboardProps {
+  storeSlug: string;
+}
+
+export default function AnalyticsDashboard({ storeSlug }: AnalyticsDashboardProps) {
+  const [analytics, setAnalytics] = useState<StoreAnalytics | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState<AnalyticsFilters>({
+    start_date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    end_date: new Date().toISOString().split('T')[0],
+    period: '30d'
+  });
+
+  useEffect(() => {
+    loadAnalytics();
+  }, [storeSlug, filters]);
+
+  const loadAnalytics = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(
+        `/api/stores/${storeSlug}/analytics?start_date=${filters.start_date}&end_date=${filters.end_date}`
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        setAnalytics(data);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar analytics:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePeriodChange = (period: '7d' | '30d' | '90d' | '1y') => {
+    const today = new Date();
+    let startDate = new Date();
+
+    switch (period) {
+      case '7d':
+        startDate.setDate(today.getDate() - 7);
+        break;
+      case '30d':
+        startDate.setDate(today.getDate() - 30);
+        break;
+      case '90d':
+        startDate.setDate(today.getDate() - 90);
+        break;
+      case '1y':
+        startDate.setFullYear(today.getFullYear() - 1);
+        break;
+    }
+
+    setFilters({
+      start_date: startDate.toISOString().split('T')[0],
+      end_date: today.toISOString().split('T')[0],
+      period
+    });
+  };
+
+  const getChangeIcon = (change: number) => {
+    if (change > 0) return <ArrowUpRight className="w-4 h-4 text-green-600" />;
+    if (change < 0) return <ArrowDownRight className="w-4 h-4 text-red-600" />;
+    return <Minus className="w-4 h-4 text-gray-400" />;
+  };
+
+  const getChangeColor = (change: number) => {
+    if (change > 0) return 'text-green-600';
+    if (change < 0) return 'text-red-600';
+    return 'text-gray-500';
+  };
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="animate-pulse">
+          <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-24 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!analytics) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="text-center text-gray-500">
+          <BarChart3 className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+          <p>Nenhum dado de analytics disponível</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Filtros de período */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-gray-900">Analytics</h3>
+          <div className="flex space-x-2">
+            {(['7d', '30d', '90d', '1y'] as const).map((period) => (
+              <button
+                key={period}
+                onClick={() => handlePeriodChange(period)}
+                className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                  filters.period === period
+                    ? 'bg-purple-100 text-purple-700'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                {period}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Cards de métricas */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Visualizações */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Visualizações</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {analytics.total_views.toLocaleString()}
+              </p>
+            </div>
+            <div className="p-3 bg-blue-100 rounded-lg">
+              <Eye className="w-6 h-6 text-blue-600" />
+            </div>
+          </div>
+        </div>
+
+        {/* Cliques */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Cliques</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {analytics.total_clicks.toLocaleString()}
+              </p>
+            </div>
+            <div className="p-3 bg-green-100 rounded-lg">
+              <MousePointer className="w-6 h-6 text-green-600" />
+            </div>
+          </div>
+        </div>
+
+        {/* Visitantes únicos */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Visitantes únicos</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {analytics.unique_visitors.toLocaleString()}
+              </p>
+            </div>
+            <div className="p-3 bg-purple-100 rounded-lg">
+              <Users className="w-6 h-6 text-purple-600" />
+            </div>
+          </div>
+        </div>
+
+        {/* Média por sessão */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Média/sessão</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {analytics.avg_views_per_session.toFixed(1)}
+              </p>
+            </div>
+            <div className="p-3 bg-orange-100 rounded-lg">
+              <TrendingUp className="w-6 h-6 text-orange-600" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Produtos mais clicados */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Produtos mais clicados</h3>
+        <div className="space-y-3">
+          {analytics.top_products.slice(0, 5).map((product, index) => (
+            <div key={product.product_id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                  <span className="text-sm font-semibold text-purple-600">#{product.rank}</span>
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900">{product.product_name}</p>
+                  <p className="text-sm text-gray-500">{product.clicks} cliques</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-sm font-medium text-gray-900">{product.clicks}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Estatísticas diárias */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Atividade diária</h3>
+        <div className="space-y-2">
+          {analytics.daily_stats.slice(-7).map((stat) => (
+            <div key={stat.date} className="flex items-center justify-between p-2">
+              <div className="flex items-center space-x-3">
+                <Calendar className="w-4 h-4 text-gray-400" />
+                <span className="text-sm text-gray-600">
+                  {new Date(stat.date).toLocaleDateString('pt-BR')}
+                </span>
+              </div>
+              <div className="flex items-center space-x-4">
+                <span className="text-sm text-gray-600">{stat.views} visualizações</span>
+                <span className="text-sm text-gray-600">{stat.unique_sessions} sessões</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+} 
