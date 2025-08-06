@@ -281,14 +281,44 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
 
   if (orders.length === 0) {
     return (
-      <div className="text-center py-12">
-        <Bell className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">
-          Nenhum pedido ainda
-        </h3>
-        <p className="text-gray-600">
-          Quando chegarem pedidos, eles aparecerão aqui em tempo real!
-        </p>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        {/* Header com botão de adicionar */}
+        <div className="flex items-center justify-between mb-8">
+          <h2 className="text-xl font-semibold text-gray-900">
+            Pedidos de Hoje
+          </h2>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Adicionar Pedido
+          </button>
+        </div>
+        
+        {/* Estado vazio */}
+        <div className="text-center py-12">
+          <Bell className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            Nenhum pedido ainda
+          </h3>
+          <p className="text-gray-600 mb-6">
+            Quando chegarem pedidos, eles aparecerão aqui em tempo real!
+          </p>
+          
+          {/* Botão de ação principal */}
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 mx-auto transition-colors shadow-lg hover:shadow-xl"
+          >
+            <Plus className="w-5 h-5" />
+            Criar Primeiro Pedido
+          </button>
+          
+          <p className="text-sm text-gray-500 mt-4">
+            Registre vendas do balcão ou pedidos por telefone
+          </p>
+        </div>
       </div>
     );
   }
@@ -531,9 +561,18 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
           <h3 className="text-lg font-medium text-gray-900 mb-2">
             Nenhum pedido hoje ainda
           </h3>
-          <p className="text-gray-500">
+          <p className="text-gray-500 mb-4">
             Quando chegarem novos pedidos, eles aparecerão aqui automaticamente.
           </p>
+          
+          {/* Botão para criar pedido */}
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 mx-auto transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Registrar Venda do Balcão
+          </button>
         </div>
       )}
 
