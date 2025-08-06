@@ -1,25 +1,25 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '../../../../contexts/AuthContext';
-import { toast } from 'react-hot-toast';
 import { 
-  Calendar, 
-  Filter, 
-  Download, 
-  TrendingUp, 
-  Package, 
-  Users,
-  DollarSign,
+  ArrowLeft,
   BarChart3,
-  ArrowLeft
+  Calendar, 
+  DollarSign,
+  Download, 
+  Filter, 
+  Package, 
+  TrendingUp, 
+  Users
 } from 'lucide-react';
-import ProtectedRoute from '../../../../components/auth/ProtectedRoute';
-import LottieLoader from '../../../../components/ui/lottie-loader';
-import AdminHeader from '../../../../components/ui/admin-header';
-import { Order } from '../../../../types/order';
+import { useRouter } from 'next/navigation';
+import { use, useEffect, useState } from 'react';
+import { toast } from 'react-hot-toast';
 import loadingAnimation from '../../../../../public/animations/loading-dots-blue.json';
+import ProtectedRoute from '../../../../components/auth/ProtectedRoute';
+import AdminHeader from '../../../../components/ui/admin-header';
+import LottieLoader from '../../../../components/ui/lottie-loader';
+import { useAuth } from '../../../../contexts/AuthContext';
+import type { Order } from '../../../../types/order';
 
 interface Store {
   id: string;
@@ -42,8 +42,6 @@ const statusOptions = [
   { value: 'preparing', label: 'Preparando' },
   { value: 'delivering', label: 'Entregando' },
   { value: 'delivered', label: 'Entregue' },
-  { value: 'completed_whatsapp', label: 'Concluído pelo WhatsApp' },
-  { value: 'not_completed_whatsapp', label: 'Não finalizado pelo WhatsApp' },
   { value: 'cancelled', label: 'Cancelado' }
 ];
 
@@ -65,6 +63,11 @@ export default function ReportsPage({ params }: { params: Promise<{ slug: string
     year: new Date().getFullYear() // 2025
   });
 
+  // Paginação
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  const [paginatedOrders, setPaginatedOrders] = useState<Order[]>([]);
+
   useEffect(() => {
     if (user) {
       loadStore();
@@ -80,6 +83,13 @@ export default function ReportsPage({ params }: { params: Promise<{ slug: string
   useEffect(() => {
     applyFilters();
   }, [orders, filters]);
+
+  useEffect(() => {
+    // Calcular paginação quando filteredOrders ou currentPage mudarem
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    setPaginatedOrders(filteredOrders.slice(startIndex, endIndex));
+  }, [filteredOrders, currentPage, itemsPerPage]);
 
   const loadStore = async () => {
     if (!slug) return;
@@ -116,6 +126,9 @@ export default function ReportsPage({ params }: { params: Promise<{ slug: string
 
   const applyFilters = () => {
     let filtered = [...orders];
+    
+    // Resetar para primeira página quando aplicar filtros
+    setCurrentPage(1);
 
     // Filtro por status
     if (filters.status !== 'all') {
@@ -267,7 +280,7 @@ export default function ReportsPage({ params }: { params: Promise<{ slug: string
                 <div className="flex gap-2">
                   <select
                     value={filters.month}
-                    onChange={(e) => setFilters(prev => ({ ...prev, month: parseInt(e.target.value) }))}
+                    onChange={(e) => setFilters(prev => ({ ...prev, month: Number.parseInt(e.target.value) }))}
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     disabled={!!(filters.dateFrom && filters.dateTo)}
                   >
@@ -279,7 +292,7 @@ export default function ReportsPage({ params }: { params: Promise<{ slug: string
                   </select>
                   <select
                     value={filters.year}
-                    onChange={(e) => setFilters(prev => ({ ...prev, year: parseInt(e.target.value) }))}
+                    onChange={(e) => setFilters(prev => ({ ...prev, year: Number.parseInt(e.target.value) }))}
                     className="w-20 px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     disabled={!!(filters.dateFrom && filters.dateTo)}
                   >
@@ -437,7 +450,7 @@ export default function ReportsPage({ params }: { params: Promise<{ slug: string
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredOrders.map((order) => (
+                    {paginatedOrders.map((order) => (
                       <tr key={order.id} className="hover:bg-gray-50">
                         <td className="px-4 py-4 whitespace-nowrap">
                           <div className="text-sm font-medium text-gray-900">
@@ -473,6 +486,60 @@ export default function ReportsPage({ params }: { params: Promise<{ slug: string
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+
+            {/* Paginação */}
+            {filteredOrders.length > itemsPerPage && (
+              <div className="mt-6 flex items-center justify-between border-t border-gray-200 pt-6">
+                <div className="text-sm text-gray-500">
+                  Mostrando {((currentPage - 1) * itemsPerPage) + 1} até {Math.min(currentPage * itemsPerPage, filteredOrders.length)} de {filteredOrders.length} pedidos
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Anterior
+                  </button>
+                  
+                  <div className="flex items-center space-x-1">
+                    {Array.from({ length: Math.ceil(filteredOrders.length / itemsPerPage) }, (_, i) => i + 1)
+                      .filter(page => 
+                        page === 1 || 
+                        page === Math.ceil(filteredOrders.length / itemsPerPage) || 
+                        Math.abs(page - currentPage) <= 2
+                      )
+                      .map((page, index, array) => (
+                        <div key={page} className="flex items-center">
+                          {index > 0 && array[index - 1] !== page - 1 && (
+                            <span className="px-2 text-gray-400">...</span>
+                          )}
+                          <button
+                            onClick={() => setCurrentPage(page)}
+                            className={`px-3 py-2 text-sm font-medium rounded-lg ${
+                              currentPage === page
+                                ? 'bg-blue-600 text-white'
+                                : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        </div>
+                      ))
+                    }
+                  </div>
+                  
+                  <button
+                    onClick={() => setCurrentPage(Math.min(Math.ceil(filteredOrders.length / itemsPerPage), currentPage + 1))}
+                    disabled={currentPage === Math.ceil(filteredOrders.length / itemsPerPage)}
+                    className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Próximo
+                  </button>
+                </div>
               </div>
             )}
           </div>

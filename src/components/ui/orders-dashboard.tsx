@@ -412,7 +412,7 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
       </div>
 
       {/* Cards de Estatísticas */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {/* Pedidos Feitos */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="flex items-center justify-between">
@@ -452,7 +452,20 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
           </div>
         </div>
 
-        {/* Total Vendido */}
+        {/* Cancelados */}
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-red-600">Cancelados</p>
+              <p className="text-2xl font-bold text-red-900">{stats.cancelled}</p>
+            </div>
+            <div className="bg-red-100 p-2 rounded-lg">
+              <XCircle className="w-5 h-5 text-red-600" />
+            </div>
+          </div>
+        </div>
+
+        {/* Total Vendido - Por último */}
         <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div>
@@ -465,20 +478,6 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
               <Calendar className="w-5 h-5 text-purple-600" />
             </div>
           </div>
-        </div>
-
-        {/* Cancelados */}
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-red-600">Cancelados</p>
-              <p className="text-2xl font-bold text-red-900">{stats.cancelled}</p>
-            </div>
-            <div className="bg-red-100 p-2 rounded-lg">
-              <XCircle className="w-5 h-5 text-red-600" />
-            </div>
-          </div>
-          <p className="text-xs text-red-500 mt-1">Hoje</p>
         </div>
       </div>
 
