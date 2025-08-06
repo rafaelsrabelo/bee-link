@@ -102,6 +102,7 @@ export default function AdminHeader({ store: propStore, currentPage, title, icon
           <div className="flex items-center space-x-4">
             {/* Navegação Desktop */}
             <div className="flex items-center space-x-2">
+              {/* 1. Dashboard */}
               {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
               <button
                 onClick={() => router.push(`/admin/${store.slug}`)}
@@ -113,17 +114,28 @@ export default function AdminHeader({ store: propStore, currentPage, title, icon
               >
                 Dashboard
               </button>
+              
+              {/* 2. Pedidos */}
               {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
               <button
-                onClick={() => router.push(`/admin/${store.slug}/products`)}
-                className={`px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
-                  isActive('products') 
+                onClick={() => router.push(`/admin/${store.slug}/orders`)}
+                className={`px-3 py-2 rounded-lg text-sm transition-all duration-200 relative ${
+                  isActive('orders') 
                     ? 'text-white bg-white/20 border-b-2 border-white' 
                     : 'text-white/80 hover:text-white hover:bg-white/10'
                 }`}
               >
-                Produtos
+                <div className="flex items-center gap-1">
+                  Pedidos
+                  <OrderNotificationBadge 
+                    storeSlug={store.slug} 
+                    storeId={store.id}
+                    className="text-white"
+                  />
+                </div>
               </button>
+              
+              {/* 3. Minha Loja */}
               {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
               <button
                 onClick={() => router.push(`/admin/${store.slug}/store`)}
@@ -135,24 +147,21 @@ export default function AdminHeader({ store: propStore, currentPage, title, icon
               >
                 Minha Loja
               </button>
+              
+              {/* 4. Produtos */}
               {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
               <button
-                onClick={() => router.push(`/admin/${store.slug}/orders`)}
-                className={`px-3 py-2 rounded-lg text-sm transition-all duration-200 relative ${
-                  isActive('orders') 
+                onClick={() => router.push(`/admin/${store.slug}/products`)}
+                className={`px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                  isActive('products') 
                     ? 'text-white bg-white/20 border-b-2 border-white' 
                     : 'text-white/80 hover:text-white hover:bg-white/10'
                 }`}
               >
-                <div className="flex items-center gap-2">
-                  Pedidos
-                  <OrderNotificationBadge 
-                    storeSlug={store.slug} 
-                    storeId={store.id}
-                    className="text-white"
-                  />
-                </div>
+                Produtos
               </button>
+              
+              {/* 5. Relatórios */}
               {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
               <button
                 onClick={() => router.push(`/admin/${store.slug}/reports`)}
@@ -264,6 +273,7 @@ export default function AdminHeader({ store: propStore, currentPage, title, icon
           {showMobileMenu && (
             <div className="mt-4 bg-white/10 backdrop-blur-sm rounded-lg p-4 mobile-menu">
               <div className="space-y-2">
+                {/* 1. Dashboard */}
                 {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
                 <button
                   onClick={() => handleNavigation(`/admin/${store.slug}`)}
@@ -275,28 +285,8 @@ export default function AdminHeader({ store: propStore, currentPage, title, icon
                 >
                   Dashboard
                 </button>
-                {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
-                <button
-                  onClick={() => handleNavigation(`/admin/${store.slug}/products`)}
-                  className={`w-full px-3 py-2 rounded-lg text-sm transition-all duration-200 text-left ${
-                    isActive('products') 
-                      ? 'text-white bg-white/20 border-l-4 border-white' 
-                      : 'text-white/80 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  Produtos
-                </button>
-                {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
-                <button
-                  onClick={() => handleNavigation(`/admin/${store.slug}/store`)}
-                  className={`w-full px-3 py-2 rounded-lg text-sm transition-all duration-200 text-left ${
-                    isActive('store') 
-                      ? 'text-white bg-white/20 border-l-4 border-white' 
-                      : 'text-white/80 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  Minha Loja
-                </button>
+                
+                {/* 2. Pedidos */}
                 {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
                 <button
                   onClick={() => handleNavigation(`/admin/${store.slug}/orders`)}
@@ -314,6 +304,45 @@ export default function AdminHeader({ store: propStore, currentPage, title, icon
                       className="text-white"
                     />
                   </div>
+                </button>
+                
+                {/* 3. Minha Loja */}
+                {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
+                <button
+                  onClick={() => handleNavigation(`/admin/${store.slug}/store`)}
+                  className={`w-full px-3 py-2 rounded-lg text-sm transition-all duration-200 text-left ${
+                    isActive('store') 
+                      ? 'text-white bg-white/20 border-l-4 border-white' 
+                      : 'text-white/80 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  Minha Loja
+                </button>
+                
+                {/* 4. Produtos */}
+                {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
+                <button
+                  onClick={() => handleNavigation(`/admin/${store.slug}/products`)}
+                  className={`w-full px-3 py-2 rounded-lg text-sm transition-all duration-200 text-left ${
+                    isActive('products') 
+                      ? 'text-white bg-white/20 border-l-4 border-white' 
+                      : 'text-white/80 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  Produtos
+                </button>
+                
+                {/* 5. Relatórios */}
+                {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
+                <button
+                  onClick={() => handleNavigation(`/admin/${store.slug}/reports`)}
+                  className={`w-full px-3 py-2 rounded-lg text-sm transition-all duration-200 text-left ${
+                    isActive('reports') 
+                      ? 'text-white bg-white/20 border-l-4 border-white' 
+                      : 'text-white/80 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  Relatórios
                 </button>
               </div>
             </div>

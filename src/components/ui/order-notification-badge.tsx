@@ -24,12 +24,15 @@ export default function OrderNotificationBadge({
 
   return (
     <div className={`relative ${className}`}>
-      <Bell className="w-6 h-6" />
+      <div className="p-1.5 rounded-full bg-white/15 hover:bg-white/25 transition-all duration-200 backdrop-blur-sm">
+        <Bell className="w-4 h-4 text-white drop-shadow-sm" />
+      </div>
       {pendingOrdersCount > 0 && (
         <span 
-          className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold shadow-lg animate-pulse"
+          className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center font-bold shadow-lg animate-pulse"
+          style={{ fontSize: '10px' }}
         >
-          {pendingOrdersCount > 99 ? '99+' : pendingOrdersCount}
+          {pendingOrdersCount > 9 ? '9+' : pendingOrdersCount}
         </span>
       )}
     </div>
