@@ -90,6 +90,8 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
   const [showCreateCategoryModal, setShowCreateCategoryModal] = useState(false);
   const [showCategoriesManager, setShowCategoriesManager] = useState(false);
   const [categoriesRefreshKey, setCategoriesRefreshKey] = useState(0);
+  const [savingProduct, setSavingProduct] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
 
   // Função para buscar nome da categoria pelo ID
   const getCategoryNameById = async (categoryId: number): Promise<string> => {
@@ -289,44 +291,52 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
   };
 
   const handleAddProduct = async () => {
-    if (!isFormValid) {
-      toast.error('Preencha todos os campos obrigatórios');
+    if (!isFormValid || savingProduct) {
+      if (!isFormValid) toast.error('Preencha todos os campos obrigatórios');
       return;
     }
 
-    // Buscar nome real da categoria se foi selecionada uma categoria personalizada
-    let categoryName = newProduct.category || 'bag';
-    if (newProduct.category === 'selected' && newProduct.category_id) {
-      categoryName = await getCategoryNameById(newProduct.category_id);
+    setSavingProduct(true);
+    try {
+      // Buscar nome real da categoria se foi selecionada uma categoria personalizada
+      let categoryName = newProduct.category || 'bag';
+      if (newProduct.category === 'selected' && newProduct.category_id) {
+        categoryName = await getCategoryNameById(newProduct.category_id);
+      }
+
+      const product: Product = {
+        id: Date.now().toString(),
+        name: newProduct.name || '',
+        price: newProduct.price || '',
+        image: newProduct.image || '',
+        category: categoryName,
+        description: newProduct.description || '',
+        readyToShip: newProduct.readyToShip || false,
+        available: newProduct.available !== false,
+        store_id: store?.id
+      };
+
+      const updatedProducts = [...products, product];
+      await saveProducts(updatedProducts);
+
+      setNewProduct({
+        name: '',
+        price: '',
+        image: '',
+        category: 'bag',
+        description: '',
+        readyToShip: false,
+        available: true
+      });
+
+      setShowAddForm(false);
+      toast.success('Produto adicionado com sucesso!');
+    } catch (error) {
+      toast.error('Erro ao salvar produto');
+      console.error('Erro ao salvar produto:', error);
+    } finally {
+      setSavingProduct(false);
     }
-
-    const product: Product = {
-      id: Date.now().toString(),
-      name: newProduct.name || '',
-      price: newProduct.price || '',
-      image: newProduct.image || '',
-      category: categoryName,
-      description: newProduct.description || '',
-      readyToShip: newProduct.readyToShip || false,
-      available: newProduct.available !== false,
-      store_id: store?.id
-    };
-
-    const updatedProducts = [...products, product];
-    await saveProducts(updatedProducts);
-
-    setNewProduct({
-      name: '',
-      price: '',
-      image: '',
-      category: 'bag',
-      description: '',
-      readyToShip: false,
-      available: true
-    });
-
-    setShowAddForm(false);
-    toast.success('Produto adicionado com sucesso!');
   };
 
   const handleEditProduct = (product: Product) => {
@@ -335,32 +345,41 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
   };
 
   const handleSaveEdit = async () => {
-    if (!editingProduct) return;
+    if (!editingProduct || savingEdit) return;
 
-    // Buscar nome real da categoria se foi selecionada uma categoria personalizada
-    let categoryName = editingProduct.category;
-    if (editingProduct.category === 'selected' && editingProduct.category_id) {
-      categoryName = await getCategoryNameById(editingProduct.category_id);
+    setSavingEdit(true);
+    try {
+      // Buscar nome real da categoria se foi selecionada uma categoria personalizada
+      let categoryName = editingProduct.category;
+      if (editingProduct.category === 'selected' && editingProduct.category_id) {
+        categoryName = await getCategoryNameById(editingProduct.category_id);
+      }
+
+      const updatedProduct = {
+        ...editingProduct,
+        category: categoryName
+      };
+
+      const updatedProducts = products.map(p => 
+        p.id === editingProduct.id ? updatedProduct : p
+      );
+      await saveProducts(updatedProducts);
+
+      setIsEditing(null);
+      setEditingProduct(null);
+      toast.success('Produto atualizado com sucesso!');
+    } catch (error) {
+      toast.error('Erro ao atualizar produto');
+      console.error('Erro ao atualizar produto:', error);
+    } finally {
+      setSavingEdit(false);
     }
-
-    const updatedProduct = {
-      ...editingProduct,
-      category: categoryName
-    };
-
-    const updatedProducts = products.map(p => 
-      p.id === editingProduct.id ? updatedProduct : p
-    );
-    await saveProducts(updatedProducts);
-
-    setIsEditing(null);
-    setEditingProduct(null);
-    toast.success('Produto atualizado com sucesso!');
   };
 
   const handleCancelEdit = () => {
     setIsEditing(null);
     setEditingProduct(null);
+    setSavingEdit(false); // Reset loading state
   };
 
   const handleDeleteProduct = async (id: string) => {
@@ -788,14 +807,24 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
                 <button
                   type="button"
                   onClick={handleAddProduct}
-                  disabled={!isFormValid}
+                  disabled={!isFormValid || savingProduct}
                   className="w-full sm:w-auto px-6 py-3 text-black bg-blue-600 rounded-lg  transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-md hover:shadow-lg order-1 sm:order-2"
                 >
-                  {isFormValid ? 'Adicionar Produto' : 'Preencha todos os campos'}
+                  {savingProduct ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="w-4 h-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      Salvando...
+                    </div>
+                  ) : (
+                    isFormValid ? 'Adicionar Produto' : 'Preencha todos os campos'
+                  )}
                 </button>
                 <button
                   type="button"
-                  onClick={() => setShowAddForm(false)}
+                  onClick={() => {
+                    setShowAddForm(false);
+                    setSavingProduct(false); // Reset loading state
+                  }}
                   className="w-full sm:w-auto px-6 py-3 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 font-medium order-2 sm:order-1"
                 >
                   Cancelar
@@ -918,10 +947,18 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
                   <button
                     type="button"
                     onClick={handleSaveEdit}
-                    className="w-full sm:w-auto px-6 py-3 text-white rounded-lg transition-all duration-200 font-medium shadow-md hover:shadow-lg order-1 sm:order-2"
-                    style={{ backgroundColor: store.colors.primary }}
+                    disabled={savingEdit}
+                    className="w-full sm:w-auto px-6 py-3 text-white rounded-lg transition-all duration-200 font-medium shadow-md hover:shadow-lg order-1 sm:order-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{ backgroundColor: store?.colors?.primary || '#8B5CF6' }}
                   >
-                    Salvar Alterações
+                    {savingEdit ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-4 h-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                        Salvando...
+                      </div>
+                    ) : (
+                      'Salvar Alterações'
+                    )}
                   </button>
                   <button
                     type="button"

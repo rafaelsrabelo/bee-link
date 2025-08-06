@@ -1,9 +1,9 @@
 'use client';
 
-import React from 'react';
-import { Store } from '@/contexts/StoreContext';
-import { LayoutType } from '@/types/layout';
+import type { Store } from '@/contexts/StoreContext';
+import type { LayoutType } from '@/types/layout';
 import Image from 'next/image';
+import React from 'react';
 
 interface StorePreviewProps {
   store: Store;
@@ -141,7 +141,7 @@ export default function StorePreview({ store, layoutType, className = "", isLive
                     <span className="text-gray-400 text-xs">Imagem</span>
                   </div>
                   <div className="p-2">
-                    <p className="text-sm font-medium text-gray-900 mb-1">Round bag</p>
+                    <p className="text-sm font-medium text-gray-900 mb-1">Produto 1</p>
                     <p className="text-sm text-gray-600">R$ 99,99</p>
                     <button 
                       className="w-full mt-2 py-1 rounded text-xs text-white"
@@ -168,7 +168,7 @@ export default function StorePreview({ store, layoutType, className = "", isLive
                     <span className="text-gray-400 text-xs">Imagem</span>
                   </div>
                   <div className="p-2">
-                    <p className="text-sm font-medium text-gray-900 mb-1">Bolsa média</p>
+                    <p className="text-sm font-medium text-gray-900 mb-1">Produto 2</p>
                     <p className="text-sm text-gray-600">R$ 69,99</p>
                     <button 
                       className="w-full mt-2 py-1 rounded text-xs text-white"
@@ -190,9 +190,10 @@ export default function StorePreview({ store, layoutType, className = "", isLive
                 <span className="text-gray-400 text-xs">Imagem</span>
               </div>
               <div className="p-2">
-                <p className="text-sm font-medium text-gray-900 mb-1">Round bag</p>
+                <p className="text-sm font-medium text-gray-900 mb-1">Produto 1</p>
                 <p className="text-sm text-gray-600">R$ 99,99</p>
                 <div className="flex items-center space-x-1 mt-2">
+                                      {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
                                       <button 
                       className="w-6 h-6 rounded text-xs text-white"
                       style={{ backgroundColor: store.colors?.primary || '#8B5CF6' }}
@@ -200,6 +201,7 @@ export default function StorePreview({ store, layoutType, className = "", isLive
                       -
                     </button>
                   <span className="text-xs">4</span>
+                  {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
                   <button 
                     className="w-6 h-6 rounded text-xs text-white"
                     style={{ backgroundColor: store.colors?.primary || '#8B5CF6' }}
@@ -216,7 +218,7 @@ export default function StorePreview({ store, layoutType, className = "", isLive
                 <span className="text-gray-400 text-xs">Imagem</span>
               </div>
               <div className="p-2">
-                <p className="text-sm font-medium text-gray-900 mb-1">Bolsa média</p>
+                <p className="text-sm font-medium text-gray-900 mb-1">Produto 2</p>
                 <p className="text-sm text-gray-600">R$ 69,99</p>
                 <button 
                   className="w-full mt-2 py-1 rounded text-xs text-white"
