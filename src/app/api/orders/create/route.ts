@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import { supabase } from '../../../../lib/supabase';
-import { CreateOrderRequest, Order, OrderItem } from '../../../../types/order';
+import type { CreateOrderRequest, Order, OrderItem } from '../../../../types/order';
 
 interface StoreData {
   id: string;
@@ -73,7 +74,7 @@ async function sendWhatsAppMessage(phone: string, message: string) {
 export async function POST(request: NextRequest) {
   try {
     const body: CreateOrderRequest = await request.json();
-    const { storeSlug, customer_name, customer_phone, customer_address, items, total, notes } = body;
+    const { storeSlug, customer_name, customer_phone, customer_address, items, total, source, isManualOrder, notes, order_date } = body;
 
     console.log('Criando pedido para loja:', storeSlug);
     console.log('Dados do pedido:', { customer_name, customer_phone, items, total });
@@ -95,18 +96,31 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Criar o pedido no banco
+    // Pedidos manuais (criados pelo admin) já chegam como entregues
+    // Pedidos de clientes (via site) chegam como pendentes
+    
+    console.log(`📦 Criando pedido: source=${source}, isManualOrder=${isManualOrder}, status=${isManualOrder ? 'delivered' : 'pending'}`);
+    
+    const orderInsert = {
+      store_id: store.id,
+      customer_name,
+      customer_phone,
+      customer_address,
+      items,
+      total,
+      source,
+      notes,
+      status: isManualOrder ? 'delivered' : 'pending'
+    };
+
+    // Se uma data foi fornecida, usar ela; senão usar a data atual
+    if (order_date) {
+      orderInsert.created_at = new Date(`${order_date}T00:00:00.000Z`).toISOString();
+    }
+
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .insert([{
-        store_id: store.id,
-        customer_name,
-        customer_phone,
-        customer_address,
-        items,
-        total,
-        notes,
-        status: 'pending'
-      }])
+      .insert([orderInsert])
       .select()
       .single();
 

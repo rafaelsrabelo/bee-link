@@ -15,6 +15,7 @@ export interface Order {
   items: OrderItem[];
   total: number;
   status: 'pending' | 'accepted' | 'preparing' | 'delivering' | 'delivered' | 'cancelled';
+  source?: string; // Origem do pedido (link, whatsapp, presencial, etc.)
   notes?: string;
   created_at: string;
   updated_at: string;
@@ -27,7 +28,10 @@ export interface CreateOrderRequest {
   customer_address?: string;
   items: OrderItem[];
   total: number;
+  source?: string; // Origem do pedido
+  isManualOrder?: boolean; // Flag para identificar pedidos criados pelo admin
   notes?: string;
+  order_date?: string; // Data do pedido em formato YYYY-MM-DD
 }
 
 export interface UpdateOrderStatusRequest {

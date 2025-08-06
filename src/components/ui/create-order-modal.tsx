@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Order, OrderItem } from '../../types/order';
+import { Minus, Plus, Search, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
-import { X, Plus, Minus, Search } from 'lucide-react';
+import type { Order, OrderItem } from '../../types/order';
 
 interface CreateOrderModalProps {
   storeSlug: string;
@@ -25,7 +25,7 @@ const orderSources = [
   { value: 'presencial', label: '🏪 Presencial' },
   { value: 'telefone', label: '📞 Telefone' },
   { value: 'instagram', label: '📱 Instagram' },
-  { value: 'facebook', label: '📘 Facebook' },
+  { value: 'ifood', label: '🍔 iFood' },
   { value: 'indicacao', label: '👥 Indicação' },
   { value: 'outros', label: '📝 Outros' }
 ];
@@ -41,20 +41,26 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
     customer_phone: '',
     customer_address: '',
     source: 'presencial',
-    notes: ''
+    notes: '',
+    order_date: new Date().toISOString().split('T')[0] // Data atual como padrão
   });
 
   // Carregar produtos da loja
   useEffect(() => {
     loadProducts();
-  }, [storeSlug]);
+  }, []);  // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadProducts = async () => {
     try {
-      const response = await fetch(`/api/stores/${storeSlug}/products`);
+      console.log('🛍️ Carregando produtos para:', storeSlug);
+      const response = await fetch(`/api/stores/${storeSlug}/products-public`);
       if (response.ok) {
         const data = await response.json();
+        console.log('✅ Produtos carregados:', data.products?.length || 0);
         setProducts(data.products || []);
+      } else {
+        console.error('Erro na resposta:', response.status);
+        toast.error('Erro ao carregar produtos');
       }
     } catch (error) {
       console.error('Erro ao carregar produtos:', error);
@@ -104,6 +110,13 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
     return orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   };
 
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(price);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -132,8 +145,13 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
         customer_address: formData.customer_address,
         items: orderItems,
         total: getTotal(),
-        notes: `Origem: ${orderSources.find(s => s.value === formData.source)?.label || formData.source}${formData.notes ? `\nObservações: ${formData.notes}` : ''}`
+        source: formData.source,
+        isManualOrder: true, // Flag para identificar que é do admin
+        notes: `Origem: ${orderSources.find(s => s.value === formData.source)?.label || formData.source}${formData.notes ? `\nObservações: ${formData.notes}` : ''}`,
+        order_date: formData.order_date
       };
+
+      console.log('📝 Criando pedido com dados:', orderData);
 
       const response = await fetch('/api/orders/create', {
         method: 'POST',
@@ -147,6 +165,9 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
         const result = await response.json();
         
         // Criar o objeto order para adicionar à lista
+        // Pedidos criados pelo admin sempre são manuais (delivered)
+        const isManualOrder = true;
+        
         const newOrder: Order = {
           id: result.orderId,
           store_id: storeId,
@@ -155,13 +176,16 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
           customer_address: formData.customer_address,
           items: orderItems,
           total: getTotal(),
-          status: 'pending',
+          status: isManualOrder ? 'delivered' : 'pending',
+          source: formData.source,
           notes: orderData.notes,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         };
 
+        toast.success('Pedido criado com sucesso!');
         onOrderCreated(newOrder);
+        onClose(); // Fechar o modal após sucesso
       } else {
         const errorData = await response.json();
         toast.error(errorData.error || 'Erro ao criar pedido');
@@ -176,13 +200,14 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
+      <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-xl font-semibold text-gray-900">
             Criar Pedido Manual
           </h2>
           <button
+            type="button"
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600"
           >
@@ -190,7 +215,7 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex h-[calc(90vh-80px)]">
+        <form onSubmit={handleSubmit} className="flex flex-1 min-h-0">
           {/* Coluna da Esquerda - Formulário */}
           <div className="w-1/2 p-6 border-r overflow-y-auto">
             <div className="space-y-4">
@@ -239,6 +264,19 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
                       onChange={(e) => setFormData(prev => ({ ...prev, customer_address: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       placeholder="Endereço de entrega (opcional)"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Data do Pedido *
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.order_date}
+                      onChange={(e) => setFormData(prev => ({ ...prev, order_date: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      required
                     />
                   </div>
                 </div>
@@ -306,31 +344,72 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
 
             {/* Lista de Produtos */}
             <div className="flex-1 overflow-y-auto p-6">
-              <div className="space-y-3">
-                {filteredProducts.map((product) => (
-                  <div key={product.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-900">{product.name}</div>
-                      <div className="text-sm text-gray-500">
-                        R$ {product.price.toFixed(2).replace('.', ',')}
+              {products.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <div className="mb-2">Nenhum produto cadastrado</div>
+                  <div className="text-xs">Cadastre produtos na seção Produtos</div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {(searchTerm ? filteredProducts : products).map((product) => {
+                    const currentItem = orderItems.find(item => item.id === product.id);
+                    const currentQuantity = currentItem?.quantity || 0;
+                    
+                    return (
+                      <div key={product.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                        <div className="flex-1">
+                          <div className="font-medium text-gray-900">{product.name}</div>
+                          <div className="text-sm text-gray-500">
+                            {formatPrice(product.price)}
+                          </div>
+                          {currentQuantity > 0 && (
+                            <div className="text-xs text-blue-600 font-medium">
+                              {currentQuantity} no pedido
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          {currentQuantity > 0 ? (
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => updateQuantity(product.id, -1)}
+                                className="w-8 h-8 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg flex items-center justify-center"
+                              >
+                                <Minus className="w-4 h-4" />
+                              </button>
+                              <span className="w-8 text-center font-medium">{currentQuantity}</span>
+                              <button
+                                type="button"
+                                onClick={() => updateQuantity(product.id, 1)}
+                                className="w-8 h-8 bg-green-100 hover:bg-green-200 text-green-600 rounded-lg flex items-center justify-center"
+                              >
+                                <Plus className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => addProduct(product)}
+                              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg flex items-center gap-1"
+                            >
+                              <Plus className="w-4 h-4" />
+                              Adicionar
+                            </button>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => addProduct(product)}
-                      className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
+                    );
+                  })}
 
-                {filteredProducts.length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
-                    {searchTerm ? 'Nenhum produto encontrado' : 'Nenhum produto disponível'}
-                  </div>
-                )}
-              </div>
+                  {searchTerm && filteredProducts.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      Nenhum produto encontrado para "{searchTerm}"
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Carrinho */}
@@ -348,7 +427,7 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-gray-600">
-                          R$ {(item.price * item.quantity).toFixed(2).replace('.', ',')}
+                          {formatPrice(item.price * item.quantity)}
                         </span>
                         <div className="flex items-center gap-1">
                           <button
@@ -380,7 +459,7 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
 
                 <div className="flex justify-between items-center mt-3 pt-3 border-t text-lg font-semibold">
                   <span>Total:</span>
-                  <span>R$ {getTotal().toFixed(2).replace('.', ',')}</span>
+                  <span>{formatPrice(getTotal())}</span>
                 </div>
               </div>
             )}
@@ -388,22 +467,27 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
         </form>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 p-6 border-t bg-gray-50">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-          >
-            Cancelar
-          </button>
-          <button
-            type="submit"
-            onClick={handleSubmit}
-            disabled={loading || orderItems.length === 0}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? 'Criando...' : `Criar Pedido (R$ ${getTotal().toFixed(2).replace('.', ',')})`}
-          </button>
+        <div className="flex items-center justify-between gap-3 p-6 border-t bg-gray-50">
+          <div className="text-sm text-gray-600">
+            {orderItems.length} {orderItems.length === 1 ? 'item' : 'itens'} selecionados
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              onClick={handleSubmit}
+              disabled={loading || orderItems.length === 0}
+              className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-lg shadow-lg"
+            >
+              {loading ? '🔄 Criando Pedido...' : `🛍️ Criar Pedido - ${formatPrice(getTotal())}`}
+            </button>
+          </div>
         </div>
       </div>
     </div>

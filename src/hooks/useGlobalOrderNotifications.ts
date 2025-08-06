@@ -26,7 +26,7 @@ export function useGlobalOrderNotifications({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Função para buscar pedidos pendentes
+  // Função para buscar pedidos pendentes (otimizada)
   const fetchPendingOrders = useCallback(async () => {
     if (!enabled || !storeId) return;
 
@@ -34,18 +34,31 @@ export function useGlobalOrderNotifications({
     setError(null);
 
     try {
-      const { data, error } = await supabase
+      // Buscar apenas a contagem para melhor performance
+      const { count, error } = await supabase
         .from('orders')
-        .select('*')
+        .select('id', { count: 'exact', head: true })
         .eq('store_id', storeId)
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false });
+        .eq('status', 'pending');
 
       if (error) throw error;
 
-      const orders = data || [];
-      setPendingOrdersCount(orders.length);
-      setNewOrders(orders);
+      setPendingOrdersCount(count || 0);
+      
+      // Se houver pedidos pendentes, buscar os detalhes apenas se necessário
+      if (count && count > 0) {
+        const { data } = await supabase
+          .from('orders')
+          .select('*')
+          .eq('store_id', storeId)
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false })
+          .limit(5); // Limitar a 5 pedidos mais recentes
+          
+        setNewOrders(data || []);
+      } else {
+        setNewOrders([]);
+      }
     } catch (err) {
       console.error('Erro ao buscar pedidos pendentes:', err);
       setError(err instanceof Error ? err.message : 'Erro desconhecido');

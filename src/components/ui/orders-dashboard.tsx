@@ -1,23 +1,29 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
-import { Order } from '../../types/order';
-import { toast } from 'react-hot-toast';
-import CreateOrderModal from './create-order-modal';
 import { 
-  Clock, 
+  AlertTriangle,
+  BarChart3,
+  Bell,
+  Calendar,
+  Check,
   CheckCircle, 
   ChefHat, 
-  Truck, 
-  Package, 
-  XCircle,
-  Bell,
-  Phone,
+  Clock, 
   MapPin,
-  Calendar,
-  Plus
+  MessageCircle,
+  Package, 
+  Phone,
+  Play,
+  Plus,
+  Truck, 
+  X,
+  XCircle
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { toast } from 'react-hot-toast';
+import { supabase } from '../../lib/supabase';
+import type { Order } from '../../types/order';
+import CreateOrderModal from './create-order-modal';
 
 interface OrdersDashboardProps {
   storeSlug: string;
@@ -89,15 +95,17 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
     total: todayOrders.length,
     pending: todayOrders.filter(order => ['pending', 'accepted', 'preparing'].includes(order.status)).length,
     delivered: todayOrders.filter(order => order.status === 'delivered').length,
+    cancelled: todayOrders.filter(order => order.status === 'cancelled').length,
     revenue: todayOrders
       .filter(order => order.status === 'delivered')
       .reduce((sum, order) => sum + order.total, 0)
   };
 
-  // Carregar pedidos iniciais
+  // Carregar pedidos iniciais (otimizado - apenas de hoje)
   const loadOrders = async () => {
     try {
-      const response = await fetch(`/api/stores/${storeSlug}/orders`);
+      // Carregar apenas pedidos de hoje para melhor performance
+      const response = await fetch(`/api/stores/${storeSlug}/orders?onlyToday=true&limit=50`);
       if (response.ok) {
         const data = await response.json();
         setOrders(data.orders || []);
@@ -208,6 +216,52 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
     }
   };
 
+  // Função para atualizar status do pedido com nota
+  const updateOrderStatusWithNote = async (orderId: string, newStatus: Order['status'], note: string) => {
+    setUpdatingStatus(orderId);
+    
+    // Encontrar o pedido atual
+    const currentOrder = orders.find(order => order.id === orderId);
+    if (!currentOrder) {
+      toast.error('Pedido não encontrado');
+      setUpdatingStatus(null);
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/orders/${orderId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          status: newStatus,
+          notes: `${currentOrder.notes ? currentOrder.notes + '\n' : ''}${note}` 
+        }),
+      });
+
+      if (response.ok) {
+        await response.json();
+        toast.success('Status atualizado e cliente notificado via WhatsApp!', {
+          duration: 4000,
+          icon: '✅'
+        });
+        
+        // Recarregar a lista de pedidos
+        await loadOrders();
+      } else {
+        const errorData = await response.json();
+        console.error('Erro na API:', errorData);
+        toast.error(`Erro ao atualizar status: ${errorData.error || 'Erro desconhecido'}`);
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar status:', error);
+      toast.error('Erro ao atualizar status');
+    } finally {
+      setUpdatingStatus(null);
+    }
+  };
+
   // Função para atualizar status do pedido
   const updateOrderStatus = async (orderId: string, newStatus: Order['status']) => {
     setUpdatingStatus(orderId);
@@ -235,8 +289,13 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
           duration: 4000,
           icon: '✅'
         });
+        
+        // Recarregar a lista de pedidos
+        await loadOrders();
       } else {
-        toast.error('Erro ao atualizar status');
+        const errorData = await response.json();
+        console.error('Erro na API:', errorData);
+        toast.error(`Erro ao atualizar status: ${errorData.error || 'Erro desconhecido'}`);
       }
     } catch (error) {
       console.error('Erro ao atualizar status:', error);
@@ -288,6 +347,7 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
             Pedidos de Hoje
           </h2>
           <button
+            type="button"
             onClick={() => setShowCreateModal(true)}
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
           >
@@ -331,7 +391,15 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
           Pedidos de Hoje
         </h2>
         <div className="flex items-center gap-4">
+          <a
+            href={`/admin/${storeSlug}/reports`}
+            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
+          >
+            <BarChart3 className="w-4 h-4" />
+            Relatórios
+          </a>
           <button
+            type="button"
             onClick={() => setShowCreateModal(true)}
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
           >
@@ -398,6 +466,20 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
               <Calendar className="w-5 h-5 text-purple-600" />
             </div>
           </div>
+        </div>
+
+        {/* Cancelados */}
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-red-600">Cancelados</p>
+              <p className="text-2xl font-bold text-red-900">{stats.cancelled}</p>
+            </div>
+            <div className="bg-red-100 p-2 rounded-lg">
+              <XCircle className="w-5 h-5 text-red-600" />
+            </div>
+          </div>
+          <p className="text-xs text-red-500 mt-1">Hoje</p>
         </div>
       </div>
 
@@ -497,44 +579,102 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
 
             {/* Botões de ação */}
             {order.status === 'pending' && (
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => updateOrderStatus(order.id, 'accepted')}
-                  disabled={updatingStatus === order.id}
-                  className="flex-1 bg-green-600 text-white px-3 py-2 rounded text-sm font-medium hover:bg-green-700 disabled:opacity-50"
-                >
-                  {updatingStatus === order.id ? 'Aceitando...' : 'Aceitar Pedido'}
-                </button>
-                <button
-                  onClick={() => updateOrderStatus(order.id, 'cancelled')}
-                  disabled={updatingStatus === order.id}
-                  className="flex-1 bg-red-600 text-white px-3 py-2 rounded text-sm font-medium hover:bg-red-700 disabled:opacity-50"
-                >
-                  {updatingStatus === order.id ? 'Cancelando...' : 'Cancelar'}
-                </button>
+              <div className="space-y-3">
+                <div className="flex space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => updateOrderStatus(order.id, 'accepted')}
+                    disabled={updatingStatus === order.id}
+                    className="flex-1 bg-green-600 text-white px-3 py-2 rounded-lg text-xs font-medium hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-1.5 transition-colors"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    {updatingStatus === order.id ? 'Aceitando...' : 'Aceitar'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateOrderStatus(order.id, 'cancelled')}
+                    disabled={updatingStatus === order.id}
+                    className="flex-1 bg-red-600 text-white px-3 py-2 rounded-lg text-xs font-medium hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-1.5 transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    {updatingStatus === order.id ? 'Cancelando...' : 'Cancelar'}
+                  </button>
+                </div>
+                
+                {/* Botões específicos do WhatsApp */}
+                <div className="text-xs text-gray-500 text-center">Finalização via WhatsApp:</div>
+                <div className="flex space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => updateOrderStatusWithNote(order.id, 'delivered', 'Concluído via WhatsApp')}
+                    disabled={updatingStatus === order.id}
+                    className="flex-1 bg-green-700 text-white px-2 py-1.5 rounded-lg text-xs font-medium hover:bg-green-800 disabled:opacity-50 flex items-center justify-center gap-1 transition-colors"
+                  >
+                    <MessageCircle className="w-3 h-3" />
+                    {updatingStatus === order.id ? 'Atualizando...' : '✅ Concluído'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateOrderStatusWithNote(order.id, 'cancelled', 'Não finalizado via WhatsApp')}
+                    disabled={updatingStatus === order.id}
+                    className="flex-1 bg-orange-600 text-white px-2 py-1.5 rounded-lg text-xs font-medium hover:bg-orange-700 disabled:opacity-50 flex items-center justify-center gap-1 transition-colors"
+                  >
+                    <AlertTriangle className="w-3 h-3" />
+                    {updatingStatus === order.id ? 'Atualizando...' : '❌ Não Finalizado'}
+                  </button>
+                </div>
               </div>
             )}
 
             {order.status === 'accepted' && (
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => updateOrderStatus(order.id, 'preparing')}
-                  disabled={updatingStatus === order.id}
-                  className="flex-1 bg-blue-600 text-white px-3 py-2 rounded text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-                >
-                  {updatingStatus === order.id ? 'Atualizando...' : 'Preparar Pedido'}
-                </button>
+              <div className="space-y-3">
+                <div className="flex space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => updateOrderStatus(order.id, 'preparing')}
+                    disabled={updatingStatus === order.id}
+                    className="flex-1 bg-blue-600 text-white px-3 py-2 rounded-lg text-xs font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-1.5 transition-colors"
+                  >
+                    <ChefHat className="w-3.5 h-3.5" />
+                    {updatingStatus === order.id ? 'Atualizando...' : 'Preparar'}
+                  </button>
+                </div>
+                
+                {/* Botões específicos do WhatsApp */}
+                <div className="text-xs text-gray-500 text-center">Finalização via WhatsApp:</div>
+                <div className="flex space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => updateOrderStatusWithNote(order.id, 'delivered', 'Concluído via WhatsApp')}
+                    disabled={updatingStatus === order.id}
+                    className="flex-1 bg-green-700 text-white px-2 py-1.5 rounded-lg text-xs font-medium hover:bg-green-800 disabled:opacity-50 flex items-center justify-center gap-1 transition-colors"
+                  >
+                    <MessageCircle className="w-3 h-3" />
+                    {updatingStatus === order.id ? 'Atualizando...' : '✅ Concluído'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateOrderStatusWithNote(order.id, 'cancelled', 'Não finalizado via WhatsApp')}
+                    disabled={updatingStatus === order.id}
+                    className="flex-1 bg-orange-600 text-white px-2 py-1.5 rounded-lg text-xs font-medium hover:bg-orange-700 disabled:opacity-50 flex items-center justify-center gap-1 transition-colors"
+                  >
+                    <AlertTriangle className="w-3 h-3" />
+                    {updatingStatus === order.id ? 'Atualizando...' : '❌ Não Finalizado'}
+                  </button>
+                </div>
               </div>
             )}
 
             {order.status === 'preparing' && (
               <div className="flex space-x-2">
                 <button
+                  type="button"
                   onClick={() => updateOrderStatus(order.id, 'delivering')}
                   disabled={updatingStatus === order.id}
-                  className="flex-1 bg-purple-600 text-white px-3 py-2 rounded text-sm font-medium hover:bg-purple-700 disabled:opacity-50"
+                  className="flex-1 bg-purple-600 text-white px-3 py-2 rounded-lg text-xs font-medium hover:bg-purple-700 disabled:opacity-50 flex items-center justify-center gap-1.5 transition-colors"
                 >
-                  {updatingStatus === order.id ? 'Atualizando...' : 'Sair para Entrega'}
+                  <Truck className="w-3.5 h-3.5" />
+                  {updatingStatus === order.id ? 'Atualizando...' : 'Sair p/ Entrega'}
                 </button>
               </div>
             )}
@@ -542,11 +682,13 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
             {order.status === 'delivering' && (
               <div className="flex space-x-2">
                 <button
+                  type="button"
                   onClick={() => updateOrderStatus(order.id, 'delivered')}
                   disabled={updatingStatus === order.id}
-                  className="flex-1 bg-gray-600 text-white px-3 py-2 rounded text-sm font-medium hover:bg-gray-700 disabled:opacity-50"
+                  className="flex-1 bg-green-600 text-white px-3 py-2 rounded-lg text-xs font-medium hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-1.5 transition-colors"
                 >
-                  {updatingStatus === order.id ? 'Atualizando...' : 'Marcar como Entregue'}
+                  <Package className="w-3.5 h-3.5" />
+                  {updatingStatus === order.id ? 'Atualizando...' : 'Marcar Entregue'}
                 </button>
               </div>
             )}

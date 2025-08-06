@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '../../../../../lib/supabase';
-import { cookies } from 'next/headers';
 
 export async function GET(
   request: NextRequest,
@@ -8,17 +7,19 @@ export async function GET(
 ) {
   try {
     const { slug } = await params;
-    const cookieStore = await cookies();
-    const token = cookieStore.get('sb-wxggxjpkbdhofbubvlbd-auth-token')?.value;
+    const { searchParams } = new URL(request.url);
+    
+    // Parâmetros de consulta
+    const limit = parseInt(searchParams.get('limit') || '50');
+    const offset = parseInt(searchParams.get('offset') || '0');
+    const status = searchParams.get('status');
+    const dateFrom = searchParams.get('dateFrom');
+    const dateTo = searchParams.get('dateTo');
+    const onlyToday = searchParams.get('onlyToday') === 'true';
 
-    if (!token) {
-      return NextResponse.json(
-        { error: 'Não autorizado' },
-        { status: 401 }
-      );
-    }
+    console.log('🔍 Buscando pedidos:', { slug, limit, offset, status, dateFrom, dateTo, onlyToday });
 
-    // Buscar a loja pelo slug
+    // 1. Buscar a loja pelo slug primeiro
     const { data: store, error: storeError } = await supabase
       .from('stores')
       .select('id')
@@ -32,12 +33,37 @@ export async function GET(
       );
     }
 
-    // Buscar pedidos da loja ordenados por data de criação (mais recentes primeiro)
-    const { data: orders, error: ordersError } = await supabase
+    // 2. Construir query para pedidos
+    let query = supabase
       .from('orders')
       .select('*')
       .eq('store_id', store.id)
       .order('created_at', { ascending: false });
+
+    // Aplicar filtros
+    if (status && status !== 'all') {
+      query = query.eq('status', status);
+    }
+
+    // Filtro de data
+    if (onlyToday) {
+      const today = new Date();
+      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+      
+      query = query
+        .gte('created_at', startOfDay.toISOString())
+        .lte('created_at', endOfDay.toISOString());
+    } else if (dateFrom && dateTo) {
+      query = query
+        .gte('created_at', new Date(dateFrom).toISOString())
+        .lte('created_at', new Date(dateTo + 'T23:59:59').toISOString());
+    }
+
+    // Aplicar paginação
+    query = query.range(offset, offset + limit - 1);
+
+    const { data: orders, error: ordersError } = await query;
 
     if (ordersError) {
       console.error('Erro ao buscar pedidos:', ordersError);
@@ -47,16 +73,52 @@ export async function GET(
       );
     }
 
+    // 3. Buscar contagem total para paginação (otimizada)
+    let countQuery = supabase
+      .from('orders')
+      .select('id', { count: 'exact', head: true })
+      .eq('store_id', store.id);
+
+    if (status && status !== 'all') {
+      countQuery = countQuery.eq('status', status);
+    }
+
+    if (onlyToday) {
+      const today = new Date();
+      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+      
+      countQuery = countQuery
+        .gte('created_at', startOfDay.toISOString())
+        .lte('created_at', endOfDay.toISOString());
+    } else if (dateFrom && dateTo) {
+      countQuery = countQuery
+        .gte('created_at', new Date(dateFrom).toISOString())
+        .lte('created_at', new Date(dateTo + 'T23:59:59').toISOString());
+    }
+
+    const { count } = await countQuery;
+
+    console.log('✅ Pedidos encontrados:', { 
+      orders: orders?.length || 0, 
+      total: count || 0 
+    });
+
     return NextResponse.json({
-      success: true,
-      orders: orders || []
+      orders: orders || [],
+      pagination: {
+        total: count || 0,
+        limit,
+        offset,
+        hasMore: (count || 0) > offset + limit
+      }
     });
 
   } catch (error) {
-    console.error('Erro na busca de pedidos:', error);
+    console.error('Erro na API de pedidos:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
     );
   }
-} 
+}

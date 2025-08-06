@@ -64,7 +64,7 @@ export default function CartPageClient({ store }: CartPageClientProps) {
       const orderItems = cart.map(item => ({
         id: item.name.toLowerCase().replace(/\s+/g, '-'), // Gerar ID baseado no nome
         name: item.name,
-        price: parseFloat(item.price.replace('R$', '').replace(',', '.').trim()),
+        price: Number.parseFloat(item.price.replace('R$', '').replace(',', '.').trim()),
         quantity: item.quantity,
         image: item.image
       }));
@@ -76,6 +76,7 @@ export default function CartPageClient({ store }: CartPageClientProps) {
         customer_address: '', // Você pode adicionar um campo para endereço
         items: orderItems,
         total: getCartTotal(),
+        source: 'link', // Pedidos de clientes vêm via link da loja
         notes: '' // Você pode adicionar um campo para observações
       };
 

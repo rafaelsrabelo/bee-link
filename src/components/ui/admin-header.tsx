@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { ChevronDown, LogOut, Menu, User, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { User, LogOut, ChevronDown, Menu, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useStore } from '../../contexts/StoreContext';
 import OrderNotificationBadge from './order-notification-badge';
@@ -102,6 +102,7 @@ export default function AdminHeader({ store: propStore, currentPage, title, icon
           <div className="flex items-center space-x-4">
             {/* Navegação Desktop */}
             <div className="flex items-center space-x-2">
+              {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
               <button
                 onClick={() => router.push(`/admin/${store.slug}`)}
                 className={`px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
@@ -112,6 +113,7 @@ export default function AdminHeader({ store: propStore, currentPage, title, icon
               >
                 Dashboard
               </button>
+              {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
               <button
                 onClick={() => router.push(`/admin/${store.slug}/products`)}
                 className={`px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
@@ -122,6 +124,7 @@ export default function AdminHeader({ store: propStore, currentPage, title, icon
               >
                 Produtos
               </button>
+              {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
               <button
                 onClick={() => router.push(`/admin/${store.slug}/store`)}
                 className={`px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
@@ -132,6 +135,7 @@ export default function AdminHeader({ store: propStore, currentPage, title, icon
               >
                 Minha Loja
               </button>
+              {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
               <button
                 onClick={() => router.push(`/admin/${store.slug}/orders`)}
                 className={`px-3 py-2 rounded-lg text-sm transition-all duration-200 relative ${
@@ -149,11 +153,23 @@ export default function AdminHeader({ store: propStore, currentPage, title, icon
                   />
                 </div>
               </button>
+              {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
+              <button
+                onClick={() => router.push(`/admin/${store.slug}/reports`)}
+                className={`px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                  isActive('reports') 
+                    ? 'text-white bg-white/20 border-b-2 border-white' 
+                    : 'text-white/80 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                Relatórios
+              </button>
 
             </div>
 
             {/* User Menu Desktop */}
             <div className="relative user-menu">
+              {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 className="flex items-center space-x-2 p-2 text-white hover:bg-white/20 transition-colors rounded-lg"
@@ -168,6 +184,7 @@ export default function AdminHeader({ store: propStore, currentPage, title, icon
               
               {showUserMenu && (
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                  {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
                   <button
                     onClick={async () => {
                       await signOut();
@@ -199,6 +216,7 @@ export default function AdminHeader({ store: propStore, currentPage, title, icon
             <div className="flex items-center space-x-2">
               {/* User Menu Mobile */}
               <div className="relative user-menu">
+                {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
                   className="flex items-center space-x-1 p-2 text-white hover:bg-white/20 transition-colors rounded-lg"
@@ -213,6 +231,7 @@ export default function AdminHeader({ store: propStore, currentPage, title, icon
                       <p className="text-xs font-medium text-gray-900">{store.name}</p>
                       <p className="text-xs text-gray-500 truncate">{user?.email}</p>
                     </div>
+                    {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
                     <button
                       onClick={async () => {
                         await signOut();
@@ -227,6 +246,7 @@ export default function AdminHeader({ store: propStore, currentPage, title, icon
               </div>
 
               {/* Menu Hambúrguer */}
+              {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
               <button
                 onClick={() => setShowMobileMenu(!showMobileMenu)}
                 className="p-2 text-white hover:bg-white/20 transition-colors rounded-lg mobile-menu"
@@ -244,6 +264,7 @@ export default function AdminHeader({ store: propStore, currentPage, title, icon
           {showMobileMenu && (
             <div className="mt-4 bg-white/10 backdrop-blur-sm rounded-lg p-4 mobile-menu">
               <div className="space-y-2">
+                {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
                 <button
                   onClick={() => handleNavigation(`/admin/${store.slug}`)}
                   className={`w-full px-3 py-2 rounded-lg text-sm transition-all duration-200 text-left ${
@@ -254,6 +275,7 @@ export default function AdminHeader({ store: propStore, currentPage, title, icon
                 >
                   Dashboard
                 </button>
+                {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
                 <button
                   onClick={() => handleNavigation(`/admin/${store.slug}/products`)}
                   className={`w-full px-3 py-2 rounded-lg text-sm transition-all duration-200 text-left ${
@@ -264,6 +286,7 @@ export default function AdminHeader({ store: propStore, currentPage, title, icon
                 >
                   Produtos
                 </button>
+                {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
                 <button
                   onClick={() => handleNavigation(`/admin/${store.slug}/store`)}
                   className={`w-full px-3 py-2 rounded-lg text-sm transition-all duration-200 text-left ${
@@ -274,6 +297,7 @@ export default function AdminHeader({ store: propStore, currentPage, title, icon
                 >
                   Minha Loja
                 </button>
+                {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
                 <button
                   onClick={() => handleNavigation(`/admin/${store.slug}/orders`)}
                   className={`w-full px-3 py-2 rounded-lg text-sm transition-all duration-200 text-left ${
