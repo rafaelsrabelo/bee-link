@@ -3,6 +3,7 @@
 import { ArrowLeft, MessageCircle, ShoppingCart, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
+import { toast } from 'react-hot-toast';
 
 import { useCartStore } from '../../stores/cartStore';
 import type { StoreData } from '../data';
@@ -52,36 +53,103 @@ export default function CartPageClient({ store }: CartPageClientProps) {
     }
   }, [store.slug, clearCart]);
 
-  const handleWhatsAppClick = () => {
+  const handleWhatsAppClick = async () => {
     if (cart.length === 0) return;
 
-    const itemsList = cart.map(item => 
-      `• ${item.name} - ${item.price} x${item.quantity}`
-    ).join('\n');
+    // Mostrar loading
+    const loadingToast = toast.loading('Enviando pedido...');
 
-    const total = getCartTotal().toFixed(2).replace('.', ',');
-    
-    const message = `Olá! Gostaria de fazer um pedido da ${store.store_name}:\n\n${itemsList}\n\n*Total: R$ ${total}*`;
-    
-    // Limpar carrinho antes de abrir WhatsApp
-    clearCart();
-    
-    // Abrir WhatsApp diretamente
-                    const whatsappUrl = store.social_networks?.whatsapp 
-                  ? `https://wa.me/${store.social_networks.whatsapp.replace(/[^\d]/g, '')}?text=${encodeURIComponent(message)}`
-                  : '#';
-    
-    // Para WebViews do Instagram, usar location.href é mais confiável
-    if (typeof window !== 'undefined' && window.navigator.userAgent.toLowerCase().includes('instagram')) {
-      window.location.href = whatsappUrl;
-    } else {
-      window.open(whatsappUrl, '_blank');
+    try {
+      // Preparar dados do pedido
+      const orderItems = cart.map(item => ({
+        id: item.name.toLowerCase().replace(/\s+/g, '-'), // Gerar ID baseado no nome
+        name: item.name,
+        price: parseFloat(item.price.replace('R$', '').replace(',', '.').trim()),
+        quantity: item.quantity,
+        image: item.image
+      }));
+
+      const orderData = {
+        storeSlug: store.slug,
+        customer_name: 'Cliente', // Você pode adicionar um formulário para coletar dados do cliente
+        customer_phone: store.social_networks?.whatsapp || '',
+        customer_address: '', // Você pode adicionar um campo para endereço
+        items: orderItems,
+        total: getCartTotal(),
+        notes: '' // Você pode adicionar um campo para observações
+      };
+
+      // Enviar pedido para a API
+      const response = await fetch('/api/orders/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orderData),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        toast.success('Pedido enviado com sucesso!', { id: loadingToast });
+        
+        // Limpar carrinho
+        clearCart();
+        
+        // Preparar mensagem para WhatsApp do cliente
+        const items = cart.map(item => 
+          `• ${item.quantity}x ${item.name} - ${item.price}`
+        ).join('\n');
+        
+        const whatsappMessage = `🛒 *MEU PEDIDO*\n\n📋 *Pedido #${result.orderId?.slice(0, 8) || 'NOVO'}*\n\n🛍️ *Itens:*\n${items}\n\n💰 *Total:* R$ ${getCartTotal().toFixed(2).replace('.', ',')}\n\n✅ *Status:* Pedido enviado com sucesso!\n\nObrigado por escolher ${store.store_name}!`;
+        
+        // Redirecionar para WhatsApp da loja com a mensagem do pedido
+        if (store.social_networks?.whatsapp) {
+          const cleanPhone = store.social_networks.whatsapp.replace(/[^\d]/g, '');
+          const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(whatsappMessage)}`;
+          
+          // Mostrar toast informativo
+          toast.success('Redirecionando para WhatsApp...', { duration: 3000 });
+          
+          // Redirecionar após pequeno delay para mostrar o toast
+          setTimeout(() => {
+            // Tentar diferentes métodos de redirecionamento
+            try {
+              // Método 1: window.open
+              const opened = window.open(whatsappUrl, '_blank');
+              if (!opened) {
+                // Método 2: location.href se popup foi bloqueado
+                window.location.href = whatsappUrl;
+                return;
+              }
+            } catch (error) {
+              console.error('Erro ao abrir WhatsApp:', error);
+              // Método fallback
+              window.location.href = whatsappUrl;
+            }
+            
+            // Redirecionar para a loja após abrir WhatsApp
+            setTimeout(() => {
+              window.location.href = `/${store.slug}?showCatalog=true`;
+            }, 1500);
+          }, 1000);
+        } else {
+          // Se não tiver WhatsApp, redirecionar direto para a loja
+          window.location.href = `/${store.slug}?showCatalog=true`;
+        }
+      } else {
+        throw new Error('Erro ao enviar pedido');
+      }
+    } catch (error) {
+      console.error('Erro ao enviar pedido:', error);
+      toast.error('Erro ao enviar pedido. Tente novamente.', { id: loadingToast });
     }
   };
 
   const handleBackToStore = () => {
     window.location.href = `/${store.slug}?showCatalog=true`;
   };
+
+
 
   if (cart.length === 0) {
     return (

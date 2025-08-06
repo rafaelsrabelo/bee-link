@@ -89,6 +89,7 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
         </div>
         <CartHeader 
           storeSlug={store.slug}
+          colors={store.colors}
         />
       </div>
 

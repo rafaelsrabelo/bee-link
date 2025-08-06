@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { User, LogOut, ChevronDown, Menu, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useStore } from '../../contexts/StoreContext';
+import OrderNotificationBadge from './order-notification-badge';
 
 interface Store {
   id: string;
@@ -22,7 +23,7 @@ interface Store {
 
 interface AdminHeaderProps {
   store?: Store | null;
-  currentPage: 'dashboard' | 'products' | 'store';
+  currentPage: 'dashboard' | 'products' | 'store' | 'orders';
   title: string;
   icon: React.ComponentType<{ className?: string }>;
 }
@@ -130,6 +131,23 @@ export default function AdminHeader({ store: propStore, currentPage, title, icon
                 }`}
               >
                 Minha Loja
+              </button>
+              <button
+                onClick={() => router.push(`/admin/${store.slug}/orders`)}
+                className={`px-3 py-2 rounded-lg text-sm transition-all duration-200 relative ${
+                  isActive('orders') 
+                    ? 'text-white bg-white/20 border-b-2 border-white' 
+                    : 'text-white/80 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  Pedidos
+                  <OrderNotificationBadge 
+                    storeSlug={store.slug} 
+                    storeId={store.id}
+                    className="text-white"
+                  />
+                </div>
               </button>
 
             </div>
@@ -255,6 +273,23 @@ export default function AdminHeader({ store: propStore, currentPage, title, icon
                   }`}
                 >
                   Minha Loja
+                </button>
+                <button
+                  onClick={() => handleNavigation(`/admin/${store.slug}/orders`)}
+                  className={`w-full px-3 py-2 rounded-lg text-sm transition-all duration-200 text-left ${
+                    isActive('orders') 
+                      ? 'text-white bg-white/20 border-l-4 border-white' 
+                      : 'text-white/80 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    Pedidos
+                    <OrderNotificationBadge 
+                      storeSlug={store.slug} 
+                      storeId={store.id}
+                      className="text-white"
+                    />
+                  </div>
                 </button>
               </div>
             </div>

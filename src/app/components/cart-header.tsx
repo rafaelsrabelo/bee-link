@@ -9,9 +9,15 @@ import { trackEvent } from "../../lib/simple-analytics";
 interface CartHeaderProps {
   storeSlug: string;
   className?: string;
+  colors?: {
+    background: string;
+    primary: string;
+    text: string;
+    header: string;
+  };
 }
 
-export default function CartHeader({ storeSlug, className = "" }: CartHeaderProps) {
+export default function CartHeader({ storeSlug, className = "", colors }: CartHeaderProps) {
   const { cart, getCartTotal, getCartItemCount, isLoading } = useCartStore();
   const router = useRouter();
 
@@ -52,7 +58,10 @@ export default function CartHeader({ storeSlug, className = "" }: CartHeaderProp
       >
         <ShoppingCart className="w-6 h-6" />
         {cart.length > 0 && (
-          <span className="absolute -top-1 -right-1 bg-[#A67C52] text-white text-xs rounded-full w-6 h-6 flex items-center justify-center shadow-lg border-2 border-white/50">
+          <span 
+            className="absolute -top-1 -right-1 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center shadow-lg border-2 border-white/50"
+            style={{ backgroundColor: colors?.primary || '#A67C52' }}
+          >
             {getCartItemCount()}
           </span>
         )}

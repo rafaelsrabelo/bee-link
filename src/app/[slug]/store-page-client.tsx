@@ -155,6 +155,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
           </div>
           <CartHeader 
             storeSlug={store.slug}
+            colors={store.colors}
           />
         </div>
 
