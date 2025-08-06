@@ -8,8 +8,8 @@ import { toast } from 'react-hot-toast';
 import loadingAnimation from '../../../../../public/animations/loading-dots-blue.json';
 import ProtectedRoute from '../../../../components/auth/ProtectedRoute';
 import AdminHeader from '../../../../components/ui/admin-header';
-import CreateStoreCategoryModal from '../../../../components/ui/create-store-category-modal';
 import CategoriesManager from '../../../../components/ui/categories-manager';
+import CreateStoreCategoryModal from '../../../../components/ui/create-store-category-modal';
 import DeleteModal from '../../../../components/ui/delete-modal';
 import LottieLoader from '../../../../components/ui/lottie-loader';
 import MobileImageUpload from '../../../../components/ui/mobile-image-upload';
@@ -89,6 +89,35 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
   });
   const [showCreateCategoryModal, setShowCreateCategoryModal] = useState(false);
   const [showCategoriesManager, setShowCategoriesManager] = useState(false);
+  const [categoriesRefreshKey, setCategoriesRefreshKey] = useState(0);
+
+  // Função para buscar nome da categoria pelo ID
+  const getCategoryNameById = async (categoryId: number): Promise<string> => {
+    try {
+      const response = await fetch(`/api/stores/${slug}/product-categories`);
+      if (response.ok) {
+        const categories = await response.json();
+        const category = categories.find((cat: { id: number; name: string }) => cat.id === categoryId);
+        return category?.name || 'bag';
+      }
+    } catch (error) {
+      console.error('Erro ao buscar categoria:', error);
+    }
+    return 'bag';
+  };
+
+  // Função para forçar refresh das categorias
+  const refreshCategories = () => {
+    setCategoriesRefreshKey(prev => prev + 1);
+    // Reset da categoria selecionada no formulário para evitar estado inconsistente
+    if (newProduct.category === 'selected') {
+      setNewProduct(prev => ({
+        ...prev,
+        category_id: undefined,
+        category: 'bag' // Reset para valor padrão
+      }));
+    }
+  };
 
   const { user } = useAuth();
   const router = useRouter();
@@ -265,13 +294,19 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
       return;
     }
 
+    // Buscar nome real da categoria se foi selecionada uma categoria personalizada
+    let categoryName = newProduct.category || 'bag';
+    if (newProduct.category === 'selected' && newProduct.category_id) {
+      categoryName = await getCategoryNameById(newProduct.category_id);
+    }
+
     const product: Product = {
       id: Date.now().toString(),
-      name: newProduct.name!,
-      price: newProduct.price!,
-      image: newProduct.image!,
-      category: newProduct.category!,
-      description: newProduct.description!,
+      name: newProduct.name || '',
+      price: newProduct.price || '',
+      image: newProduct.image || '',
+      category: categoryName,
+      description: newProduct.description || '',
       readyToShip: newProduct.readyToShip || false,
       available: newProduct.available !== false,
       store_id: store?.id
@@ -302,8 +337,19 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
   const handleSaveEdit = async () => {
     if (!editingProduct) return;
 
+    // Buscar nome real da categoria se foi selecionada uma categoria personalizada
+    let categoryName = editingProduct.category;
+    if (editingProduct.category === 'selected' && editingProduct.category_id) {
+      categoryName = await getCategoryNameById(editingProduct.category_id);
+    }
+
+    const updatedProduct = {
+      ...editingProduct,
+      category: categoryName
+    };
+
     const updatedProducts = products.map(p => 
-      p.id === editingProduct.id ? editingProduct : p
+      p.id === editingProduct.id ? updatedProduct : p
     );
     await saveProducts(updatedProducts);
 
@@ -507,6 +553,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
                     )}
                     <div className="absolute top-2 right-2">
                       <button
+                        type="button"
                         onClick={() => toggleAvailability(product.id)}
                         className={`p-1 rounded-full ${
                           product.available 
@@ -557,7 +604,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
                                               {/* Analytics info */}
                         {!analytics ? (
                           <div className="text-xs bg-gray-100 text-gray-400 px-2 py-1 rounded-full">
-                            <div className="animate-pulse bg-gray-200 h-3 w-8 rounded"></div>
+                            <div className="animate-pulse bg-gray-200 h-3 w-8 rounded" />
                           </div>
                         ) : (
                           <div className="flex items-center gap-1 text-xs bg-purple-100 text-purple-600 px-2 py-1 rounded-full">
@@ -572,7 +619,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
                         {/* Cart Analytics info */}
                         {!analytics ? (
                           <div className="text-xs bg-gray-100 text-gray-400 px-2 py-1 rounded-full">
-                            <div className="animate-pulse bg-gray-200 h-3 w-8 rounded"></div>
+                            <div className="animate-pulse bg-gray-200 h-3 w-8 rounded" />
                           </div>
                         ) : (
                           <div className="flex items-center gap-1 text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full">
@@ -604,12 +651,14 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
                       
                       <div className="flex space-x-2">
                         <button
+                          type="button"
                           onClick={() => handleEditProduct(product)}
                           className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
+                          type="button"
                           onClick={() => handleDeleteProduct(product.id)}
                           className="p-1 text-gray-400 hover:text-red-600 transition-colors"
                         >
@@ -629,6 +678,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-semibold text-gray-900">Adicionar Novo Produto</h2>
                 <button
+                  type="button"
                   onClick={() => setShowAddForm(false)}
                   className="text-gray-400 hover:text-gray-600 transition-colors"
                 >
@@ -686,6 +736,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Categoria</label>
                   <ProductCategorySelector
+                    key={categoriesRefreshKey} // Força re-render quando categorias mudam
                     value={newProduct.category_id}
                     onChange={(categoryId) => {
                       setNewProduct({
@@ -760,6 +811,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-xl font-semibold text-gray-900">Editar Produto</h2>
                   <button
+                    type="button"
                     onClick={handleCancelEdit}
                     className="text-gray-400 hover:text-gray-600 transition-colors"
                   >
@@ -814,6 +866,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Categoria</label>
                     <ProductCategorySelector
+                      key={categoriesRefreshKey} // Força re-render quando categorias mudam
                       value={editingProduct.category_id}
                       onChange={(categoryId) => {
                         setEditingProduct({
@@ -902,8 +955,8 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
             onCategoryCreated={() => {
               // Fechar modal
               setShowCreateCategoryModal(false);
-              // Simples reload (funciona garantido)
-              window.location.reload();
+              // Força refresh das categorias
+              refreshCategories();
             }}
             storeSlug={slug || ''}
             colors={store?.colors}
@@ -913,7 +966,10 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
           {showCategoriesManager && (
             <CategoriesManager
               storeSlug={slug || ''}
-              onClose={() => setShowCategoriesManager(false)}
+              onClose={() => {
+                setShowCategoriesManager(false);
+                refreshCategories(); // Força refresh das categorias
+              }}
             />
           )}
         </div>
