@@ -1,20 +1,20 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '../../../../contexts/AuthContext';
-import { toast } from 'react-hot-toast';
-import { Save, Upload, Instagram, MessageCircle, Music, Youtube, Settings, Store, Palette } from 'lucide-react';
+import { Instagram, MessageCircle, Music, Palette, Save, Settings, Store, Upload, Youtube } from 'lucide-react';
 import Image from 'next/image';
-import MobileImageUpload from '../../../../components/ui/mobile-image-upload';
+import { useRouter } from 'next/navigation';
+import { use, useEffect, useState } from 'react';
+import { toast } from 'react-hot-toast';
+import loadingAnimation from '../../../../../public/animations/loading-dots-blue.json';
 import ProtectedRoute from '../../../../components/auth/ProtectedRoute';
-import LottieLoader from '../../../../components/ui/lottie-loader';
 import AdminHeader from '../../../../components/ui/admin-header';
 import CategorySelector from '../../../../components/ui/category-selector';
 import LayoutSelector from '../../../../components/ui/layout-selector';
+import LottieLoader from '../../../../components/ui/lottie-loader';
+import MobileImageUpload from '../../../../components/ui/mobile-image-upload';
 import StorePreview from '../../../../components/ui/store-preview';
 import Tabs from '../../../../components/ui/tabs';
-import loadingAnimation from '../../../../../public/animations/loading-dots-blue.json';
+import { useAuth } from '../../../../contexts/AuthContext';
 
 interface Store {
   id: string;
@@ -478,18 +478,45 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
                           </label>
                           <div className="flex items-center space-x-2">
                             <MessageCircle className="w-5 h-5 text-green-600" />
-                            <input
-                              type="text"
-                              value={formData.social_networks.whatsapp}
-                              onChange={(e) => updateFormData({
-                                social_networks: { ...formData.social_networks, whatsapp: e.target.value }
-                              })}
-                              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                              placeholder="(11) 99999-9999"
-                            />
+                            <div className="flex-1 relative">
+                              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm font-medium">
+                                +55
+                              </div>
+                              <input
+                                type="text"
+                                value={formData.social_networks.whatsapp.replace(/^\+?55/, '')}
+                                onChange={(e) => {
+                                  // Remove tudo que não é número
+                                  let value = e.target.value.replace(/\D/g, '');
+                                  
+                                  // Aplica máscara (11) 99999-9999
+                                  if (value.length >= 11) {
+                                    value = value.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+                                  } else if (value.length >= 7) {
+                                    value = value.replace(/(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3');
+                                  } else if (value.length >= 3) {
+                                    value = value.replace(/(\d{2})(\d{0,5})/, '($1) $2');
+                                  } else if (value.length >= 1) {
+                                    value = value.replace(/(\d{0,2})/, '($1');
+                                  }
+                                  
+                                  // Sempre salva com +55 no backend
+                                  const fullNumber = value ? `+55${value.replace(/\D/g, '')}` : '';
+                                  updateFormData({
+                                    social_networks: { ...formData.social_networks, whatsapp: fullNumber }
+                                  });
+                                }}
+                                className="w-full pl-12 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                placeholder="(11) 99999-9999"
+                                maxLength={15}
+                              />
+                            </div>
                           </div>
                           <p className="text-xs text-gray-500 mt-1">
-                            Número do WhatsApp para contato com clientes
+                            Digite apenas o número com DDD. O código do país (+55) será adicionado automaticamente.
+                          </p>
+                          <p className="text-xs text-green-600 mt-1">
+                            💡 Exemplo: (11) 99999-9999 será salvo como +5511999999999
                           </p>
                         </div>
 

@@ -722,9 +722,6 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
           <p className="text-sm text-gray-500 mb-2">
             Há {orders.length - todayOrders.length} pedidos de dias anteriores
           </p>
-          <p className="text-xs text-gray-400">
-            💡 Em breve: página de relatórios para ver histórico completo
-          </p>
         </div>
       )}
 

@@ -1,16 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { ChevronDown, Package } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 interface ProductCategory {
   id: number;
   name: string;
-  name_pt: string;
-  slug: string;
   description: string;
-  icon: string;
   color: string;
+  store_id: string;
   is_active: boolean;
   sort_order: number;
 }
@@ -20,6 +18,7 @@ interface ProductCategorySelectorProps {
   onChange: (categoryId: number) => void;
   placeholder?: string;
   className?: string;
+  storeSlug: string; // Adicionado para buscar categorias por loja
   colors?: {
     primary: string;
     text: string;
@@ -33,6 +32,7 @@ export default function ProductCategorySelector({
   onChange, 
   placeholder = "Selecionar categoria",
   className = "",
+  storeSlug,
   colors
 }: ProductCategorySelectorProps) {
   const [categories, setCategories] = useState<ProductCategory[]>([]);
@@ -42,7 +42,7 @@ export default function ProductCategorySelector({
   useEffect(() => {
     const loadCategories = async () => {
       try {
-        const response = await fetch('/api/product-categories');
+        const response = await fetch(`/api/stores/${storeSlug}/product-categories`);
         if (response.ok) {
           const data = await response.json();
           setCategories(data);
@@ -55,7 +55,7 @@ export default function ProductCategorySelector({
     };
 
     loadCategories();
-  }, []);
+  }, [storeSlug]);
 
   const selectedCategory = categories.find(cat => cat.id === value);
 
@@ -91,12 +91,14 @@ export default function ProductCategorySelector({
                   className="w-4 h-4 rounded-full"
                   style={{ backgroundColor: selectedCategory.color }}
                 ></div>
-                <span className="text-sm text-gray-900">{selectedCategory.name_pt}</span>
+                <span className="text-sm text-gray-900">{selectedCategory.name}</span>
               </>
             ) : (
               <>
                 <Package className="w-4 h-4 text-gray-400" />
-                <span className="text-sm text-gray-500">{placeholder}</span>
+                <span className="text-sm text-gray-500">
+                  {categories.length === 0 ? "Crie uma categoria primeiro" : placeholder}
+                </span>
               </>
             )}
           </div>
@@ -107,8 +109,13 @@ export default function ProductCategorySelector({
       {isOpen && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
           {categories.length === 0 ? (
-            <div className="px-3 py-2 text-sm text-gray-500">
-              Nenhuma categoria disponível
+            <div className="px-3 py-4 text-center">
+              <div className="text-sm text-gray-500 mb-2">
+                📝 Crie sua primeira categoria
+              </div>
+              <div className="text-xs text-gray-400">
+                Use o botão &quot;Criar Categoria&quot; acima
+              </div>
             </div>
           ) : (
             <div className="py-1">
@@ -127,7 +134,7 @@ export default function ProductCategorySelector({
                       className="w-3 h-3 rounded-full"
                       style={{ backgroundColor: category.color }}
                     ></div>
-                    <span className="text-sm text-gray-900">{category.name_pt}</span>
+                    <span className="text-sm text-gray-900">{category.name}</span>
                   </div>
                 </button>
               ))}

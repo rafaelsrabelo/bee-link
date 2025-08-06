@@ -1,19 +1,20 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '../../../../contexts/AuthContext';
-import { toast } from 'react-hot-toast';
-import { Edit, Eye, EyeOff, Package, Plus, Trash2, X, Star, MousePointer, ShoppingCart, FolderPlus } from 'lucide-react';
+import { Edit, Eye, EyeOff, FolderPlus, MousePointer, Package, Plus, ShoppingCart, Star, Trash2, X } from 'lucide-react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { use, useEffect, useState } from 'react';
+import { toast } from 'react-hot-toast';
+import loadingAnimation from '../../../../../public/animations/loading-dots-blue.json';
+import ProtectedRoute from '../../../../components/auth/ProtectedRoute';
+import AdminHeader from '../../../../components/ui/admin-header';
+import CreateStoreCategoryModal from '../../../../components/ui/create-store-category-modal';
+import CategoriesManager from '../../../../components/ui/categories-manager';
 import DeleteModal from '../../../../components/ui/delete-modal';
 import LottieLoader from '../../../../components/ui/lottie-loader';
 import MobileImageUpload from '../../../../components/ui/mobile-image-upload';
-import ProtectedRoute from '../../../../components/auth/ProtectedRoute';
-import AdminHeader from '../../../../components/ui/admin-header';
 import ProductCategorySelector from '../../../../components/ui/product-category-selector';
-import CreateCategoryModal from '../../../../components/ui/create-category-modal';
-import loadingAnimation from '../../../../../public/animations/loading-dots-blue.json';
+import { useAuth } from '../../../../contexts/AuthContext';
 
 interface Product {
   id: string;
@@ -87,17 +88,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
     available: true
   });
   const [showCreateCategoryModal, setShowCreateCategoryModal] = useState(false);
-  const [categories, setCategories] = useState<Array<{
-    id: number;
-    name: string;
-    name_pt: string;
-    slug: string;
-    description: string;
-    icon: string;
-    color: string;
-    is_active: boolean;
-    sort_order: number;
-  }>>([]);
+  const [showCategoriesManager, setShowCategoriesManager] = useState(false);
 
   const { user } = useAuth();
   const router = useRouter();
@@ -117,7 +108,6 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
   useEffect(() => {
     if (user && slug) {
       loadStoreAndProducts();
-      loadCategories();
     }
   }, [user, slug]);
 
@@ -368,22 +358,9 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
     toast.success('Todos os produtos foram removidos!');
   };
 
-  const handleCategoryCreated = () => {
-    toast.success('Categoria criada com sucesso!');
-    loadCategories(); // Recarregar categorias
-  };
 
-  const loadCategories = async () => {
-    try {
-      const response = await fetch('/api/product-categories');
-      if (response.ok) {
-        const data = await response.json();
-        setCategories(data);
-      }
-    } catch (error) {
-      console.error('Erro ao carregar categorias:', error);
-    }
-  };
+
+
 
                 const getProductClicks = (productId: string) => {
                 if (!analytics?.top_products) return 0;
@@ -469,10 +446,18 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
             <button
               onClick={() => setShowCreateCategoryModal(true)}
               type="button"
-              className="w-full sm:w-auto bg-green-500/80 hover:bg-green-500 text-white px-6 py-3 rounded-lg flex items-center justify-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg font-medium ml-auto"
+              className="w-full sm:w-auto bg-green-500/80 hover:bg-green-500 text-white px-6 py-3 rounded-lg flex items-center justify-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg font-medium"
             >
               <FolderPlus className="w-5 h-5" />
               <span>Criar Categoria</span>
+            </button>
+            <button
+              onClick={() => setShowCategoriesManager(true)}
+              type="button"
+              className="w-full sm:w-auto bg-purple-500/80 hover:bg-purple-500 text-white px-6 py-3 rounded-lg flex items-center justify-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg font-medium"
+            >
+              <Edit className="w-5 h-5" />
+              <span>Gerenciar Categorias</span>
             </button>
           </div>
 
@@ -673,7 +658,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
                         // Remover tudo exceto números
                         const value = e.target.value.replace(/[^\d]/g, '');
                         // Converter para centavos e formatar
-                        const cents = parseInt(value) || 0;
+                        const cents = Number.parseInt(value) || 0;
                         const reais = Math.floor(cents / 100);
                         const centavos = cents % 100;
                         const formatted = `${reais},${centavos.toString().padStart(2, '0')}`;
@@ -703,14 +688,14 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
                   <ProductCategorySelector
                     value={newProduct.category_id}
                     onChange={(categoryId) => {
-                      const selectedCategory = categories?.find(cat => cat.id === categoryId);
                       setNewProduct({
                         ...newProduct, 
                         category_id: categoryId,
-                        category: selectedCategory?.name_pt || ''
+                        category: 'selected'
                       });
                     }}
                     placeholder="Selecionar categoria"
+                    storeSlug={slug || ''}
                     colors={store?.colors}
                   />
                 </div>
@@ -754,7 +739,6 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
                   onClick={handleAddProduct}
                   disabled={!isFormValid}
                   className="w-full sm:w-auto px-6 py-3 text-black bg-blue-600 rounded-lg  transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-md hover:shadow-lg order-1 sm:order-2"
-                  // style={{ backgroundColor: store.colors.primary }}
                 >
                   {isFormValid ? 'Adicionar Produto' : 'Preencha todos os campos'}
                 </button>
@@ -805,7 +789,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
                           // Remover tudo exceto números
                           const value = e.target.value.replace(/[^\d]/g, '');
                           // Converter para centavos e formatar
-                          const cents = parseInt(value) || 0;
+                          const cents = Number.parseInt(value) || 0;
                           const reais = Math.floor(cents / 100);
                           const centavos = cents % 100;
                           const formatted = `${reais},${centavos.toString().padStart(2, '0')}`;
@@ -832,14 +816,14 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
                     <ProductCategorySelector
                       value={editingProduct.category_id}
                       onChange={(categoryId) => {
-                        const selectedCategory = categories?.find(cat => cat.id === categoryId);
                         setEditingProduct({
                           ...editingProduct, 
                           category_id: categoryId,
-                          category: selectedCategory?.name_pt || ''
+                          category: 'selected'
                         });
                       }}
                       placeholder="Selecionar categoria"
+                      storeSlug={slug || ''}
                       colors={store?.colors}
                     />
                   </div>
@@ -912,12 +896,26 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
           />
 
           {/* Modal de Criar Categoria */}
-          <CreateCategoryModal
+          <CreateStoreCategoryModal
             isOpen={showCreateCategoryModal}
             onClose={() => setShowCreateCategoryModal(false)}
-            onCategoryCreated={handleCategoryCreated}
+            onCategoryCreated={() => {
+              // Fechar modal
+              setShowCreateCategoryModal(false);
+              // Simples reload (funciona garantido)
+              window.location.reload();
+            }}
+            storeSlug={slug || ''}
             colors={store?.colors}
           />
+          
+          {/* Modal de Gerenciar Categorias */}
+          {showCategoriesManager && (
+            <CategoriesManager
+              storeSlug={slug || ''}
+              onClose={() => setShowCategoriesManager(false)}
+            />
+          )}
         </div>
       </div>
     </ProtectedRoute>

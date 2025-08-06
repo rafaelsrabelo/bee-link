@@ -1,15 +1,11 @@
 'use client';
 
 import { 
-  ArrowLeft,
   BarChart3,
-  Calendar, 
   DollarSign,
-  Download, 
   Filter, 
   Package, 
-  TrendingUp, 
-  Users
+  TrendingUp
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { use, useEffect, useState } from 'react';
@@ -102,7 +98,7 @@ export default function ReportsPage({ params }: { params: Promise<{ slug: string
       }
       const storeData = await response.json();
       setStore(storeData);
-    } catch (error) {
+    } catch (_error) {
       toast.error('Erro ao carregar dados da loja');
     }
   };
