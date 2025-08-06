@@ -1,19 +1,22 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '../contexts/AuthContext';
-import { toast } from 'react-hot-toast';
-import { Eye, EyeOff, Mail, Lock, Loader2, ArrowRight, Store } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, Loader2, Lock, Mail, Store } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useState } from 'react';
+import { toast } from 'react-hot-toast';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function HomePage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
 
-  const { signIn, user, loading } = useAuth();
+  const { signIn, resetPassword, user, loading } = useAuth();
   const router = useRouter();
 
   const checkUserStore = useCallback(async () => {
@@ -71,7 +74,28 @@ export default function HomePage() {
     setIsLoading(false);
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!forgotEmail.trim()) {
+      toast.error('Digite seu email');
+      return;
+    }
 
+    setIsResettingPassword(true);
+
+    const { error } = await resetPassword(forgotEmail);
+
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success('Email de recuperação enviado! Verifique sua caixa de entrada.');
+      setShowForgotPassword(false);
+      setForgotEmail('');
+    }
+    
+    setIsResettingPassword(false);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-violet-50">
@@ -170,6 +194,17 @@ export default function HomePage() {
               </button>
             </form>
 
+            {/* Forgot Password Link */}
+            <div className="mt-4 text-center">
+              <button
+                type="button"
+                onClick={() => setShowForgotPassword(true)}
+                className="text-sm text-purple-600 hover:text-purple-700 font-medium transition-colors"
+              >
+                Esqueci minha senha
+              </button>
+            </div>
+
             {/* Create Account Link */}
             <div className="mt-6 text-center">
               <p className="text-gray-600">
@@ -185,6 +220,59 @@ export default function HomePage() {
           </div>
         </div>
       </main>
+
+      {/* Forgot Password Modal */}
+      {showForgotPassword && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md">
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">Esqueci minha senha</h3>
+            <p className="text-gray-600 text-sm mb-6">
+              Digite seu email para receber as instruções de recuperação de senha.
+            </p>
+            
+            <form onSubmit={handleForgotPassword}>
+              <div className="mb-4">
+                <label htmlFor="forgot-email" className="block text-sm font-medium text-gray-700 mb-2">
+                  Email
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    id="forgot-email"
+                    type="email"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    required
+                    className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                    placeholder="seu@email.com"
+                  />
+                </div>
+              </div>
+              
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowForgotPassword(false);
+                    setForgotEmail('');
+                  }}
+                  className="flex-1 px-4 py-3 text-gray-600 border border-gray-300 rounded-xl font-medium hover:bg-gray-50 transition-all duration-200"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={isResettingPassword}
+                  className="flex-1 bg-gradient-to-r from-purple-600 to-violet-600 text-white py-3 px-4 rounded-xl font-medium hover:from-purple-700 hover:to-violet-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isResettingPassword && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {isResettingPassword ? 'Enviando...' : 'Enviar'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Decorative Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">

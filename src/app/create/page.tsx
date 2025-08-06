@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '../../contexts/AuthContext';
-import { toast } from 'react-hot-toast';
-import { Eye, EyeOff, Mail, Lock, Loader2, ArrowLeft, Store, User } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, Loader2, Lock, Mail, Store, User } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { toast } from 'react-hot-toast';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function CreateAccountPage() {
   const [email, setEmail] = useState('');
@@ -83,6 +83,11 @@ export default function CreateAccountPage() {
       setEmail('');
       setPassword('');
       setConfirmPassword('');
+
+      // Redirecionar para login após 2 segundos
+      setTimeout(() => {
+        router.push('/');
+      }, 2000);
     }
     
     setIsLoading(false);
