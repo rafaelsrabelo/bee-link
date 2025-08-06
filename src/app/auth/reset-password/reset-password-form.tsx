@@ -19,27 +19,42 @@ export function ResetPasswordForm() {
   const supabase = createClientComponentClient();
 
   useEffect(() => {
-    // Verificar se há tokens de reset na URL
-    const accessToken = searchParams.get('access_token');
-    const refreshToken = searchParams.get('refresh_token');
-    
-    if (accessToken && refreshToken) {
-      // Definir a sessão com os tokens do email
-      supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken,
-      }).then(({ error }) => {
-        if (error) {
-          toast.error('Link de recuperação inválido ou expirado');
-          router.push('/');
-        } else {
-          setIsValidToken(true);
+    // Verificar se tem token direto na URL ou se está logado
+    const checkAuthAndToken = async () => {
+      try {
+        // Verificar se há token direto na URL (só para debug, não precisamos processar)
+        const tokenParam = searchParams.get('token');
+        if (tokenParam) {
+          console.log('Debug - Token encontrado na URL:', tokenParam);
         }
-      });
-    } else {
-      toast.error('Link de recuperação inválido');
-      router.push('/');
-    }
+        
+        // Verificar se está logado (seja por token ou sessão existente)
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Debug - Erro ao verificar sessão:', error);
+          toast.error('Erro ao verificar autenticação');
+          setTimeout(() => router.push('/'), 3000);
+          return;
+        }
+        
+        if (session?.user) {
+          console.log('Debug - Usuário logado via sessão');
+          setIsValidToken(true);
+          toast.success('Você pode redefinir sua senha agora!');
+        } else {
+          console.log('Debug - Nenhuma autenticação válida encontrada');
+          toast.error('Você precisa estar logado para redefinir a senha');
+          setTimeout(() => router.push('/'), 3000);
+        }
+      } catch (error) {
+        console.error('Debug - Erro geral:', error);
+        toast.error('Erro ao verificar autenticação');
+        setTimeout(() => router.push('/'), 3000);
+      }
+    };
+    
+    checkAuthAndToken();
   }, [searchParams, router, supabase.auth]);
 
   const handleSubmit = async (e: React.FormEvent) => {

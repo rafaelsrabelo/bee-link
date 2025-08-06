@@ -39,7 +39,11 @@ class Analytics {
     this.initializeGA4();
   }
 
-  private generateSessionId(): string {
+  private   generateSessionId(): string {
+    // Evitar Date.now() e Math.random() para problemas de hidratação
+    if (typeof window === 'undefined') {
+      return 'server-session';
+    }
     return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 

@@ -135,12 +135,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const resetPassword = async (email: string) => {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset-password`,
+        redirectTo: `${window.location.origin}/auth/callback`,
       });
       
       return { error };
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Erro ao enviar email de recuperação';
+      // Error logging removido para evitar problemas de hidratação
       return { error: { message: errorMessage } };
     }
   };

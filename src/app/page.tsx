@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 
+
 export default function HomePage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -105,7 +106,9 @@ export default function HomePage() {
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-violet-600 rounded-xl flex items-center justify-center">
-                <Store className="w-6 h-6 text-white" />
+                <div >
+                  <Store className="w-6 h-6 text-white" />
+                </div>
               </div>
               <div>
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
@@ -120,7 +123,9 @@ export default function HomePage() {
               className="hidden sm:flex items-center space-x-2 text-purple-600 hover:text-purple-700 font-medium transition-colors"
             >
               <span>Criar conta</span>
-              <ArrowRight className="w-4 h-4" />
+              <div >
+                <ArrowRight className="w-4 h-4" />
+              </div>
             </Link>
           </div>
         </div>
@@ -146,7 +151,9 @@ export default function HomePage() {
                   Email
                 </label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <div >
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  </div>
                   <input
                     id="email"
                     type="email"
@@ -164,7 +171,9 @@ export default function HomePage() {
                   Senha
                 </label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <div >
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  </div>
                   <input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
@@ -179,7 +188,9 @@ export default function HomePage() {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                   >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    <div >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </div>
                   </button>
                 </div>
               </div>
@@ -236,7 +247,9 @@ export default function HomePage() {
                   Email
                 </label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <div >
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  </div>
                   <input
                     id="forgot-email"
                     type="email"

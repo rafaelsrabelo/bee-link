@@ -1,18 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { 
-  TrendingUp, 
-  Eye, 
-  MousePointer, 
-  Users, 
-  Calendar,
-  BarChart3,
-  ArrowUpRight,
   ArrowDownRight,
-  Minus
+  ArrowUpRight,
+  BarChart3,
+  Calendar,
+  Eye, 
+  Minus,
+  MousePointer, 
+  TrendingUp, 
+  Users 
 } from 'lucide-react';
-import type { StoreAnalytics, AnalyticsFilters } from '../../types/analytics';
+import { useEffect, useState } from 'react';
+import type { AnalyticsFilters, StoreAnalytics } from '../../types/analytics';
 
 interface AnalyticsDashboardProps {
   storeSlug: string;
@@ -21,10 +21,25 @@ interface AnalyticsDashboardProps {
 export default function AnalyticsDashboard({ storeSlug }: AnalyticsDashboardProps) {
   const [analytics, setAnalytics] = useState<StoreAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState<AnalyticsFilters>({
-    start_date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    end_date: new Date().toISOString().split('T')[0],
-    period: '30d'
+  const [filters, setFilters] = useState<AnalyticsFilters>(() => {
+    // Evitar Date.now() no lado servidor para problemas de hidratação
+    if (typeof window === 'undefined') {
+      return {
+        start_date: '',
+        end_date: '',
+        period: '30d'
+      };
+    }
+    
+    const now = new Date();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(now.getDate() - 30);
+    
+    return {
+      start_date: thirtyDaysAgo.toISOString().split('T')[0],
+      end_date: now.toISOString().split('T')[0],
+      period: '30d'
+    };
   });
 
   useEffect(() => {
