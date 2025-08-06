@@ -455,9 +455,9 @@ export default function ReportsPage({ params }: { params: Promise<{ slug: string
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap">
                           <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            order.status === 'delivered' || order.status === 'completed_whatsapp'
+                            order.status === 'delivered'
                               ? 'bg-green-100 text-green-800'
-                              : order.status === 'cancelled' || order.status === 'not_completed_whatsapp'
+                              : order.status === 'cancelled'
                               ? 'bg-red-100 text-red-800'
                               : 'bg-yellow-100 text-yellow-800'
                           }`}>

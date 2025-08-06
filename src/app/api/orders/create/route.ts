@@ -101,7 +101,18 @@ export async function POST(request: NextRequest) {
     
     console.log(`📦 Criando pedido: source=${source}, isManualOrder=${isManualOrder}, status=${isManualOrder ? 'delivered' : 'pending'}`);
     
-    const orderInsert = {
+    const orderInsert: {
+      store_id: string;
+      customer_name: string;
+      customer_phone: string;
+      customer_address?: string;
+      items: OrderItem[];
+      total: number;
+      source?: string;
+      notes?: string;
+      status: string;
+      created_at?: string;
+    } = {
       store_id: store.id,
       customer_name,
       customer_phone,

@@ -23,7 +23,7 @@ interface Store {
 
 interface AdminHeaderProps {
   store?: Store | null;
-  currentPage: 'dashboard' | 'products' | 'store' | 'orders';
+  currentPage: 'dashboard' | 'products' | 'store' | 'orders' | 'reports';
   title: string;
   icon: React.ComponentType<{ className?: string }>;
 }

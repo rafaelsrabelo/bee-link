@@ -405,7 +405,7 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
 
                   {searchTerm && filteredProducts.length === 0 && (
                     <div className="text-center py-8 text-gray-500">
-                      Nenhum produto encontrado para "{searchTerm}"
+                      Nenhum produto encontrado para &quot;{searchTerm}&quot;
                     </div>
                   )}
                 </div>
