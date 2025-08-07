@@ -28,7 +28,7 @@ export default function RootLayout({
         {/* Google Tag Manager */}
         <GoogleTagManager gtmId="GTM-KKBJV4JP" />
       </head>
-      <body className={`${redHatDisplay.className} bg-background-primary text-content-body`}>
+      <body className={`${redHatDisplay.className} bg-background-primary text-content-body`} suppressHydrationWarning={true}>
         <AuthProvider>
           <StoreProvider>
             {children}

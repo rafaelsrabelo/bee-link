@@ -81,7 +81,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
     name: '',
     price: '',
     image: '',
-    category: 'bag',
+    category: 'Geral',
     category_id: undefined,
     description: '',
     readyToShip: false,
@@ -95,17 +95,20 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
 
   // Função para buscar nome da categoria pelo ID
   const getCategoryNameById = async (categoryId: number): Promise<string> => {
+    console.log('🔍 getCategoryNameById chamada com ID:', categoryId);
     try {
       const response = await fetch(`/api/stores/${slug}/product-categories`);
       if (response.ok) {
         const categories = await response.json();
+        console.log('🔍 Categorias encontradas:', categories);
         const category = categories.find((cat: { id: number; name: string }) => cat.id === categoryId);
-        return category?.name || 'bag';
+        console.log('🔍 Categoria encontrada:', category);
+        return category?.name || 'Geral';
       }
     } catch (error) {
       console.error('Erro ao buscar categoria:', error);
     }
-    return 'bag';
+    return 'Geral';
   };
 
   // Função para forçar refresh das categorias
@@ -116,7 +119,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
       setNewProduct(prev => ({
         ...prev,
         category_id: undefined,
-        category: 'bag' // Reset para valor padrão
+        category: 'Geral' // Reset para valor padrão
       }));
     }
   };
@@ -219,6 +222,9 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
   const saveProducts = async (newProducts: Product[]) => {
     if (!slug) return;
     
+    // Debug: log dos produtos sendo enviados
+    console.log('🔍 Produtos sendo enviados para API:', JSON.stringify(newProducts, null, 2));
+    
     setProducts(newProducts);
     try {
       const response = await fetch(`/api/stores/${slug}/products`, {
@@ -299,9 +305,16 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
     setSavingProduct(true);
     try {
       // Buscar nome real da categoria se foi selecionada uma categoria personalizada
-      let categoryName = newProduct.category || 'bag';
+      let categoryName = newProduct.category || 'Geral';
+      console.log('🔍 Debug categoria - Antes:', { 
+        category: newProduct.category, 
+        category_id: newProduct.category_id,
+        categoryName 
+      });
+      
       if (newProduct.category === 'selected' && newProduct.category_id) {
         categoryName = await getCategoryNameById(newProduct.category_id);
+        console.log('🔍 Debug categoria - Depois de buscar nome:', { categoryName });
       }
 
       const product: Product = {
@@ -310,11 +323,19 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
         price: newProduct.price || '',
         image: newProduct.image || '',
         category: categoryName,
+        category_id: newProduct.category_id || null, // Simplificado: sempre usar category_id se existir
         description: newProduct.description || '',
         readyToShip: newProduct.readyToShip || false,
         available: newProduct.available !== false,
         store_id: store?.id
       };
+
+      // Debug: log do produto sendo criado
+      console.log('🔍 Produto sendo criado:', {
+        newProduct,
+        categoryName,
+        finalProduct: product
+      });
 
       const updatedProducts = [...products, product];
       await saveProducts(updatedProducts);
@@ -323,7 +344,8 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
         name: '',
         price: '',
         image: '',
-        category: 'bag',
+        category: 'Geral',
+        category_id: undefined,
         description: '',
         readyToShip: false,
         available: true
@@ -357,7 +379,8 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
 
       const updatedProduct = {
         ...editingProduct,
-        category: categoryName
+        category: categoryName,
+        category_id: editingProduct.category_id || null // Simplificado: sempre usar category_id se existir
       };
 
       const updatedProducts = products.map(p => 

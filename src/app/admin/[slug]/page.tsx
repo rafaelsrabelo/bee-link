@@ -1,13 +1,13 @@
 'use client';
-import { useEffect, useState, use } from 'react';
+import { BarChart3, Eye, MousePointer, ShoppingCart, Star, TrendingUp } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '../../../contexts/AuthContext';
+import { use, useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
-import { BarChart3, Eye, MousePointer, TrendingUp, Star, ShoppingCart } from 'lucide-react';
-import ProtectedRoute from '../../../components/auth/ProtectedRoute';
-import LottieLoader from '../../../components/ui/lottie-loader';
-import AdminHeader from '../../../components/ui/admin-header';
 import loadingAnimation from '../../../../public/animations/loading-dots-blue.json';
+import ProtectedRoute from '../../../components/auth/ProtectedRoute';
+import AdminHeader from '../../../components/ui/admin-header';
+import LottieLoader from '../../../components/ui/lottie-loader';
+import { useAuth } from '../../../contexts/AuthContext';
 
 interface Store {
   id: string;
@@ -356,7 +356,7 @@ export default function AdminDashboardPage({ params }: { params: Promise<{ slug:
                 <h4 className="text-lg font-semibold text-gray-900 mb-4">🛒 Produtos mais adicionados ao carrinho</h4>
                 <div className="space-y-3">
                   {analytics.top_cart_products.slice(0, 5).map((product, index: number) => (
-                    <div key={product.product_id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div key={`${product.product_id}-${index}`} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div className="flex items-center space-x-3">
                         <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center relative">
                           <span className="text-sm font-semibold text-red-600">#{product.rank}</span>

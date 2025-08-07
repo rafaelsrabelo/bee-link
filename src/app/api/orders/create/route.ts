@@ -74,7 +74,23 @@ async function sendWhatsAppMessage(phone: string, message: string) {
 export async function POST(request: NextRequest) {
   try {
     const body: CreateOrderRequest = await request.json();
-    const { storeSlug, customer_name, customer_phone, customer_address, items, total, source, isManualOrder, notes, order_date } = body;
+    const { 
+      storeSlug, 
+      customer_name, 
+      customer_phone, 
+      customer_address, 
+      items, 
+      total, 
+      source, 
+      isManualOrder, 
+      notes, 
+      order_date,
+      delivery_type,
+      delivery_cep,
+      delivery_city,
+      delivery_state,
+      payment_method
+    } = body;
 
     console.log('Criando pedido para loja:', storeSlug);
     console.log('Dados do pedido:', { customer_name, customer_phone, items, total });
@@ -95,25 +111,52 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 2. Criar o pedido no banco
-    // Pedidos manuais (criados pelo admin) já chegam como entregues
-    // Pedidos de clientes (via site) chegam como pendentes
+    // 2. Criar ou buscar o cliente
+    let customerId: string;
     
+    // Primeiro, tentar buscar cliente existente pelo telefone
+    const { data: existingCustomer } = await supabase
+      .from('customers')
+      .select('id')
+      .eq('phone', customer_phone)
+      .eq('store_id', store.id)
+      .single();
+
+    if (existingCustomer) {
+      customerId = existingCustomer.id;
+      console.log('Cliente encontrado:', customerId);
+    } else {
+      // Criar novo cliente
+      const { data: newCustomer, error: customerError } = await supabase
+        .from('customers')
+        .insert([{
+          store_id: store.id,
+          name: customer_name,
+          phone: customer_phone,
+          address: customer_address
+        }])
+        .select('id')
+        .single();
+
+      if (customerError) {
+        console.error('Erro ao criar cliente:', customerError);
+        return NextResponse.json(
+          { error: 'Erro ao criar cliente', details: customerError.message },
+          { status: 500 }
+        );
+      }
+
+      customerId = newCustomer.id;
+      console.log('Novo cliente criado:', customerId);
+    }
+
+    // 3. Criar o pedido no banco
     console.log(`📦 Criando pedido: source=${source}, isManualOrder=${isManualOrder}, status=${isManualOrder ? 'delivered' : 'pending'}`);
     
-    const orderInsert: {
-      store_id: string;
-      customer_name: string;
-      customer_phone: string;
-      customer_address?: string;
-      items: OrderItem[];
-      total: number;
-      source?: string;
-      notes?: string;
-      status: string;
-      created_at?: string;
-    } = {
+    // Objeto básico sempre funciona
+    const orderInsert: any = {
       store_id: store.id,
+      customer_id: customerId,
       customer_name,
       customer_phone,
       customer_address,
@@ -124,10 +167,25 @@ export async function POST(request: NextRequest) {
       status: isManualOrder ? 'delivered' : 'pending'
     };
 
+    // Adicionar novos campos opcionais (só se existirem no schema)
+    try {
+      if (delivery_type) orderInsert.delivery_type = delivery_type;
+      if (payment_method) orderInsert.payment_method = payment_method;
+      if (delivery_cep) orderInsert.delivery_cep = delivery_cep;
+      if (delivery_city) orderInsert.delivery_city = delivery_city;
+      if (delivery_state) orderInsert.delivery_state = delivery_state;
+      // Manter compatibility com delivery_address
+      orderInsert.delivery_address = customer_address;
+    } catch (error) {
+      console.log('Algumas colunas novas podem não existir ainda no banco:', error);
+    }
+
     // Se uma data foi fornecida, usar ela; senão usar a data atual
     if (order_date) {
       orderInsert.created_at = new Date(`${order_date}T00:00:00.000Z`).toISOString();
     }
+
+    console.log('Dados que serão inseridos:', JSON.stringify(orderInsert, null, 2));
 
     const { data: order, error: orderError } = await supabase
       .from('orders')
@@ -136,7 +194,21 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (orderError) {
-      console.error('Erro ao criar pedido:', orderError);
+      console.error('Erro detalhado ao criar pedido:', orderError);
+      console.error('Dados tentando inserir:', orderInsert);
+      
+      // Se o erro for de coluna não existe, dar uma mensagem mais clara
+      if (orderError.message?.includes('column') && orderError.message?.includes('does not exist')) {
+        return NextResponse.json(
+          { 
+            error: 'Erro de configuração do banco', 
+            details: 'Execute o script SQL para adicionar as novas colunas',
+            sqlError: orderError.message 
+          },
+          { status: 500 }
+        );
+      }
+      
       return NextResponse.json(
         { error: 'Erro ao criar pedido', details: orderError.message },
         { status: 500 }

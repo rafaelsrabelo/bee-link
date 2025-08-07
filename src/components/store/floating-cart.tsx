@@ -1,0 +1,235 @@
+'use client';
+
+import { Minus, Plus, ShoppingCart, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+
+interface CartItem {
+  id: string;
+  name: string;
+  price: string;
+  quantity: number;
+  image?: string;
+}
+
+interface FloatingCartProps {
+  items: CartItem[];
+  totalItems: number;
+  totalValue: number;
+  storeColors: {
+    background: string;
+    primary: string;
+    text: string;
+    header: string;
+  };
+  onOpenCart?: () => void;
+  onCheckout?: () => void;
+  onAddItem?: (itemName: string) => void;
+  onRemoveItem?: (itemName: string) => void;
+  isCheckingOut?: boolean;
+}
+
+export default function FloatingCart({
+  items,
+  totalItems,
+  totalValue,
+  storeColors,
+  onOpenCart,
+  onCheckout,
+  onAddItem,
+  onRemoveItem,
+  isCheckingOut = false
+}: FloatingCartProps) {
+  const [isVisible, setIsVisible] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  // Mostrar carrinho apenas quando há itens
+  useEffect(() => {
+    setIsVisible(totalItems > 0);
+    // Se não há itens, fechar expansão
+    if (totalItems === 0) {
+      setIsExpanded(false);
+    }
+  }, [totalItems]);
+
+  // Formatar valor total
+  const formatPrice = (value: number) => {
+    return value.toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    });
+  };
+
+  if (!isVisible) return null;
+
+  return (
+    <>
+      {/* Backdrop para fechar quando expandido */}
+      {isExpanded && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40"
+          onClick={() => setIsExpanded(false)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setIsExpanded(false);
+            }
+          }}
+          role="button"
+          tabIndex={0}
+          aria-label="Fechar carrinho expandido"
+        />
+      )}
+
+      {/* Carrinho Flutuante */}
+      <div 
+        className={`
+          fixed bottom-4 left-4 right-4 z-50 transition-all duration-300 ease-in-out
+          ${isExpanded ? 'bottom-0 left-0 right-0' : ''}
+        `}
+      >
+        {/* Versão Expandida */}
+        {isExpanded ? (
+          <div 
+            className="bg-white rounded-t-2xl shadow-2xl max-h-96 overflow-hidden"
+            style={{ borderTopColor: storeColors.primary, borderTopWidth: '3px' }}
+          >
+            {/* Header do carrinho expandido */}
+            <div 
+              className="flex items-center justify-between p-4 text-white"
+              style={{ backgroundColor: storeColors.primary }}
+            >
+              <div className="flex items-center space-x-2">
+                <ShoppingCart className="w-5 h-5" />
+                <span className="font-medium">Seu Carrinho</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsExpanded(false)}
+                className="hover:bg-white/20 p-1 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Lista de itens */}
+            <div className="max-h-48 overflow-y-auto p-4 space-y-3">
+              {items.map((item) => (
+                <div key={`${item.id}-${item.name}`} className="flex items-center space-x-3">
+                  {item.image && (
+                    <img 
+                      src={item.image} 
+                      alt={item.name}
+                      className="w-12 h-12 object-cover rounded-lg"
+                    />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {item.name}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      R$ {item.price}
+                    </p>
+                  </div>
+                  
+                  {/* Controles de quantidade */}
+                  <div className="flex items-center space-x-2">
+                    <button
+                      type="button"
+                      onClick={() => onRemoveItem?.(item.name)}
+                      className="w-8 h-8 rounded-full flex items-center justify-center hover:opacity-80 transition-all"
+                      style={{ backgroundColor: 'transparent', border: `1px solid ${storeColors.primary}` }}
+                      title={item.quantity === 1 ? "Remover item" : "Diminuir quantidade"}
+                    >
+                      <Minus className="w-3 h-3" style={{ color: storeColors.primary }} />
+                    </button>
+                    
+                    <span className="font-medium text-sm min-w-[20px] text-center">
+                      {item.quantity}
+                    </span>
+                    
+                    <button
+                      type="button"
+                      onClick={() => onAddItem?.(item.name)}
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-white hover:opacity-90 transition-all"
+                      style={{ backgroundColor: storeColors.primary }}
+                      title="Adicionar mais"
+                    >
+                      <Plus className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Footer com total e ações */}
+            <div className="border-t p-4 space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="font-medium text-gray-900">Total:</span>
+                <span className="font-bold text-lg" style={{ color: storeColors.primary }}>
+                  {formatPrice(totalValue)}
+                </span>
+              </div>
+              
+              <button
+                type="button"
+                onClick={() => {
+                  setIsExpanded(false);
+                  onCheckout?.();
+                }}
+                disabled={isCheckingOut}
+                className="w-full px-4 py-3 rounded-lg text-white font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                style={{ backgroundColor: storeColors.primary }}
+              >
+                {isCheckingOut ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                    Carregando...
+                  </>
+                ) : (
+                  'Finalizar Pedido'
+                )}
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* Versão Compacta */
+          <button
+            type="button"
+            onClick={() => setIsExpanded(true)}
+            className={`
+              w-full bg-white rounded-2xl shadow-lg p-4 
+              hover:shadow-xl transition-all duration-200 transform hover:scale-105
+              border-2
+            `}
+            style={{ borderColor: storeColors.primary }}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div 
+                  className="w-12 h-12 rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: storeColors.primary }}
+                >
+                  <ShoppingCart className="w-6 h-6 text-white" />
+                </div>
+                <div className="text-left">
+                  <p className="font-medium text-gray-900">
+                    {totalItems} {totalItems === 1 ? 'item' : 'itens'}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Toque para ver detalhes
+                  </p>
+                </div>
+              </div>
+              
+              <div className="text-right">
+                <p className="font-bold text-lg" style={{ color: storeColors.primary }}>
+                  {formatPrice(totalValue)}
+                </p>
+                <p className="text-xs text-gray-500">Total</p>
+              </div>
+            </div>
+          </button>
+        )}
+      </div>
+    </>
+  );
+}

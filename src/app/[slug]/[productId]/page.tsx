@@ -47,7 +47,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
     };
 
     return <ProductPageClient store={formattedStore} product={product} />;
-  } catch (error) {
+  } catch {
     notFound();
   }
 }

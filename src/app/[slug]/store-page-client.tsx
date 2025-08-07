@@ -1,13 +1,15 @@
 "use client";
 
-import { ArrowLeft, Instagram, MessageCircle, Minus, Package, Phone, Plus, ShoppingCart } from "lucide-react";
+import { ArrowLeft, ClipboardList, Instagram, Menu, MessageCircle, Minus, Package, Phone, Plus, ShoppingCart } from "lucide-react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import CategoryFilter from '../../components/store/category-filter';
+import FloatingCart from '../../components/store/floating-cart';
+import { trackAddToCart, trackEvent, trackPageView, trackProductClick } from '../../lib/simple-analytics';
 import CartControlsCompactLoading from '../components/cart-controls-compact-loading';
 import CartHeader from '../components/cart-header';
 import { useCartStore } from '../stores/cartStore';
-import { trackPageView, trackProductClick, trackAddToCart, trackEvent } from '../../lib/simple-analytics';
 
 interface StoreData {
   store_name: string;
@@ -42,9 +44,8 @@ interface Product {
   category_data?: {
     id: number;
     name: string;
-    name_pt: string;
-    slug: string;
-    color: string;
+    description?: string;
+    color?: string;
   };
   description: string;
   readyToShip?: boolean;
@@ -55,25 +56,40 @@ interface StorePageClientProps {
   store: StoreData;
 }
 
+// Função para gerar mensagem do WhatsApp
+const generateWhatsAppMessage = (items: CartItem[], totalValue: number, store: StoreData) => {
+  const itemsList = items.map(item => `• ${item.quantity}x ${item.name} - R$ ${item.price}`).join('\n');
+  
+  return `🛒 *Pedido - ${store.store_name}*\n\nItens:\n${itemsList}\n\n💰 *Total: R$ ${totalValue.toFixed(2).replace('.', ',')}*\n\nGostaria de finalizar este pedido!`;
+};
+
 export default function StorePageClient({ store }: StorePageClientProps) {
   const [showCatalog, setShowCatalog] = useState(false);
   const [error] = useState<string | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
   const searchParams = useSearchParams();
   const { cart, addToCart, removeFromCart, getCartItemQuantity, setStoreSlug, isLoading } = useCartStore();
 
-  // Debug: verificar dados de layout
-  console.log('Store layout data:', {
-    layout_type: store.layout_type,
-    banner_image: store.banner_image,
-    show_products_by_category: store.show_products_by_category
-  });
+  // Store layout data loaded
 
   // Configurar o store slug quando o componente montar
   useEffect(() => {
     setStoreSlug(store.slug);
   }, [store.slug, setStoreSlug]);
+
+  // Listener para limpar carrinho quando pedido for finalizado
+  useEffect(() => {
+    const handleCartCleared = () => {
+      // O carrinho será limpo automaticamente pelo localStorage
+      // Apenas forçar re-render
+      window.location.reload();
+    };
+
+    window.addEventListener('cartCleared', handleCartCleared);
+    return () => window.removeEventListener('cartCleared', handleCartCleared);
+  }, []);
 
   // Tracking de visualização da página
   useEffect(() => {
@@ -141,27 +157,50 @@ export default function StorePageClient({ store }: StorePageClientProps) {
     return (
       <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: store.colors.background }}>
         {/* Header */}
-        <div className="flex justify-between items-center px-4 py-4 fixed top-0 left-0 right-0 z-50 backdrop-blur-sm border-b border-white/10" style={{ backgroundColor: `${store.colors.header}` }}>
-          <button
-            type="button"
-            className="text-white hover:bg-white/10 p-2 rounded-full"
-            onClick={() => setShowCatalog(false)}
-          >
-            <ArrowLeft className="w-6 h-6" />
-          </button>
-          <div className="text-center">
-            <div className="text-white font-medium">Catálogo</div>
-            <div className="text-white/70 text-sm">{store.store_name}</div>
+        <div className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md border-b border-white/10" style={{ backgroundColor: `${store.colors.header}95` }}>
+          {/* Single Header Row */}
+          <div className="flex justify-between items-center px-4 py-4">
+            {/* Logo + Store Name */}
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 rounded-full overflow-hidden bg-white border-2 border-white/20 flex items-center justify-center shadow-sm">
+                {store.logo ? (
+                  <Image
+                    src={store.logo}
+                    alt={store.store_name}
+                    width={48}
+                    height={48}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-gray-800 font-bold text-lg">
+                    {store.store_name.charAt(0).toUpperCase()}
+                  </span>
+                )}
+              </div>
+              <div>
+                <h1 className="text-white font-semibold text-base">{store.store_name}</h1>
+                <p className="text-white/70 text-sm">Catálogo de Produtos</p>
+              </div>
+            </div>
+            
+            {/* Ver Pedidos Button */}
+            <button
+              type="button"
+              className="text-white hover:bg-white/10 px-3 py-2 rounded-lg transition-colors text-sm font-medium flex items-center space-x-2"
+              onClick={() => {
+                // Redirecionar para página de histórico de pedidos
+                window.location.href = `/${store.slug}/pedidos`;
+              }}
+            >
+              <ClipboardList className="w-4 h-4" />
+              <span>Ver Pedidos</span>
+            </button>
           </div>
-          <CartHeader 
-            storeSlug={store.slug}
-            colors={store.colors}
-          />
         </div>
 
         {/* Catalog Header - Layout Condicional */}
         <div className="mb-6 pt-20">
-          {store.layout_type === 'banner' ? (
+          {store.layout_type === 'banner' && (
             /* Layout Banner - Mostra banner de imagem (largura total) */
             <div className="w-full h-32 overflow-hidden mb-4">
               {store.banner_image ? (
@@ -181,21 +220,20 @@ export default function StorePageClient({ store }: StorePageClientProps) {
                 </div>
               )}
             </div>
-          ) : (
-            /* Layout Default - Mostra título "CATÁLOGO" */
-            <div className="px-4">
-              <div className="bg-white/90 backdrop-blur-sm rounded-full px-6 py-4 flex items-center justify-between">
-                <span className="font-medium text-lg" style={{ color: store.colors.primary }}>CATÁLOGO</span>
-                <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center" style={{ backgroundColor: store.colors.primary }}>
-                  <span className="text-white font-bold text-lg">{store.store_name.charAt(0)}</span>
-                </div>
-              </div>
-            </div>
           )}
+          {/* Layout Default não mostra nada - apenas o espaçamento */}
         </div>
 
-        {/* Products Grid */}
-        <div className="px-4 pb-20 pt-4">
+        {/* Category Filter - Apenas para produtos organizados por categoria */}
+        {store.show_products_by_category && (
+          <CategoryFilter 
+            products={products}
+            storeColors={store.colors}
+          />
+        )}
+
+                    {/* Products Grid */}
+            <div id="products-section" className="px-4 pb-32 pt-4">
           {loading ? (
             <div className="text-center py-8">
               <div style={{ color: store.colors.text }}>Carregando produtos...</div>
@@ -220,19 +258,32 @@ export default function StorePageClient({ store }: StorePageClientProps) {
             <div className="space-y-6">
               {(() => {
                 const availableProducts = products.filter((p: Product) => p.available !== false);
-                // Usar category_data.name_pt se disponível, senão usar category
-                const categories = [...new Set(availableProducts.map(p => p.category_data?.name_pt || p.category))];
+                
+                // Usar a mesma lógica do CategoryFilter
+                const categories = [...new Set(availableProducts.map(p => {
+                  // Se tem category_data, usar name
+                  if (p.category_data?.name) {
+                    return p.category_data.name;
+                  }
+                  // Se não tem category_data mas tem category, usar category
+                  if (p.category) {
+                    return p.category;
+                  }
+                  // Fallback para "Geral"
+                  return 'Geral';
+                }))];
 
                 return categories.map(category => {
-                  const categoryProducts = availableProducts.filter(p => 
-                    (p.category_data?.name_pt || p.category) === category
-                  );
+                  const categoryProducts = availableProducts.filter(p => {
+                    const productCategory = p.category_data?.name || p.category || 'Geral';
+                    return productCategory === category;
+                  });
 
                   return (
-                    <div key={`category-${category}`} className="space-y-3">
+                    <div key={`category-${category}`} id={`category-${category}`} data-category={category} className="space-y-3">
                       {/* Título da categoria */}
                       <div className="flex items-center space-x-2">
-                        <div className="w-1 h-6 rounded-full" style={{ backgroundColor: store.colors.primary }}></div>
+                        <div className="w-1 h-6 rounded-full" style={{ backgroundColor: store.colors.primary }} />
                         <h3 className="font-semibold text-lg" style={{ color: store.colors.text }}>{category}</h3>
                       </div>
 
@@ -346,7 +397,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
                                           store_slug: store.slug,
                                           product_id: product.id,
                                           product_name: product.name,
-                                          product_price: parseFloat(product.price.replace('R$', '').replace(',', '.').trim())
+                                          product_price: Number.parseFloat(product.price.replace('R$', '').replace(',', '.').trim())
                                         });
                                       }}
                                       className="w-8 h-8 rounded-full flex items-center justify-center shadow-sm hover:opacity-80 transition-all"
@@ -477,7 +528,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
                                 store_slug: store.slug,
                                 product_id: product.id,
                                 product_name: product.name,
-                                product_price: parseFloat(product.price.replace('R$', '').replace(',', '.').trim())
+                                product_price: Number.parseFloat(product.price.replace('R$', '').replace(',', '.').trim())
                               });
                             }}
                             className="w-8 h-8 rounded-full flex items-center justify-center shadow-sm hover:opacity-80 transition-all"
@@ -494,6 +545,45 @@ export default function StorePageClient({ store }: StorePageClientProps) {
             </div>
           )}
         </div>
+
+        {/* Carrinho Flutuante */}
+        <FloatingCart
+          items={cart.map(item => ({
+            id: item.name,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            image: item.image
+          }))}
+          totalItems={cart.reduce((total, item) => total + item.quantity, 0)}
+          totalValue={cart.reduce((total, item) => {
+            const price = Number.parseFloat(item.price.replace('R$', '').replace(',', '.').trim());
+            return total + (price * item.quantity);
+          }, 0)}
+          storeColors={store.colors}
+          isCheckingOut={isCheckingOut}
+          onOpenCart={() => {
+            // Ação para abrir carrinho (pode redirecionar para página de carrinho)
+            console.log('Abrir carrinho');
+          }}
+          onCheckout={() => {
+            // Mostrar loading e redirecionar para página de checkout
+            setIsCheckingOut(true);
+            setTimeout(() => {
+              window.location.href = `/${store.slug}/checkout`;
+            }, 100);
+          }}
+          onAddItem={(itemName) => {
+            // Encontrar o produto e adicionar ao carrinho
+            const product = products.find(p => p.name === itemName);
+            if (product) {
+              addToCart(product);
+            }
+          }}
+          onRemoveItem={(itemName) => {
+            removeFromCart(itemName);
+          }}
+        />
       </div>
     );
   }

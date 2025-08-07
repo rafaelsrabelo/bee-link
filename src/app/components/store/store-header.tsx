@@ -24,7 +24,12 @@ export function StoreHeader({ store }: StoreHeaderProps) {
     } else {
       // Fallback: copiar para clipboard
       await navigator.clipboard.writeText(window.location.href);
-      alert('Link copiado para a área de transferência!');
+      // Usar toast aqui se disponível, senão manter alert como fallback
+      if (typeof window !== 'undefined' && (window as any).toast) {
+        (window as any).toast.success('Link copiado para a área de transferência!');
+      } else {
+        alert('Link copiado para a área de transferência!');
+      }
     }
   };
 

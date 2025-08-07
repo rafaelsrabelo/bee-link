@@ -19,6 +19,13 @@ export interface Order {
   notes?: string;
   created_at: string;
   updated_at: string;
+  // Novas informações de entrega e pagamento
+  delivery_type?: 'delivery' | 'pickup';
+  delivery_address?: string;
+  delivery_cep?: string;
+  delivery_city?: string;
+  delivery_state?: string;
+  payment_method?: 'money' | 'pix' | 'credit_card' | 'debit_card';
 }
 
 export interface CreateOrderRequest {
@@ -32,6 +39,12 @@ export interface CreateOrderRequest {
   isManualOrder?: boolean; // Flag para identificar pedidos criados pelo admin
   notes?: string;
   order_date?: string; // Data do pedido em formato YYYY-MM-DD
+  // Novas informações de entrega e pagamento
+  delivery_type?: 'delivery' | 'pickup';
+  delivery_cep?: string;
+  delivery_city?: string;
+  delivery_state?: string;
+  payment_method?: 'money' | 'pix' | 'credit_card' | 'debit_card';
 }
 
 export interface UpdateOrderStatusRequest {

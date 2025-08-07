@@ -79,6 +79,7 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
   const [loading, setLoading] = useState(true);
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'polling' | 'error'>('connecting');
 
   // Função para verificar se um pedido é do dia atual
   const isToday = (dateString: string) => {
@@ -117,13 +118,16 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
     }
   };
 
-  // Configurar Supabase Realtime
+  // Configurar sistema de notificações em tempo real
   useEffect(() => {
     loadOrders();
 
-    // Inscrever para mudanças em tempo real
+    let pollingInterval: NodeJS.Timeout;
+
+    // Configuração simples do Realtime
+    
     const channel = supabase
-      .channel('orders')
+      .channel(`orders-${storeId}`)
       .on('postgres_changes', 
         { 
           event: 'INSERT', 
@@ -134,13 +138,26 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
         (payload) => {
           // Novo pedido chegou!
           const newOrder = payload.new as Order;
-          console.log('🔔 NOVO PEDIDO RECEBIDO!', newOrder);
           
-          // Tocar som de notificação apenas para novos pedidos
+          // Verificar se é do store correto
+          if (newOrder.store_id !== storeId) {
+            return;
+          }
+          
+          // Tocar som de notificação
           playNotificationSound();
           
-          // Atualizar lista local
-          setOrders(prev => [newOrder, ...prev]);
+          // Atualizar lista local (sempre adicionar, não filtrar por data)
+          setOrders(prev => {
+            // Verificar se já existe
+            const exists = prev.some(o => o.id === newOrder.id);
+            if (exists) {
+              return prev;
+            }
+            
+            const updatedOrders = [newOrder, ...prev];
+            return updatedOrders;
+          });
           
           // Mostrar toast de notificação
           toast.success(`🔔 Novo pedido de ${newOrder.customer_name}!`, {
@@ -159,6 +176,7 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
         (payload) => {
           // Status do pedido mudou
           const updatedOrder = payload.new as Order;
+          
           setOrders(prev => 
             prev.map(order => 
               order.id === updatedOrder.id ? updatedOrder : order
@@ -166,10 +184,70 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
           );
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          setConnectionStatus('connected');
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          setConnectionStatus('polling');
+          startPolling();
+        }
+      });
+
+    // Função de polling como fallback
+    const startPolling = () => {
+      console.log('🔄 Iniciando polling a cada 5 segundos...');
+      setConnectionStatus('polling');
+      pollingInterval = setInterval(async () => {
+        try {
+          const response = await fetch(`/api/stores/${storeSlug}/orders?onlyToday=true&limit=50`);
+          if (response.ok) {
+            const data = await response.json();
+            const newOrders = data.orders || [];
+            
+            // Verificar se há novos pedidos
+            setOrders(prev => {
+              const currentIds = new Set(prev.map(o => o.id));
+              const newOrdersToAdd = newOrders.filter((o: Order) => !currentIds.has(o.id));
+              
+              if (newOrdersToAdd.length > 0) {
+                console.log('🔔 NOVOS PEDIDOS VIA POLLING!', newOrdersToAdd);
+                playNotificationSound();
+                
+                // Usar setTimeout para evitar setState durante render
+                setTimeout(() => {
+                  for (const order of newOrdersToAdd) {
+                    toast.success(`🔔 Novo pedido de ${order.customer_name}!`, {
+                      duration: 5000,
+                      icon: '🛒'
+                    });
+                  }
+                }, 0);
+                
+                return [...newOrdersToAdd, ...prev];
+              }
+              
+              return newOrders;
+            });
+          }
+        } catch (error) {
+          console.error('Erro no polling:', error);
+        }
+      }, 5000); // Polling a cada 5 segundos
+    };
+
+    // Se Realtime não conectar em 3 segundos, ativar polling
+    const timeoutId = setTimeout(() => {
+      if (connectionStatus === 'connecting') {
+        startPolling();
+      }
+    }, 3000);
 
     return () => {
       supabase.removeChannel(channel);
+      clearTimeout(timeoutId);
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
     };
   }, [storeSlug, storeId]);
 
@@ -211,7 +289,7 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
       
     } catch (error) {
       // Fallback para navegadores mais antigos
-      console.log('🔊 NOVO PEDIDO! 🔊');
+      // Silencioso em produção
     }
   };
 
@@ -386,9 +464,40 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-gray-900">
-          Pedidos de Hoje
-        </h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-xl font-semibold text-gray-900">
+            Pedidos de Hoje
+          </h2>
+          
+          {/* Indicador de status da conexão */}
+          <div className="flex items-center gap-2">
+            {connectionStatus === 'connecting' && (
+              <div className="flex items-center gap-1 text-yellow-600">
+                <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
+                <span className="text-xs">Conectando...</span>
+              </div>
+            )}
+            {connectionStatus === 'connected' && (
+              <div className="flex items-center gap-1 text-green-600">
+                <div className="w-2 h-2 bg-green-500 rounded-full" />
+                <span className="text-xs">Tempo real</span>
+              </div>
+            )}
+            {connectionStatus === 'polling' && (
+              <div className="flex items-center gap-1 text-blue-600">
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                <span className="text-xs">Polling</span>
+              </div>
+            )}
+            {connectionStatus === 'error' && (
+              <div className="flex items-center gap-1 text-red-600">
+                <div className="w-2 h-2 bg-red-500 rounded-full" />
+                <span className="text-xs">Erro</span>
+              </div>
+            )}
+          </div>
+        </div>
+        
         <div className="flex items-center gap-4">
           <a
             href={`/admin/${storeSlug}/reports`}
@@ -471,7 +580,7 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
             <div>
               <p className="text-sm font-medium text-purple-600">Total Vendido</p>
               <p className="text-2xl font-bold text-purple-900">
-                R$ {formatPrice(stats.revenue)}
+                {formatPrice(stats.revenue)}
               </p>
             </div>
             <div className="bg-purple-100 p-2 rounded-lg">
@@ -542,6 +651,39 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
                 </div>
               </div>
             </div>
+
+            {/* Informações de entrega e pagamento */}
+            {(order.delivery_type || order.payment_method) && (
+              <div className="mb-3 p-2 bg-gray-50 rounded-lg">
+                <div className="text-sm font-medium text-gray-700 mb-1">
+                  Detalhes do pedido:
+                </div>
+                <div className="flex flex-wrap gap-3 text-sm text-gray-600">
+                  {order.delivery_type && (
+                    <div className="flex items-center space-x-1">
+                      <Truck className="w-4 h-4" />
+                      <span>
+                        {order.delivery_type === 'delivery' ? 'Entrega' : 'Retirada'}
+                        {order.delivery_type === 'delivery' && order.delivery_city && (
+                          <span> - {order.delivery_city}/{order.delivery_state}</span>
+                        )}
+                      </span>
+                    </div>
+                  )}
+                  {order.payment_method && (
+                    <div className="flex items-center space-x-1">
+                      <Package className="w-4 h-4" />
+                      <span>
+                        {order.payment_method === 'money' && 'Dinheiro'}
+                        {order.payment_method === 'pix' && 'PIX'}
+                        {order.payment_method === 'credit_card' && 'Cartão de Crédito'}
+                        {order.payment_method === 'debit_card' && 'Cartão de Débito'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Itens do pedido */}
             <div className="mb-3">

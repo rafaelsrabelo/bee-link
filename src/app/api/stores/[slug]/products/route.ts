@@ -1,6 +1,7 @@
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
@@ -27,7 +28,7 @@ export async function GET(
       .from('products')
       .select(`
         *,
-        category:product_categories(id, name, name_pt, slug, color)
+        category:product_categories(id, name, description, color)
       `)
       .eq('store_id', store.id)
       .order('created_at', { ascending: false });
@@ -43,7 +44,7 @@ export async function GET(
       description?: string; 
       price: number; 
       image?: string; 
-      category?: { name_pt?: string; name?: string } | string; 
+      category?: { name?: string; description?: string; color?: string } | string; 
       category_id?: string;
       store_id: string;
       available?: boolean;
@@ -51,9 +52,10 @@ export async function GET(
       [key: string]: unknown;
     }) => ({
       ...product,
-      category: typeof product.category === 'object' && product.category?.name_pt 
-        ? product.category.name_pt 
-        : (typeof product.category === 'string' ? product.category : 'Produto')
+      category: typeof product.category === 'object' && product.category?.name 
+        ? product.category.name 
+        : (typeof product.category === 'string' ? product.category : 'Geral'),
+      category_data: typeof product.category === 'object' ? product.category : null
     }));
 
     return NextResponse.json(processedProducts);
