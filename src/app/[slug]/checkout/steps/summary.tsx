@@ -130,7 +130,6 @@ export default function SummaryStep({
       }
 
       const result = await orderResponse.json();
-              // Pedido criado com sucesso
       
       // Sucesso - remover loading toast
       toast.success('Pedido criado com sucesso!', { id: loadingToast });
@@ -161,10 +160,29 @@ ${deliveryInfo}
 ---
 Pedido feito pelo site 🐝 Bee Link`;
 
-      // 5. Redirecionar para WhatsApp
+      // 5. Abrir WhatsApp IMEDIATAMENTE (antes do setTimeout para evitar bloqueio de pop-up)
       const whatsappNumber = store.social_networks?.whatsapp?.replace(/\D/g, '') || '5511999999999';
       const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
-      window.open(whatsappUrl, '_blank');
+      
+      // Em produção, sempre mostrar o toast com link clicável para evitar problemas de pop-up
+      toast.success(
+        <div>
+          <p>✅ Pedido criado com sucesso!</p>
+          <p className="mt-2">Clique no botão abaixo para abrir o WhatsApp:</p>
+          <a 
+            href={whatsappUrl} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="inline-block mt-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-center"
+          >
+            📱 Abrir WhatsApp
+          </a>
+        </div>,
+        { 
+          id: loadingToast,
+          duration: 15000 // 15 segundos para dar tempo de clicar
+        }
+      );
 
       // 6. Limpar carrinho e redirecionar para a página de confirmação do pedido
       setTimeout(() => {
