@@ -21,6 +21,7 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
+import { usePendingOrdersStore } from '../../stores/pendingOrdersStore';
 import type { Order } from '../../types/order';
 import CreateOrderModal from './create-order-modal';
 
@@ -81,6 +82,13 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'polling' | 'error'>('connecting');
   const [forceUpdate, setForceUpdate] = useState(0); // Força re-render quando necessário
+  
+  // Store para salvar pedidos em aberto
+  const { setPendingCount, incrementCount, decrementCount } = usePendingOrdersStore();
+  
+
+  
+
 
   // Função para verificar se um pedido é do dia atual
   const isToday = (dateString: string) => {
@@ -112,6 +120,13 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
       if (response.ok) {
         const data = await response.json();
         setOrders(data.orders || []);
+        
+        // Salvar no store o valor de pedidos em aberto
+        const pendingCount = (data.orders || []).filter((order: Order) => 
+          ['pending', 'accepted', 'preparing'].includes(order.status)
+        ).length;
+        console.log('🔢 Dashboard: Atualizando store com', pendingCount, 'pedidos em aberto');
+        setPendingCount(pendingCount);
       }
     } catch (error) {
       console.error('Erro ao carregar pedidos:', error);
@@ -130,7 +145,7 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
     // Configuração simples do Realtime
     
     const channel = supabase
-      .channel(`orders-${storeId}`)
+      .channel(`dashboard-orders-${storeId}`)
       .on('postgres_changes', 
         { 
           event: 'INSERT', 
@@ -164,6 +179,10 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
             
             console.log('✅ Dashboard: Adicionando novo pedido à lista');
             const updatedOrders = [newOrder, ...prev];
+            
+            // Incrementar contador no store (+1)
+            incrementCount();
+            
             return updatedOrders;
           });
           
@@ -173,6 +192,10 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
             duration: 5000,
             icon: '🛒'
           });
+          
+
+          
+
         }
       )
       .on('postgres_changes',
@@ -185,23 +208,36 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
         (payload) => {
           // Status do pedido mudou
           const updatedOrder = payload.new as Order;
+          const oldOrder = payload.old as Order;
           
           setOrders(prev => {
             const updated = prev.map(order => 
               order.id === updatedOrder.id ? updatedOrder : order
             );
+            
+            // Atualizar contador no store quando status mudar
+            const newPendingCount = updated.filter(order => 
+              ['pending', 'accepted', 'preparing'].includes(order.status)
+            ).length;
+            setPendingCount(newPendingCount);
+            
             return updated;
           });
+          
+
           
           // Forçar re-render para atualizar estatísticas
           setForceUpdate(prev => prev + 1);
         }
       )
       .subscribe((status) => {
+        console.log('📡 Dashboard: Status do Realtime:', status);
         if (status === 'SUBSCRIBED') {
           setConnectionStatus('connected');
+          console.log('✅ Dashboard: Realtime conectado com sucesso!');
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
           setConnectionStatus('polling');
+          console.log('🔄 Realtime falhou, ativando polling...');
           startPolling();
         }
       });
@@ -238,6 +274,8 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
     // Se Realtime não conectar em 3 segundos, ativar polling
     const timeoutId = setTimeout(() => {
       if (connectionStatus === 'connecting') {
+        setConnectionStatus('polling');
+        console.log('🔄 Realtime não conectou em 3 segundos, ativando polling...');
         startPolling();
       }
     }, 3000);
@@ -251,45 +289,73 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
     };
   }, [storeSlug, storeId]);
 
+  // Função para marcar notificação como lida
+  const markNotificationAsRead = async (orderId: string) => {
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ notification_read: true })
+        .eq('id', orderId);
+
+      if (error) throw error;
+      console.log('✅ Notificação marcada como lida:', orderId);
+    } catch (err) {
+      console.error('❌ Erro ao marcar notificação como lida:', err);
+    }
+  };
+
   // Função para tocar som de notificação
   const playNotificationSound = () => {
     try {
-      // Gerar beep duplo chamativo
-      const audioContext = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      console.log('🔊 Tentando tocar som...');
       
-      // Primeiro beep
-      const oscillator1 = audioContext.createOscillator();
-      const gainNode1 = audioContext.createGain();
-      
-      oscillator1.connect(gainNode1);
-      gainNode1.connect(audioContext.destination);
-      
-      oscillator1.frequency.value = 800;
-      gainNode1.gain.setValueAtTime(0.4, audioContext.currentTime);
-      gainNode1.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
-      
-      oscillator1.start(audioContext.currentTime);
-      oscillator1.stop(audioContext.currentTime + 0.2);
-      
-      // Segundo beep após pequena pausa
-      setTimeout(() => {
-        const oscillator2 = audioContext.createOscillator();
-        const gainNode2 = audioContext.createGain();
+      // Verificar se o usuário já interagiu com a página
+      if (document.visibilityState === 'visible') {
+        console.log('🔊 Página visível, tocando som...');
         
-        oscillator2.connect(gainNode2);
-        gainNode2.connect(audioContext.destination);
+        // Usar Web Audio API para gerar beep duplo chamativo
+        const audioContext = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
         
-        oscillator2.frequency.value = 1000;
-        gainNode2.gain.setValueAtTime(0.4, audioContext.currentTime);
-        gainNode2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+        // Primeiro beep (mais agudo)
+        const oscillator1 = audioContext.createOscillator();
+        const gainNode1 = audioContext.createGain();
         
-        oscillator2.start(audioContext.currentTime);
-        oscillator2.stop(audioContext.currentTime + 0.3);
-      }, 300);
-      
+        oscillator1.connect(gainNode1);
+        gainNode1.connect(audioContext.destination);
+        
+        oscillator1.frequency.value = 1000; // Frequência mais aguda
+        oscillator1.type = 'sine';
+        
+        gainNode1.gain.setValueAtTime(0.4, audioContext.currentTime);
+        gainNode1.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+        
+        oscillator1.start(audioContext.currentTime);
+        oscillator1.stop(audioContext.currentTime + 0.3);
+        
+        // Segundo beep após pausa (mais grave)
+        setTimeout(() => {
+          const oscillator2 = audioContext.createOscillator();
+          const gainNode2 = audioContext.createGain();
+          
+          oscillator2.connect(gainNode2);
+          gainNode2.connect(audioContext.destination);
+          
+          oscillator2.frequency.value = 600; // Frequência mais grave
+          oscillator2.type = 'sine';
+          
+          gainNode2.gain.setValueAtTime(0.4, audioContext.currentTime);
+          gainNode2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
+          
+          oscillator2.start(audioContext.currentTime);
+          oscillator2.stop(audioContext.currentTime + 0.4);
+        }, 400); // Pausa entre os beeps
+        
+        console.log('🔊 Som tocado com sucesso!');
+      } else {
+        console.log('🔊 Página não visível, som não tocado');
+      }
     } catch (error) {
-      // Fallback para navegadores mais antigos
-      // Silencioso em produção
+      console.error('🔊 Erro ao tocar som:', error);
     }
   };
 
