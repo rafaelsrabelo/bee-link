@@ -564,7 +564,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
           isCheckingOut={isCheckingOut}
           onOpenCart={() => {
             // Ação para abrir carrinho (pode redirecionar para página de carrinho)
-            console.log('Abrir carrinho');
+            // Abrir carrinho
           }}
           onCheckout={() => {
             // Mostrar loading e redirecionar para página de checkout

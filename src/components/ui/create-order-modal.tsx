@@ -52,7 +52,7 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
 
   const loadProducts = async () => {
     try {
-      console.log('🛍️ Carregando produtos para:', storeSlug);
+      // Carregando produtos
       const response = await fetch(`/api/stores/${storeSlug}/products-public`);
       if (response.ok) {
         const data = await response.json();
