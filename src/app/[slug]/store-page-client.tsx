@@ -57,7 +57,7 @@ interface StorePageClientProps {
 }
 
 // Função para gerar mensagem do WhatsApp
-const generateWhatsAppMessage = (items: CartItem[], totalValue: number, store: StoreData) => {
+const generateWhatsAppMessage = (items: Array<{name: string; price: string; quantity: number}>, totalValue: number, store: StoreData) => {
   const itemsList = items.map(item => `• ${item.quantity}x ${item.name} - R$ ${item.price}`).join('\n');
   
   return `🛒 *Pedido - ${store.store_name}*\n\nItens:\n${itemsList}\n\n💰 *Total: R$ ${totalValue.toFixed(2).replace('.', ',')}*\n\nGostaria de finalizar este pedido!`;
@@ -82,9 +82,10 @@ export default function StorePageClient({ store }: StorePageClientProps) {
   // Listener para limpar carrinho quando pedido for finalizado
   useEffect(() => {
     const handleCartCleared = () => {
-      // O carrinho será limpo automaticamente pelo localStorage
-      // Apenas forçar re-render
-      window.location.reload();
+      // O carrinho já foi limpo pelo store, apenas forçar re-render
+      // Não precisa recarregar a página inteira
+      const { clearCart } = useCartStore.getState();
+      clearCart();
     };
 
     window.addEventListener('cartCleared', handleCartCleared);
@@ -105,7 +106,8 @@ export default function StorePageClient({ store }: StorePageClientProps) {
   }, [searchParams]);
 
   // Carregar produtos da API
-  useEffect(() => {
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+    useEffect(() => {
     const loadProducts = async () => {
       try {
         setLoading(true);
@@ -126,12 +128,13 @@ export default function StorePageClient({ store }: StorePageClientProps) {
 
   // Verificar se o carrinho pertence à loja atual
   useEffect(() => {
-    const cartStoreSlug = localStorage.getItem('cart-store-slug');
-    if (cartStoreSlug && cartStoreSlug !== store.slug) {
+    const { storeSlug, clearCart } = useCartStore.getState();
+    if (storeSlug && storeSlug !== store.slug) {
       // Se o carrinho pertence a outra loja, limpar
-      const { clearCart } = useCartStore.getState();
       clearCart();
     }
+    // Definir a loja atual no store
+    useCartStore.getState().setStoreSlug(store.slug);
   }, [store.slug]);
 
   // Tratamento de erro

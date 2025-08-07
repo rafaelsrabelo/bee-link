@@ -3,6 +3,7 @@
 import { CreditCard, MapPin, ShoppingBag, User } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
+import { useCartStore } from '../../../stores/cartStore';
 
 interface SummaryStepProps {
   customerData: {
@@ -32,6 +33,9 @@ interface SummaryStepProps {
     id: string;
     store_name: string;
     slug: string;
+    colors?: {
+      primary: string;
+    };
     social_networks?: {
       whatsapp?: string;
     };
@@ -48,10 +52,11 @@ export default function SummaryStep({
   cart,
   store,
   onBack,
-  currentStep,
-  totalSteps
+  // currentStep,
+  // totalSteps
 }: SummaryStepProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { clearCart } = useCartStore();
 
   // Calcular total
   const total = cart.reduce((sum, item) => {
@@ -163,12 +168,22 @@ Pedido feito pelo site 🐝 Bee Link`;
 
       // 6. Limpar carrinho e redirecionar para a página de confirmação do pedido
       setTimeout(() => {
-        // Limpar carrinho
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('cart');
-          // Disparar evento para atualizar o carrinho em outras páginas
-          window.dispatchEvent(new CustomEvent('cartCleared'));
+        try {
+          // Limpar carrinho usando o store
+          clearCart();
+          
+          // Também limpar localStorage para garantir
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('cart');
+            localStorage.removeItem('cart-storage'); // Limpar também o storage do Zustand
+            // Disparar evento para atualizar o carrinho em outras páginas
+            window.dispatchEvent(new CustomEvent('cartCleared'));
+          }
+        } catch (error) {
+          console.error('Erro ao limpar carrinho:', error);
+          // Mesmo com erro, continuar com o redirecionamento
         }
+        
         window.location.href = `/${store.slug}/order-confirmation?orderId=${result.orderId}`;
       }, 2000);
       

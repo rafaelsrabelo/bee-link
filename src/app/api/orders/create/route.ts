@@ -154,7 +154,7 @@ export async function POST(request: NextRequest) {
     console.log(`📦 Criando pedido: source=${source}, isManualOrder=${isManualOrder}, status=${isManualOrder ? 'delivered' : 'pending'}`);
     
     // Objeto básico sempre funciona
-    const orderInsert: any = {
+    const orderInsert: Record<string, unknown> = {
       store_id: store.id,
       customer_id: customerId,
       customer_name,

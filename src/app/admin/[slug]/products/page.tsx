@@ -323,7 +323,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
         price: newProduct.price || '',
         image: newProduct.image || '',
         category: categoryName,
-        category_id: newProduct.category_id || null, // Simplificado: sempre usar category_id se existir
+        category_id: newProduct.category_id || undefined, // Simplificado: sempre usar category_id se existir
         description: newProduct.description || '',
         readyToShip: newProduct.readyToShip || false,
         available: newProduct.available !== false,
@@ -380,7 +380,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
       const updatedProduct = {
         ...editingProduct,
         category: categoryName,
-        category_id: editingProduct.category_id || null // Simplificado: sempre usar category_id se existir
+        category_id: editingProduct.category_id || undefined // Simplificado: sempre usar category_id se existir
       };
 
       const updatedProducts = products.map(p => 

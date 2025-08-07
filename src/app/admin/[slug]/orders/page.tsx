@@ -1,15 +1,15 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { Bell, ShoppingBag } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '../../../../contexts/AuthContext';
+import { use, useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
-import { ShoppingBag, Bell } from 'lucide-react';
-import ProtectedRoute from '../../../../components/auth/ProtectedRoute';
-import LottieLoader from '../../../../components/ui/lottie-loader';
-import AdminHeader from '../../../../components/ui/admin-header';
-import OrdersDashboard from '../../../../components/ui/orders-dashboard';
 import loadingAnimation from '../../../../../public/animations/loading-dots-blue.json';
+import ProtectedRoute from '../../../../components/auth/ProtectedRoute';
+import AdminHeader from '../../../../components/ui/admin-header';
+import LottieLoader from '../../../../components/ui/lottie-loader';
+import OrdersDashboard from '../../../../components/ui/orders-dashboard';
+import { useAuth } from '../../../../contexts/AuthContext';
 
 interface Store {
   id: string;
@@ -32,6 +32,7 @@ export default function OrdersPage({ params }: { params: Promise<{ slug: string 
   const router = useRouter();
   const { slug } = use(params);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
     if (user) {
       loadStore();

@@ -10,6 +10,7 @@ import PaymentStep from './steps/payment';
 import SummaryStep from './steps/summary';
 
 interface StoreData {
+  id: string;
   store_name: string;
   slug: string;
   logo: string;

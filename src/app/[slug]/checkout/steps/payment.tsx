@@ -3,11 +3,13 @@
 import { Banknote, CreditCard, Smartphone } from 'lucide-react';
 import { useState } from 'react';
 
+interface PaymentData {
+  method: string;
+}
+
 interface PaymentStepProps {
-  paymentData: {
-    method: string;
-  };
-  setPaymentData: (data: any) => void;
+  paymentData: PaymentData;
+  setPaymentData: (data: PaymentData) => void;
   onNext: () => void;
   onBack: () => void;
   currentStep: number;
@@ -24,8 +26,8 @@ export default function PaymentStep({
   setPaymentData,
   onNext,
   onBack,
-  currentStep,
-  totalSteps,
+  // currentStep,
+  // totalSteps,
   store
 }: PaymentStepProps) {
   const [errors, setErrors] = useState<{[key: string]: string}>({});

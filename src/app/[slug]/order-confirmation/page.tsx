@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, CheckCircle, Clock, MapPin, Package, Phone, Store, User } from 'lucide-react';
+import { ArrowLeft, CheckCircle, MapPin, Package, Phone, Store, User } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { use, useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';

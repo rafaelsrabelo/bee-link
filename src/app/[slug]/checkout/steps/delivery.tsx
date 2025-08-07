@@ -3,18 +3,20 @@
 import { MapPin, Store, Truck } from 'lucide-react';
 import { useState } from 'react';
 
+interface DeliveryData {
+  type: string;
+  cep: string;
+  address: string;
+  number: string;
+  complement: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+}
+
 interface DeliveryStepProps {
-  deliveryData: {
-    type: string;
-    cep: string;
-    address: string;
-    number: string;
-    complement: string;
-    neighborhood: string;
-    city: string;
-    state: string;
-  };
-  setDeliveryData: (data: any) => void;
+  deliveryData: DeliveryData;
+  setDeliveryData: (data: DeliveryData) => void;
   onNext: () => void;
   onBack: () => void;
   currentStep: number;
@@ -31,8 +33,8 @@ export default function DeliveryStep({
   setDeliveryData,
   onNext,
   onBack,
-  currentStep,
-  totalSteps,
+  // currentStep,
+  // totalSteps,
   store
 }: DeliveryStepProps) {
   const [errors, setErrors] = useState<{[key: string]: string}>({});

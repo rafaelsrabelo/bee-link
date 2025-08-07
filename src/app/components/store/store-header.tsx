@@ -25,8 +25,8 @@ export function StoreHeader({ store }: StoreHeaderProps) {
       // Fallback: copiar para clipboard
       await navigator.clipboard.writeText(window.location.href);
       // Usar toast aqui se disponível, senão manter alert como fallback
-      if (typeof window !== 'undefined' && (window as any).toast) {
-        (window as any).toast.success('Link copiado para a área de transferência!');
+      if (typeof window !== 'undefined' && (window as unknown as Record<string, unknown>).toast) {
+        ((window as unknown as Record<string, unknown>).toast as { success: (msg: string) => void }).success('Link copiado para a área de transferência!');
       } else {
         alert('Link copiado para a área de transferência!');
       }

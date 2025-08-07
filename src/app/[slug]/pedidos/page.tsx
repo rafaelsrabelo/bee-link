@@ -1,7 +1,7 @@
 'use client';
 
 import { ArrowLeft, Package, Phone, Store, User } from 'lucide-react';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { use, useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 
@@ -483,7 +483,7 @@ export default function PedidosPage({ params }: PedidosPageProps) {
                 </div>
 
                 {filteredOrders.map((order) => (
-                  <div key={order.id} className="bg-white rounded-lg shadow-sm border p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => router.push(`/${params.slug}/order-confirmation?orderId=${order.id}`)}>
+                  <div key={order.id} className="bg-white rounded-lg shadow-sm border p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => router.push(`/${slug}/order-confirmation?orderId=${order.id}`)}>
                     <div className="flex justify-between items-start mb-4">
                       <div>
                         <h3 className="font-semibold text-gray-900 text-lg">

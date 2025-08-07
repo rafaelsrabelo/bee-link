@@ -167,11 +167,6 @@ export default function CategoryFilter({ products, storeColors, onCategoryClick 
       <div 
         ref={scrollContainerRef}
         className="flex gap-2 px-4 py-3 overflow-x-auto scrollbar-hide"
-        style={{
-          scrollbarWidth: 'none',
-          msOverflowStyle: 'none',
-          WebkitScrollbar: { display: 'none' }
-        }}
       >
         {allCategories.map((category) => {
           const isActive = activeCategory === category;

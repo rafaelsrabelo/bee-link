@@ -56,7 +56,7 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
       const response = await fetch(`/api/stores/${storeSlug}/products-public`);
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ Produtos carregados:', data.products?.length || 0);
+        // Produtos carregados
         setProducts(data.products || []);
       } else {
         console.error('Erro na resposta:', response.status);
@@ -151,7 +151,7 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
         order_date: formData.order_date
       };
 
-      console.log('📝 Criando pedido com dados:', orderData);
+      // Criando pedido
 
       const response = await fetch('/api/orders/create', {
         method: 'POST',

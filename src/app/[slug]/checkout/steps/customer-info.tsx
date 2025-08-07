@@ -28,7 +28,7 @@ interface CustomerInfoStepProps {
     name: string;
     phone: string;
   };
-  setCustomerData: (data: any) => void;
+  setCustomerData: (data: { name: string; phone: string }) => void;
   onNext: () => void;
   currentStep: number;
   totalSteps: number;
@@ -43,8 +43,8 @@ export default function CustomerInfoStep({
   customerData,
   setCustomerData,
   onNext,
-  currentStep,
-  totalSteps,
+  // currentStep,
+  // totalSteps,
   store
 }: CustomerInfoStepProps) {
   const [errors, setErrors] = useState<{[key: string]: string}>({});
@@ -83,8 +83,10 @@ export default function CustomerInfoStep({
     
     if (numbers.length <= 2) {
       return `(${numbers}`;
+    // biome-ignore lint/style/noUselessElse: <explanation>
     } else if (numbers.length <= 7) {
       return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
+    // biome-ignore lint/style/noUselessElse: <explanation>
     } else {
       return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7, 11)}`;
     }
