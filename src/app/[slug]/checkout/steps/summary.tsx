@@ -160,50 +160,34 @@ ${deliveryInfo}
 ---
 Pedido feito pelo site 🐝 Bee Link`;
 
-      // 5. Abrir WhatsApp IMEDIATAMENTE (antes do setTimeout para evitar bloqueio de pop-up)
+      // 5. Redirecionar automaticamente para WhatsApp
       const whatsappNumber = store.social_networks?.whatsapp?.replace(/\D/g, '') || '5511999999999';
       const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
       
-      // Em produção, sempre mostrar o toast com link clicável para evitar problemas de pop-up
-      toast.success(
-        <div>
-          <p>✅ Pedido criado com sucesso!</p>
-          <p className="mt-2">Clique no botão abaixo para abrir o WhatsApp:</p>
-          <a 
-            href={whatsappUrl} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="inline-block mt-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-center"
-          >
-            📱 Abrir WhatsApp
-          </a>
-        </div>,
-        { 
-          id: loadingToast,
-          duration: 15000 // 15 segundos para dar tempo de clicar
-        }
-      );
+      // Redirecionar diretamente para o WhatsApp
+      window.location.href = whatsappUrl;
 
-      // 6. Limpar carrinho e redirecionar para a página de confirmação do pedido
-      setTimeout(() => {
-        try {
-          // Limpar carrinho usando o store
-          clearCart();
-          
-          // Também limpar localStorage para garantir
-          if (typeof window !== 'undefined') {
-            localStorage.removeItem('cart');
-            localStorage.removeItem('cart-storage'); // Limpar também o storage do Zustand
-            // Disparar evento para atualizar o carrinho em outras páginas
-            window.dispatchEvent(new CustomEvent('cartCleared'));
-          }
-        } catch (error) {
-          console.error('Erro ao limpar carrinho:', error);
-          // Mesmo com erro, continuar com o redirecionamento
-        }
+      // 6. Limpar carrinho antes do redirecionamento
+      try {
+        // Limpar carrinho usando o store
+        clearCart();
         
-        window.location.href = `/${store.slug}/order-confirmation?orderId=${result.orderId}`;
-      }, 2000);
+        // Também limpar localStorage para garantir
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('cart');
+          localStorage.removeItem('cart-storage'); // Limpar também o storage do Zustand
+          // Disparar evento para atualizar o carrinho em outras páginas
+          window.dispatchEvent(new CustomEvent('cartCleared'));
+        }
+      } catch (error) {
+        console.error('Erro ao limpar carrinho:', error);
+        // Mesmo com erro, continuar com o redirecionamento
+      }
+      
+      // O redirecionamento para WhatsApp já foi feito acima
+      // Após o usuário sair do WhatsApp, ele pode voltar para a página de confirmação
+      // usando o botão "Voltar" do navegador ou acessando diretamente:
+      // /${store.slug}/order-confirmation?orderId=${result.orderId}
       
     } catch (error) {
       console.error('Erro ao finalizar pedido:', error);
