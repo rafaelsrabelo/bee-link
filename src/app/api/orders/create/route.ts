@@ -44,26 +44,6 @@ Para aceitar o pedido, acesse o painel administrativo.`;
 // Função para enviar mensagem para WhatsApp
 async function sendWhatsAppMessage(phone: string, message: string) {
   try {
-    // Aqui você pode integrar com a API do WhatsApp Business
-    // Por enquanto, vamos apenas simular o envio
-    console.log('Enviando mensagem para WhatsApp:', phone);
-    console.log('Mensagem:', message);
-    
-    // Exemplo de integração com WhatsApp Business API:
-    // const response = await fetch('https://graph.facebook.com/v17.0/YOUR_PHONE_NUMBER_ID/messages', {
-    //   method: 'POST',
-    //   headers: {
-    //     'Authorization': `Bearer ${process.env.WHATSAPP_TOKEN}`,
-    //     'Content-Type': 'application/json',
-    //   },
-    //   body: JSON.stringify({
-    //     messaging_product: 'whatsapp',
-    //     to: phone,
-    //     type: 'text',
-    //     text: { body: message }
-    //   })
-    // });
-    
     return true;
   } catch (error) {
     console.error('Erro ao enviar mensagem WhatsApp:', error);
@@ -92,9 +72,6 @@ export async function POST(request: NextRequest) {
       payment_method
     } = body;
 
-    console.log('Criando pedido para loja:', storeSlug);
-    console.log('Dados do pedido:', { customer_name, customer_phone, items, total });
-
     // 1. Buscar a loja pelo slug
     const { data: store, error: storeError } = await supabase
       .from('stores')
@@ -102,7 +79,6 @@ export async function POST(request: NextRequest) {
       .eq('slug', storeSlug)
       .single();
 
-    console.log('Resultado da busca da loja:', { store, storeError });
 
     if (storeError || !store) {
       return NextResponse.json(
@@ -124,7 +100,6 @@ export async function POST(request: NextRequest) {
 
     if (existingCustomer) {
       customerId = existingCustomer.id;
-      console.log('Cliente encontrado:', customerId);
     } else {
       // Criar novo cliente
       const { data: newCustomer, error: customerError } = await supabase
@@ -147,12 +122,8 @@ export async function POST(request: NextRequest) {
       }
 
       customerId = newCustomer.id;
-      console.log('Novo cliente criado:', customerId);
     }
 
-    // 3. Criar o pedido no banco
-    console.log(`📦 Criando pedido: source=${source}, isManualOrder=${isManualOrder}, status=${isManualOrder ? 'delivered' : 'pending'}`);
-    
     // Objeto básico sempre funciona
     const orderInsert: Record<string, unknown> = {
       store_id: store.id,
@@ -176,16 +147,13 @@ export async function POST(request: NextRequest) {
       if (delivery_state) orderInsert.delivery_state = delivery_state;
       // Manter compatibility com delivery_address
       orderInsert.delivery_address = customer_address;
-    } catch (error) {
-      console.log('Algumas colunas novas podem não existir ainda no banco:', error);
+    } catch {
     }
 
     // Se uma data foi fornecida, usar ela; senão usar a data atual
     if (order_date) {
       orderInsert.created_at = new Date(`${order_date}T00:00:00.000Z`).toISOString();
     }
-
-    console.log('Dados que serão inseridos:', JSON.stringify(orderInsert, null, 2));
 
     const { data: order, error: orderError } = await supabase
       .from('orders')
@@ -194,9 +162,6 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (orderError) {
-      console.error('Erro detalhado ao criar pedido:', orderError);
-      console.error('Dados tentando inserir:', orderInsert);
-      
       // Se o erro for de coluna não existe, dar uma mensagem mais clara
       if (orderError.message?.includes('column') && orderError.message?.includes('does not exist')) {
         return NextResponse.json(

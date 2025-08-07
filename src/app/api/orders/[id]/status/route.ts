@@ -61,7 +61,6 @@ async function sendWhatsAppNotification(phone: string, message: string) {
       });
 
       if (response.ok) {
-        console.log('✅ WhatsApp enviado via Meta API para:', phone);
         return { success: true, method: 'meta-api' };
       }
     }
@@ -81,16 +80,10 @@ async function sendWhatsAppNotification(phone: string, message: string) {
       });
       
       if (response.ok) {
-        console.log('✅ WhatsApp enviado via webhook para:', phone);
         return { success: true, method: 'webhook' };
       }
     }
 
-    // OPÇÃO 3: Log para implementação futura
-    console.log('📱 WhatsApp Message Ready:');
-    console.log('To:', phone);
-    console.log('Message:', message);
-    
     return { success: true, method: 'logged' };
 
   } catch (error) {
@@ -108,11 +101,6 @@ export async function PUT(
     const body: UpdateOrderStatusRequest = await request.json();
     const { status, notes } = body;
     
-    // Removido verificação de autenticação por ora
-    // A interface de admin já está protegida
-    console.log('📝 Atualizando status do pedido:', id, 'para:', status);
-
-    // 1. Buscar o pedido com dados da loja
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .select(`
@@ -132,13 +120,6 @@ export async function PUT(
       );
     }
 
-    // 2. Atualizar o status do pedido
-    console.log('🔄 Tentando atualizar status:', { 
-      orderId: id, 
-      newStatus: status, 
-      currentStatus: order.status 
-    });
-
     const { data: updatedOrder, error: updateError } = await supabase
       .from('orders')
       .update({
@@ -157,20 +138,12 @@ export async function PUT(
       );
     }
 
-    console.log('✅ Status atualizado com sucesso:', updatedOrder.status);
-
     // 3. Enviar notificação automática para WhatsApp
     if (status !== 'pending' && order.customer_phone) {
       const statusMessage = formatStatusMessage(order, status, order.store);
       
       if (statusMessage) {
-        const whatsappResult = await sendWhatsAppNotification(order.customer_phone, statusMessage);
-        
-        if (whatsappResult.success) {
-          console.log(`✅ WhatsApp enviado (${whatsappResult.method}) para:`, order.customer_phone);
-        } else {
-          console.error('❌ Falha ao enviar WhatsApp:', whatsappResult.error);
-        }
+        await sendWhatsAppNotification(order.customer_phone, statusMessage);
       }
     }
 

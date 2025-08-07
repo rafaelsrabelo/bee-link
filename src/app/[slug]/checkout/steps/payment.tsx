@@ -113,9 +113,9 @@ export default function PaymentStep({
                   : undefined
               }}
             >
-              <div className="flex items-center space-x-3">
+              <div className="flex items-start space-x-3">
                 <IconComponent 
-                  className={`w-6 h-6 ${
+                  className={`w-6 h-6 mt-1 ${
                     paymentData.method === method.id ? '' : method.color
                   }`} 
                   style={{
@@ -126,10 +126,31 @@ export default function PaymentStep({
                 />
                 <div className="flex-1">
                   <h3 className="font-medium text-gray-900">{method.name}</h3>
-                  <p className="text-sm text-gray-600">{method.description}</p>
+                  <p className="text-sm text-gray-600 mb-2">{method.description}</p>
+                  
+                  {/* Descrições detalhadas integradas */}
+                  {paymentData.method === method.id && (
+                    <div className="mt-3 p-3 rounded-lg bg-gray-50 border border-gray-200">
+                      {method.id === 'money' && (
+                        <p className="text-sm text-gray-700">
+                          Tenha o valor exato ou informe se precisará de troco na finalização do pedido.
+                        </p>
+                      )}
+                      {method.id === 'pix' && (
+                        <p className="text-sm text-gray-700">
+                          Você receberá o código PIX ou chave para realizar o pagamento.
+                        </p>
+                      )}
+                      {(method.id === 'credit_card' || method.id === 'debit_card') && (
+                        <p className="text-sm text-gray-700">
+                          O pagamento será processado no momento da entrega ou retirada.
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div 
-                  className={`w-4 h-4 rounded-full border-2 ${
+                  className={`w-4 h-4 rounded-full border-2 mt-1 ${
                     paymentData.method === method.id ? '' : 'border-gray-300'
                   }`}
                   style={{
@@ -153,51 +174,6 @@ export default function PaymentStep({
 
       {errors.method && (
         <p className="mb-4 text-sm text-red-600">{errors.method}</p>
-      )}
-
-      {/* Informações adicionais baseadas no método selecionado */}
-      {paymentData.method === 'money' && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-          <div className="flex items-start space-x-2">
-            <Banknote className="w-5 h-5 text-yellow-600 mt-0.5" />
-            <div>
-              <h4 className="font-medium text-yellow-800">Pagamento em Dinheiro</h4>
-              <p className="text-sm text-yellow-700 mt-1">
-                Tenha o valor exato ou informe se precisará de troco na finalização do pedido.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {paymentData.method === 'pix' && (
-        <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6">
-          <div className="flex items-start space-x-2">
-            <Smartphone className="w-5 h-5 text-purple-600 mt-0.5" />
-            <div>
-              <h4 className="font-medium text-purple-800">PIX</h4>
-              <p className="text-sm text-purple-700 mt-1">
-                Você receberá o código PIX ou chave para realizar o pagamento.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {(paymentData.method === 'credit_card' || paymentData.method === 'debit_card') && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-          <div className="flex items-start space-x-2">
-            <CreditCard className="w-5 h-5 text-blue-600 mt-0.5" />
-            <div>
-              <h4 className="font-medium text-blue-800">
-                {paymentData.method === 'credit_card' ? 'Cartão de Crédito' : 'Cartão de Débito'}
-              </h4>
-              <p className="text-sm text-blue-700 mt-1">
-                O pagamento será processado no momento da entrega ou retirada.
-              </p>
-            </div>
-          </div>
-        </div>
       )}
 
       {/* Botões */}

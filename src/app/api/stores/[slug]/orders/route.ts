@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { supabase } from '../../../../../lib/supabase';
 
 export async function GET(
@@ -10,14 +10,12 @@ export async function GET(
     const { searchParams } = new URL(request.url);
     
     // Parâmetros de consulta
-    const limit = parseInt(searchParams.get('limit') || '50');
-    const offset = parseInt(searchParams.get('offset') || '0');
+    const limit = Number.parseInt(searchParams.get('limit') || '50');
+    const offset = Number.parseInt(searchParams.get('offset') || '0');
     const status = searchParams.get('status');
     const dateFrom = searchParams.get('dateFrom');
     const dateTo = searchParams.get('dateTo');
     const onlyToday = searchParams.get('onlyToday') === 'true';
-
-    console.log('🔍 Buscando pedidos:', { slug, limit, offset, status, dateFrom, dateTo, onlyToday });
 
     // 1. Buscar a loja pelo slug primeiro
     const { data: store, error: storeError } = await supabase
@@ -98,11 +96,6 @@ export async function GET(
     }
 
     const { count } = await countQuery;
-
-    console.log('✅ Pedidos encontrados:', { 
-      orders: orders?.length || 0, 
-      total: count || 0 
-    });
 
     return NextResponse.json({
       orders: orders || [],

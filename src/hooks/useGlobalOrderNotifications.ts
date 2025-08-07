@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Order } from '../types/order';
 
@@ -26,94 +26,75 @@ export function useGlobalOrderNotifications({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Função para buscar pedidos pendentes (otimizada)
-  const fetchPendingOrders = useCallback(async () => {
+  // Função para buscar pedidos pendentes
+  const fetchPendingOrders = async () => {
     if (!enabled || !storeId) return;
 
     setLoading(true);
     setError(null);
 
     try {
-      // Buscar apenas a contagem para melhor performance
       const { count, error } = await supabase
         .from('orders')
         .select('id', { count: 'exact', head: true })
         .eq('store_id', storeId)
-        .eq('status', 'pending');
+        .in('status', ['pending', 'accepted', 'preparing']);
 
       if (error) throw error;
 
-      setPendingOrdersCount(count || 0);
+      const newCount = count || 0;
+      setPendingOrdersCount(newCount);
       
-      // Se houver pedidos pendentes, buscar os detalhes apenas se necessário
       if (count && count > 0) {
         const { data } = await supabase
           .from('orders')
           .select('*')
           .eq('store_id', storeId)
-          .eq('status', 'pending')
+          .in('status', ['pending', 'accepted', 'preparing'])
           .order('created_at', { ascending: false })
-          .limit(5); // Limitar a 5 pedidos mais recentes
+          .limit(5);
           
         setNewOrders(data || []);
       } else {
         setNewOrders([]);
       }
     } catch (err) {
-      console.error('Erro ao buscar pedidos pendentes:', err);
       setError(err instanceof Error ? err.message : 'Erro desconhecido');
     } finally {
       setLoading(false);
     }
-  }, [enabled, storeId]);
+  };
 
-  // Efeito para buscar pedidos quando o hook é inicializado
+  // Carregar dados iniciais
   useEffect(() => {
     fetchPendingOrders();
-  }, [storeId, enabled, fetchPendingOrders]);
+  }, [storeId, enabled]);
 
-  // Configurar realtime para escutar novos pedidos
+  // Configurar Realtime
   useEffect(() => {
     if (!enabled || !storeId) return;
 
-    // Canal para escutar mudanças na tabela orders
     const channel = supabase
-      .channel('orders-notifications')
+      .channel(`orders-notifications-${storeId}`)
       .on(
         'postgres_changes',
         {
-          event: '*', // Escuta INSERT, UPDATE, DELETE
+          event: '*',
           schema: 'public',
           table: 'orders',
           filter: `store_id=eq.${storeId}`
         },
-        (payload) => {
-          console.log('Mudança em pedido detectada:', payload);
-          
-          // Atualizar a contagem quando houver mudanças
+        () => {
+          // Atualizar dados quando houver mudanças
           fetchPendingOrders();
-
-          // Se for um novo pedido pendente, mostrar notificação
-          if (payload.eventType === 'INSERT' && payload.new?.status === 'pending') {
-            // Aqui você pode adicionar notificação toast, som, etc.
-            console.log('Novo pedido recebido!', payload.new);
-          }
-
-          // Se um pedido foi aceito, reduzir a contagem
-          if (payload.eventType === 'UPDATE' && 
-              payload.old?.status === 'pending' && 
-              payload.new?.status !== 'pending') {
-            console.log('Pedido atualizado de pendente para:', payload.new?.status);
-          }
         }
       )
       .subscribe();
 
-    // Cleanup na desmontagem
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [storeId, enabled, fetchPendingOrders]);
+  }, [storeId, enabled]);
 
   return {
     pendingOrdersCount,
@@ -123,7 +104,7 @@ export function useGlobalOrderNotifications({
   };
 }
 
-// Hook mais simples para apenas contagem (retrocompatibilidade)
+// Hook mais simples para apenas contagem
 export function usePendingOrdersCount(storeId?: string): number {
   const { pendingOrdersCount } = useGlobalOrderNotifications({
     storeId,

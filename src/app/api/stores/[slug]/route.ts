@@ -1,6 +1,6 @@
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
@@ -46,19 +46,6 @@ export async function PUT(
 
     const body = await request.json();
     const { name, description, logo, colors, social_networks, category_id, layout_type, banner_image, show_products_by_category } = body;
-
-    console.log('Dados recebidos para atualização:', {
-      name,
-      description,
-      logo,
-      category_id,
-      layout_type,
-      banner_image,
-      show_products_by_category,
-      colors,
-      social_networks
-    });
-
     // Validações
     if (!name?.trim()) {
       return NextResponse.json({ error: 'Nome da loja é obrigatório' }, { status: 400 });
@@ -100,8 +87,6 @@ export async function PUT(
       social_networks: social_networks || {},
       updated_at: new Date().toISOString()
     };
-
-    console.log('Dados para atualização:', updateData);
 
     // Atualizar a loja
     const { data: updatedStore, error: updateError } = await supabase

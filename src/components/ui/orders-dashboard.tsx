@@ -80,6 +80,7 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'polling' | 'error'>('connecting');
+  const [forceUpdate, setForceUpdate] = useState(0); // Força re-render quando necessário
 
   // Função para verificar se um pedido é do dia atual
   const isToday = (dateString: string) => {
@@ -100,6 +101,8 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
       .filter(order => order.status === 'delivered')
       .reduce((sum, order) => sum + order.total, 0)
   };
+
+
 
   // Carregar pedidos iniciais (otimizado - apenas de hoje)
   const loadOrders = async () => {
@@ -136,14 +139,17 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
           filter: `store_id=eq.${storeId}` 
         },
         (payload) => {
+          console.log('🔍 Dashboard: Realtime detectou novo pedido:', payload.eventType, payload.new?.id);
           // Novo pedido chegou!
           const newOrder = payload.new as Order;
           
           // Verificar se é do store correto
           if (newOrder.store_id !== storeId) {
+            console.log('❌ Dashboard: Pedido não é deste store:', newOrder.store_id, 'vs', storeId);
             return;
           }
           
+          console.log('✅ Dashboard: Tocando som de notificação...');
           // Tocar som de notificação
           playNotificationSound();
           
@@ -152,13 +158,16 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
             // Verificar se já existe
             const exists = prev.some(o => o.id === newOrder.id);
             if (exists) {
+              console.log('❌ Dashboard: Pedido já existe na lista');
               return prev;
             }
             
+            console.log('✅ Dashboard: Adicionando novo pedido à lista');
             const updatedOrders = [newOrder, ...prev];
             return updatedOrders;
           });
           
+          console.log('✅ Dashboard: Mostrando toast de notificação...');
           // Mostrar toast de notificação
           toast.success(`🔔 Novo pedido de ${newOrder.customer_name}!`, {
             duration: 5000,
@@ -177,11 +186,15 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
           // Status do pedido mudou
           const updatedOrder = payload.new as Order;
           
-          setOrders(prev => 
-            prev.map(order => 
+          setOrders(prev => {
+            const updated = prev.map(order => 
               order.id === updatedOrder.id ? updatedOrder : order
-            )
-          );
+            );
+            return updated;
+          });
+          
+          // Forçar re-render para atualizar estatísticas
+          setForceUpdate(prev => prev + 1);
         }
       )
       .subscribe((status) => {
@@ -195,7 +208,6 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
 
     // Função de polling como fallback
     const startPolling = () => {
-      console.log('🔄 Iniciando polling a cada 5 segundos...');
       setConnectionStatus('polling');
       pollingInterval = setInterval(async () => {
         try {
@@ -210,19 +222,7 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
               const newOrdersToAdd = newOrders.filter((o: Order) => !currentIds.has(o.id));
               
               if (newOrdersToAdd.length > 0) {
-                console.log('🔔 NOVOS PEDIDOS VIA POLLING!', newOrdersToAdd);
                 playNotificationSound();
-                
-                // Usar setTimeout para evitar setState durante render
-                setTimeout(() => {
-                  for (const order of newOrdersToAdd) {
-                    toast.success(`🔔 Novo pedido de ${order.customer_name}!`, {
-                      duration: 5000,
-                      icon: '🛒'
-                    });
-                  }
-                }, 0);
-                
                 return [...newOrdersToAdd, ...prev];
               }
               
@@ -318,14 +318,27 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
       });
 
       if (response.ok) {
-        await response.json();
+        const result = await response.json();
         toast.success('Status atualizado e cliente notificado via WhatsApp!', {
           duration: 4000,
           icon: '✅'
         });
         
-        // Recarregar a lista de pedidos
-        await loadOrders();
+        // Atualizar localmente imediatamente
+        setOrders(prev => 
+          prev.map(order => 
+            order.id === orderId ? { 
+              ...order, 
+              status: newStatus,
+              notes: `${currentOrder.notes ? currentOrder.notes + '\n' : ''}${note}`
+            } : order
+          )
+        );
+        
+        // Forçar re-render para atualizar estatísticas
+        setForceUpdate(prev => prev + 1);
+        
+
       } else {
         const errorData = await response.json();
         console.error('Erro na API:', errorData);
@@ -361,14 +374,23 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
       });
 
       if (response.ok) {
-        await response.json();
+        const result = await response.json();
         toast.success('Status atualizado e cliente notificado via WhatsApp!', {
           duration: 4000,
           icon: '✅'
         });
         
-        // Recarregar a lista de pedidos
-        await loadOrders();
+        // Atualizar localmente imediatamente
+        setOrders(prev => 
+          prev.map(order => 
+            order.id === orderId ? { ...order, status: newStatus } : order
+          )
+        );
+        
+        // Forçar re-render para atualizar estatísticas
+        setForceUpdate(prev => prev + 1);
+        
+
       } else {
         const errorData = await response.json();
         console.error('Erro na API:', errorData);

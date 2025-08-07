@@ -1,7 +1,8 @@
 'use client';
 
 import { Bell } from 'lucide-react';
-import { useGlobalOrderNotifications } from '../../hooks/useGlobalOrderNotifications';
+import { useEffect, useState } from 'react';
+import { supabase } from '../../lib/supabase';
 
 interface OrderNotificationBadgeProps {
   storeSlug?: string;
@@ -14,11 +15,70 @@ export default function OrderNotificationBadge({
   storeId, 
   className = '' 
 }: OrderNotificationBadgeProps) {
-  const { pendingOrdersCount } = useGlobalOrderNotifications({ 
-    storeSlug, 
-    storeId, 
-    enabled: !!(storeSlug && storeId) 
-  });
+  const [pendingOrdersCount, setPendingOrdersCount] = useState(0);
+
+  // Função para buscar contagem de pedidos pendentes
+  const fetchPendingCount = async () => {
+    if (!storeId) return;
+
+    try {
+      const { count, error } = await supabase
+        .from('orders')
+        .select('id', { count: 'exact', head: true })
+        .eq('store_id', storeId)
+        .in('status', ['pending', 'accepted', 'preparing']);
+
+      if (error) throw error;
+      setPendingOrdersCount(count || 0);
+    } catch (err) {
+      console.error('Erro ao buscar contagem de pedidos:', err);
+    }
+  };
+
+  // Configurar sistema de notificações em tempo real - igual ao dashboard
+  useEffect(() => {
+    if (!storeId) return;
+
+    // Carregar dados iniciais
+    fetchPendingCount();
+
+    // Configuração do Realtime - exatamente igual ao dashboard
+    const channel = supabase
+      .channel(`badge-orders-${storeId}`)
+      .on('postgres_changes', 
+        { 
+          event: 'INSERT', 
+          schema: 'public', 
+          table: 'orders', 
+          filter: `store_id=eq.${storeId}` 
+        },
+        (payload) => {
+          console.log('🔍 Badge: Novo pedido detectado:', payload.new?.id);
+          // Novo pedido chegou - atualizar contagem
+          fetchPendingCount();
+        }
+      )
+      .on('postgres_changes',
+        { 
+          event: 'UPDATE', 
+          schema: 'public', 
+          table: 'orders', 
+          filter: `store_id=eq.${storeId}` 
+        },
+        (payload) => {
+          console.log('🔍 Badge: Pedido atualizado:', payload.new?.id, 'Status:', payload.new?.status);
+          // Status do pedido mudou - atualizar contagem
+          fetchPendingCount();
+        }
+      )
+      .subscribe((status) => {
+        console.log('🔍 Badge: Status do canal:', status);
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [storeId]);
 
   if (!storeSlug || !storeId) return null;
 

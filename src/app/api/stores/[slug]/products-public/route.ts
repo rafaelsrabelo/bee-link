@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { supabase } from '../../../../../lib/supabase';
 
 export async function GET(
@@ -7,8 +7,6 @@ export async function GET(
 ) {
   try {
     const { slug } = await params;
-
-    console.log('🛍️ Buscando produtos públicos para:', slug);
 
     // 1. Buscar a loja pelo slug
     const { data: store, error: storeError } = await supabase
@@ -45,8 +43,6 @@ export async function GET(
       ...product,
       price: Number(product.price) || 9.99 // Preço padrão se vier 0
     }));
-
-    console.log('✅ Produtos encontrados:', formattedProducts.length);
 
     return NextResponse.json({
       products: formattedProducts

@@ -127,6 +127,7 @@ export default function AdminHeader({ store: propStore, currentPage, title, icon
               >
                 <div className="flex items-center gap-1">
                   Pedidos
+
                   <OrderNotificationBadge 
                     storeSlug={store.slug} 
                     storeId={store.id}

@@ -95,18 +95,14 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
 
   // Função para buscar nome da categoria pelo ID
   const getCategoryNameById = async (categoryId: number): Promise<string> => {
-    console.log('🔍 getCategoryNameById chamada com ID:', categoryId);
     try {
       const response = await fetch(`/api/stores/${slug}/product-categories`);
       if (response.ok) {
         const categories = await response.json();
-        console.log('🔍 Categorias encontradas:', categories);
         const category = categories.find((cat: { id: number; name: string }) => cat.id === categoryId);
-        console.log('🔍 Categoria encontrada:', category);
         return category?.name || 'Geral';
       }
-    } catch (error) {
-      console.error('Erro ao buscar categoria:', error);
+    } catch {
     }
     return 'Geral';
   };
@@ -222,9 +218,6 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
   const saveProducts = async (newProducts: Product[]) => {
     if (!slug) return;
     
-    // Debug: log dos produtos sendo enviados
-    console.log('🔍 Produtos sendo enviados para API:', JSON.stringify(newProducts, null, 2));
-    
     setProducts(newProducts);
     try {
       const response = await fetch(`/api/stores/${slug}/products`, {
@@ -306,15 +299,9 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
     try {
       // Buscar nome real da categoria se foi selecionada uma categoria personalizada
       let categoryName = newProduct.category || 'Geral';
-      console.log('🔍 Debug categoria - Antes:', { 
-        category: newProduct.category, 
-        category_id: newProduct.category_id,
-        categoryName 
-      });
       
       if (newProduct.category === 'selected' && newProduct.category_id) {
         categoryName = await getCategoryNameById(newProduct.category_id);
-        console.log('🔍 Debug categoria - Depois de buscar nome:', { categoryName });
       }
 
       const product: Product = {
@@ -329,13 +316,6 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
         available: newProduct.available !== false,
         store_id: store?.id
       };
-
-      // Debug: log do produto sendo criado
-      console.log('🔍 Produto sendo criado:', {
-        newProduct,
-        categoryName,
-        finalProduct: product
-      });
 
       const updatedProducts = [...products, product];
       await saveProducts(updatedProducts);
