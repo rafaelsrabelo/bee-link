@@ -23,7 +23,7 @@ interface Store {
 
 interface AdminHeaderProps {
   store?: Store | null;
-  currentPage: 'dashboard' | 'products' | 'store' | 'orders' | 'reports';
+  currentPage: 'dashboard' | 'products' | 'store' | 'orders' | 'reports' | 'delivery';
   title: string;
   icon: React.ComponentType<{ className?: string }>;
 }
@@ -169,6 +169,19 @@ export default function AdminHeader({ store: propStore, currentPage, title, icon
                 }`}
               >
                 Relatórios
+              </button>
+
+              {/* 6. Entregas */}
+              {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
+              <button
+                onClick={() => router.push(`/admin/${store.slug}/delivery`)}
+                className={`px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                  isActive('delivery') 
+                    ? 'text-white bg-white/20 border-b-2 border-white' 
+                    : 'text-white/80 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                Entregas
               </button>
 
             </div>
@@ -355,6 +368,22 @@ export default function AdminHeader({ store: propStore, currentPage, title, icon
                   }`}
                 >
                   Relatórios
+                </button>
+
+                {/* 6. Entregas */}
+                {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
+                <button
+                  onClick={() => {
+                  router.push(`/admin/${store.slug}/delivery`);
+                  setShowMobileMenu(false);
+                }}
+                  className={`w-full px-3 py-2 rounded-lg text-sm transition-all duration-200 text-left ${
+                    isActive('delivery') 
+                      ? 'text-white bg-white/20 border-l-4 border-white' 
+                      : 'text-white/80 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  Entregas
                 </button>
               </div>
             </div>
