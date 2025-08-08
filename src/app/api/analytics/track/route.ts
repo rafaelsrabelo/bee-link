@@ -44,14 +44,10 @@ export async function POST(request: NextRequest) {
       });
 
     if (error) {
-      console.error('❌ Analytics API: Database error:', error);
       return NextResponse.json({ error: 'Erro ao registrar evento' }, { status: 500 });
     }
-
-    console.log('✅ Analytics API: Event registered successfully');
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('❌ Analytics API: Internal error:', error);
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 } 

@@ -52,34 +52,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const totalClicks = analyticsData?.filter(e => e.event_type === 'product_click').length || 0;
     const totalCartClicks = analyticsData?.filter(e => e.event_type === 'cart_add').length || 0;
     const uniqueVisitors = new Set(analyticsData?.map(e => e.ip_address).filter(Boolean)).size;
-    // Calcular crescimento comparando com período anterior
-    const currentPeriodViews = totalViews;
-    const previousPeriodDays = days;
-    const previousPeriodStart = new Date(Date.now() - (previousPeriodDays * 2) * 24 * 60 * 60 * 1000);
-    const previousPeriodEnd = new Date(Date.now() - previousPeriodDays * 24 * 60 * 60 * 1000);
-    
-    const { data: previousAnalyticsData } = await supabase
-      .from('analytics_events')
-      .select('*')
-      .eq('store_slug', slug)
-      .gte('created_at', previousPeriodStart.toISOString())
-      .lt('created_at', previousPeriodEnd.toISOString());
-    
-    const previousPeriodViews = previousAnalyticsData?.filter(e => e.event_type === 'page_view').length || 0;
-    
-    let growthPercentage = 0;
-    let hasEnoughData = false;
-    
-    if (previousPeriodViews > 0) {
-      growthPercentage = ((currentPeriodViews - previousPeriodViews) / previousPeriodViews) * 100;
-      hasEnoughData = true;
-    } else if (currentPeriodViews > 0 && previousPeriodViews === 0) {
-      // Se não havia dados no período anterior, não mostrar crescimento
-      growthPercentage = 0;
-      hasEnoughData = false;
-    }
+
 
     // Calcular produtos mais clicados
+    interface ProductClick {
+      product_id: string;
+      product_name: string;
+      clicks: number;
+    }
+
     const productClicks = analyticsData
       ?.filter(e => e.event_type === 'product_click' && e.product_id)
       .reduce((acc, e) => {
@@ -89,12 +70,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         }
         acc[key].clicks++;
         return acc;
-      }, {} as Record<string, any>);
+      }, {} as Record<string, ProductClick>);
 
-    const topProducts = Object.values(productClicks || {})
-      .sort((a: any, b: any) => b.clicks - a.clicks)
+    const topProducts = (Object.values(productClicks || {}) as ProductClick[])
+      .sort((a, b) => b.clicks - a.clicks)
       .slice(0, 10)
-      .map((product: any, index: number) => ({
+      .map((product, index) => ({
         ...product,
         rank: index + 1
       }));
@@ -110,12 +91,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       }
       acc[key].clicks++;
       return acc;
-    }, {} as Record<string, any>);
+    }, {} as Record<string, ProductClick>);
 
-    const topCartProducts = Object.values(cartProducts || {})
-      .sort((a: any, b: any) => b.clicks - a.clicks)
+    const topCartProducts = (Object.values(cartProducts || {}) as ProductClick[])
+      .sort((a, b) => b.clicks - a.clicks)
       .slice(0, 10)
-      .map((product: any, index: number) => ({
+      .map((product, index) => ({
         ...product,
         rank: index + 1
       }));
@@ -136,9 +117,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           acc[date].unique_sessions.add(e.ip_address);
         }
         return acc;
-      }, {} as Record<string, any>);
+      }, {} as Record<string, DailyStat>);
 
-    const dailyStatsArray = Object.values(dailyStats || {}).map((day: any) => ({
+    interface DailyStat {
+      date: string;
+      views: number;
+      unique_sessions: Set<string>;
+    }
+
+    const dailyStatsArray = (Object.values(dailyStats || {}) as DailyStat[]).map((day) => ({
       date: day.date,
       views: day.views,
       unique_sessions: day.unique_sessions.size
@@ -151,7 +138,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       total_cart_clicks: totalCartClicks,
       unique_visitors: uniqueVisitors,
       avg_views_per_session: uniqueVisitors > 0 ? Number((totalViews / uniqueVisitors).toFixed(1)) : 0,
-      growth_percentage: hasEnoughData ? growthPercentage : null,
+
       top_products: topProducts,
       top_cart_products: topCartProducts,
       daily_stats: dailyStatsArray

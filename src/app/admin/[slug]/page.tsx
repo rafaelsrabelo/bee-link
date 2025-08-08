@@ -32,7 +32,7 @@ export default function AdminDashboardPage({ params }: { params: Promise<{ slug:
     total_cart_clicks: number;
     unique_visitors: number;
     avg_views_per_session: number;
-    growth_percentage?: number | null;
+
     top_products: Array<{
       product_id: string;
       product_name: string;
@@ -95,15 +95,14 @@ export default function AdminDashboardPage({ params }: { params: Promise<{ slug:
         const data = await response.json();
         setAnalytics(data);
       } else {
-        setAnalytics({ 
+                setAnalytics({ 
           total_views: 0, 
           total_clicks: 0, 
           total_cart_clicks: 0,
-          total_header_cart_clicks: 0,
           unique_visitors: 0, 
           avg_views_per_session: 0, 
           top_products: [], 
-          top_cart_products: [],
+          top_cart_products: [], 
           daily_stats: [] 
         });
       }
@@ -252,19 +251,16 @@ export default function AdminDashboardPage({ params }: { params: Promise<{ slug:
                   <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-medium text-gray-600">Crescimento vs Período Anterior</p>
+                        <p className="text-sm font-medium text-gray-600">Taxa de Conversão</p>
                         <p className="text-2xl font-bold text-gray-900">
-                          {analytics.growth_percentage !== null ? `${analytics.growth_percentage > 0 ? '+' : ''}${analytics.growth_percentage.toFixed(1)}%` : 'N/A'}
+                          {analytics.total_views > 0 ? ((analytics.total_cart_clicks / analytics.total_views) * 100).toFixed(1) : 0}%
                         </p>
                         <p className="text-xs text-gray-500 mt-1">
-                          {analytics.growth_percentage !== null 
-                            ? (analytics.growth_percentage > 0 ? 'Crescimento positivo' : analytics.growth_percentage < 0 ? 'Crescimento negativo' : 'Sem mudança')
-                            : 'Dados insuficientes'
-                          }
+                          {analytics.total_cart_clicks} de {analytics.total_views} visualizações
                         </p>
                       </div>
-                      <div className={`p-3 rounded-lg ${analytics.growth_percentage > 0 ? 'bg-green-100' : analytics.growth_percentage < 0 ? 'bg-red-100' : 'bg-gray-100'}`}>
-                        <TrendingUp className={`w-6 h-6 ${analytics.growth_percentage > 0 ? 'text-green-600' : analytics.growth_percentage < 0 ? 'text-red-600' : 'text-gray-600'}`} />
+                      <div className="p-3 bg-purple-100 rounded-lg">
+                        <BarChart3 className="w-6 h-6 text-purple-600" />
                       </div>
                     </div>
                   </div>

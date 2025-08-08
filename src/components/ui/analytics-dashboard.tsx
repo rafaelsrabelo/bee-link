@@ -178,7 +178,7 @@ export default function AnalyticsDashboard({ storeSlug }: AnalyticsDashboardProp
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Adições ao Carrinho</p>
-              <p className="text-2xl font-bold text-gray-900">{analytics.total_cart_clicks.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-gray-900">{analytics.total_cart_clicks?.toLocaleString() || 0}</p>
             </div>
             <div className="p-2 bg-red-100 rounded-lg">
               <ShoppingCart className="w-6 h-6 text-red-600" />
