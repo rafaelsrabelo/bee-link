@@ -475,10 +475,10 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
             const newOrdersToAdd = newOrders.filter((o: Order) => !currentIds.has(o.id));
             
             if (newOrdersToAdd.length > 0 && !isInitialLoad) {
-                      // Tocar som várias vezes (mantendo os sons)
-        playNotificationSound();
-        setTimeout(() => playNotificationSound(), 1000);
-        setTimeout(() => playNotificationSound(), 2000);
+              // Tocar som várias vezes (mantendo os sons)
+              playNotificationSound();
+              setTimeout(() => playNotificationSound(), 1000);
+              setTimeout(() => playNotificationSound(), 2000);
               
               // Incrementar contador no store
               incrementCount();
