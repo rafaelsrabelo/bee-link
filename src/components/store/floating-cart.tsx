@@ -82,8 +82,8 @@ export default function FloatingCart({
       {/* Carrinho Flutuante */}
       <div 
         className={`
-          fixed bottom-4 left-4 right-4 z-50 transition-all duration-300 ease-in-out
-          ${isExpanded ? 'bottom-0 left-0 right-0' : ''}
+          fixed bottom-4 z-50 transition-all duration-300 ease-in-out
+          ${isExpanded ? 'bottom-0 left-0 right-0' : 'md:left-1/2 md:transform md:-translate-x-1/2 md:max-w-sm md:w-auto md:mx-4 left-4 right-4'}
         `}
       >
         {/* Versão Expandida */}
@@ -191,12 +191,42 @@ export default function FloatingCart({
             </div>
           </div>
         ) : (
-          /* Versão Compacta */
+          /* Versão Compacta - Web */
           <button
             type="button"
             onClick={() => setIsExpanded(true)}
             className={`
-              w-full bg-white rounded-2xl shadow-lg p-4 
+              hidden md:flex bg-gray-800 rounded-full shadow-lg px-6 py-3 
+              hover:shadow-xl transition-all duration-200 transform hover:scale-105
+              items-center space-x-4
+            `}
+          >
+            <div className="relative">
+              <ShoppingCart className="w-5 h-5 text-white" />
+              {totalItems > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center font-bold">
+                  {totalItems > 9 ? '9+' : totalItems}
+                </span>
+              )}
+            </div>
+            
+            <span className="text-white font-semibold">
+              {formatPrice(totalValue)}
+            </span>
+            
+            <span className="text-white text-sm bg-white/20 px-3 py-1 rounded-full">
+              VER SACOLA
+            </span>
+          </button>
+        )}
+
+        {/* Versão Compacta - Mobile (mantém o layout original) */}
+        {!isExpanded && (
+          <button
+            type="button"
+            onClick={() => setIsExpanded(true)}
+            className={`
+              md:hidden w-full bg-white rounded-2xl shadow-lg p-4 
               hover:shadow-xl transition-all duration-200 transform hover:scale-105
               border-2
             `}

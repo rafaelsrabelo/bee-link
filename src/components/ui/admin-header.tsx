@@ -57,7 +57,6 @@ export default function AdminHeader({ store: propStore, currentPage, title, icon
   const isActive = (page: string) => currentPage === page;
 
   const handleNavigation = (path: string) => {
-    // @ts-expect-error - Next.js router type issue
     router.push(path);
     setShowMobileMenu(false);
   };

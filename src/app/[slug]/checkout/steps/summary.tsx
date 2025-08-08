@@ -60,7 +60,9 @@ export default function SummaryStep({
 
   // Calcular total
   const total = cart.reduce((sum, item) => {
-    const price = Number.parseFloat(item.price.replace('R$', '').replace(',', '.').trim());
+    // Garantir que price seja uma string antes de usar replace
+    const priceString = typeof item.price === 'string' ? item.price : String(item.price);
+    const price = Number.parseFloat(priceString.replace('R$', '').replace(',', '.').trim());
     return sum + (price * item.quantity);
   }, 0);
 
@@ -86,7 +88,9 @@ export default function SummaryStep({
 
       // 1. Preparar dados para API existente
       const orderItems = cart.map(item => {
-        const priceNumber = Number.parseFloat(item.price.replace('R$', '').replace(',', '.').trim());
+        // Garantir que price seja uma string antes de usar replace
+        const priceString = typeof item.price === 'string' ? item.price : String(item.price);
+        const priceNumber = Number.parseFloat(priceString.replace('R$', '').replace(',', '.').trim());
         return {
           id: item.name.toLowerCase().replace(/\s+/g, '-'),
           name: item.name,
@@ -280,7 +284,7 @@ Pedido feito pelo site 🐝 Bee Link`;
               </div>
               <div className="text-right">
                 <p className="font-medium text-gray-900">
-                  R$ {(Number.parseFloat(item.price.replace('R$', '').replace(',', '.').trim()) * item.quantity).toFixed(2).replace('.', ',')}
+                  R$ {(Number.parseFloat((typeof item.price === 'string' ? item.price : String(item.price)).replace('R$', '').replace(',', '.').trim()) * item.quantity).toFixed(2).replace('.', ',')}
                 </p>
               </div>
             </div>

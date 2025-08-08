@@ -23,14 +23,23 @@ export default function OrderNotificationBadge({
     
     const fetchPendingOrders = async () => {
       try {
-        const response = await fetch(`/api/stores/${storeSlug}/orders?onlyToday=true&limit=50`);
+        const response = await fetch(`/api/stores/${storeSlug}/orders?onlyToday=true&limit=50`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
         if (response.ok) {
           const data = await response.json();
           const pending = data.orders?.filter((order: { status: string }) => order.status === 'pending') || [];
           setPendingCount(pending.length);
+        } else {
+          console.warn('Erro na resposta da API:', response.status);
         }
       } catch (error) {
         console.error('Erro ao buscar pedidos:', error);
+        // Não atualizar o estado em caso de erro para evitar problemas
       }
     };
     
@@ -76,13 +85,19 @@ export default function OrderNotificationBadge({
             <div className="flex justify-between items-center">
               <h3 className="font-semibold text-gray-900">Notificações</h3>
               {pendingCount > 0 && (
-                <button
-                  type="button"
+                <div
                   onClick={() => setShowDropdown(false)}
-                  className="text-sm text-blue-600 hover:text-blue-800"
+                  className="text-sm text-blue-600 hover:text-blue-800 cursor-pointer"
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      setShowDropdown(false);
+                    }
+                  }}
                 >
                   Fechar
-                </button>
+                </div>
               )}
             </div>
           </div>

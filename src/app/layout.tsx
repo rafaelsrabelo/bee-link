@@ -14,7 +14,7 @@ const redHatDisplay = Red_Hat_Display({
 
 export const metadata: Metadata = {
   title: "Bee Link - Sua loja e redes sociais em um único link",
-  description: "Centralize produtos, redes sociais e contatos em uma página profissional. Facilite a conexão com seus clientes e aumente suas vendas.",
+  description: "Centralize produtos, redes sociais e tos em uma página profissional. Facilite a conexão com seus clientes e aumente suas vendas.",
 };
 
 export default function RootLayout({

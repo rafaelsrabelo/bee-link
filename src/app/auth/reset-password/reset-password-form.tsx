@@ -25,30 +25,28 @@ export function ResetPasswordForm() {
         // Verificar se há token direto na URL (só para debug, não precisamos processar)
         const tokenParam = searchParams.get('token');
         if (tokenParam) {
-          console.log('Debug - Token encontrado na URL:', tokenParam);
+    
         }
         
         // Verificar se está logado (seja por token ou sessão existente)
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.error('Debug - Erro ao verificar sessão:', error);
+  
           toast.error('Erro ao verificar autenticação');
           setTimeout(() => router.push('/'), 3000);
           return;
         }
         
         if (session?.user) {
-          console.log('Debug - Usuário logado via sessão');
           setIsValidToken(true);
           toast.success('Você pode redefinir sua senha agora!');
         } else {
-          console.log('Debug - Nenhuma autenticação válida encontrada');
           toast.error('Você precisa estar logado para redefinir a senha');
           setTimeout(() => router.push('/'), 3000);
         }
       } catch (error) {
-        console.error('Debug - Erro geral:', error);
+
         toast.error('Erro ao verificar autenticação');
         setTimeout(() => router.push('/'), 3000);
       }
@@ -90,7 +88,7 @@ export function ResetPasswordForm() {
         }, 2000);
       }
     } catch (error: unknown) {
-      console.error('Erro ao alterar senha:', error);
+
       toast.error('Erro ao alterar senha');
     } finally {
       setIsLoading(false);

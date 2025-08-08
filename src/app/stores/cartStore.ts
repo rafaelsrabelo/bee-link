@@ -92,7 +92,9 @@ export const useCartStore = create<CartStore>()(
       getCartTotal: () => {
         const { cart } = get();
         return cart.reduce((total, item) => {
-          const price = Number.parseFloat(item.price.replace('R$ ', '').replace(',', '.'));
+          // Garantir que price seja uma string antes de usar replace
+          const priceString = typeof item.price === 'string' ? item.price : String(item.price);
+          const price = Number.parseFloat(priceString.replace('R$ ', '').replace(',', '.'));
           return total + (price * item.quantity);
         }, 0);
       },

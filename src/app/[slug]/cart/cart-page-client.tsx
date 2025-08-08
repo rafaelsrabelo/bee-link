@@ -300,7 +300,7 @@ export default function CartPageClient({ store }: CartPageClientProps) {
                     <div className="text-right">
                       <p className="text-sm text-gray-500">Total</p>
                       <p className="font-bold text-lg" style={{ color: store.colors.accent }}>
-                        R$ {(Number.parseFloat(item.price.replace(/[^\d,]/g, '').replace(',', '.')) * item.quantity).toFixed(2).replace('.', ',')}
+                        R$ {(Number.parseFloat(item.price.replace('R$ ', '').replace(',', '.')) * item.quantity).toFixed(2).replace('.', ',')}
                       </p>
                     </div>
                     
@@ -336,7 +336,7 @@ export default function CartPageClient({ store }: CartPageClientProps) {
                   {item.name} x{item.quantity}
                 </span>
                 <span className="font-medium" style={{ color: store.colors.primary }}>
-                  R$ {(Number.parseFloat(item.price.replace(/[^\d,]/g, '').replace(',', '.')) * item.quantity).toFixed(2).replace('.', ',')}
+                  R$ {(Number.parseFloat(item.price.replace('R$ ', '').replace(',', '.')) * item.quantity).toFixed(2).replace('.', ',')}
                 </span>
               </div>
             ))}

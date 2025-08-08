@@ -1,5 +1,6 @@
 'use client';
 
+
   import { 
     AlertTriangle,
     BarChart3,
@@ -18,12 +19,295 @@
     X,
     XCircle
   } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import { usePendingOrdersStore } from '../../stores/pendingOrdersStore';
 import type { Order } from '../../types/order';
 import CreateOrderModal from './create-order-modal';
+
+interface OrderDetailsPanelProps {
+  order: Order;
+  onUpdateStatus: (orderId: string, newStatus: Order['status']) => void;
+  onUpdateStatusWithNote: (orderId: string, newStatus: Order['status'], note: string) => void;
+  updatingStatus: string | null;
+  formatDate: (dateString: string) => string;
+  formatPrice: (price: number) => string;
+}
+
+function OrderDetailsPanel({ 
+  order, 
+  onUpdateStatus, 
+  onUpdateStatusWithNote, 
+  updatingStatus, 
+  formatDate, 
+  formatPrice 
+}: OrderDetailsPanelProps) {
+  const statusInfo = statusConfig[order.status];
+  const StatusIcon = statusInfo.icon;
+
+  return (
+    <div className="h-full flex flex-col">
+      {/* Header do Pedido */}
+      <div className="p-6 border-b">
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <div className="flex items-center space-x-3">
+              <h2 className="text-2xl font-bold text-gray-900">
+                Pedido #{order.id.slice(0, 8).toUpperCase()}
+              </h2>
+              {order.notes && (
+                <div className="flex items-center space-x-2 bg-amber-50 text-amber-700 px-3 py-1 rounded-full border border-amber-200">
+                  <MessageCircle className="w-4 h-4" />
+                  <span className="text-sm font-medium">Com observações</span>
+                </div>
+              )}
+            </div>
+            <p className="text-gray-600">{formatDate(order.created_at)}</p>
+          </div>
+          <div className="text-right">
+            <div className={`flex items-center space-x-2 mb-2 ${statusInfo.color}`}>
+              <StatusIcon className="w-5 h-5" />
+              <span className="font-semibold">{statusInfo.label}</span>
+            </div>
+            <p className="text-2xl font-bold text-gray-900">
+              {formatPrice(order.total)}
+            </p>
+          </div>
+        </div>
+
+        {/* Botões de Ação Principais - Visíveis no Header */}
+        {order.status === 'pending' && (
+          <div className="flex space-x-3 mt-4">
+            <button
+              type="button"
+              onClick={() => onUpdateStatus(order.id, 'accepted')}
+              disabled={updatingStatus === order.id}
+              className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 transition-colors"
+            >
+              <Check className="w-4 h-4" />
+              <span>{updatingStatus === order.id ? 'Aceitando...' : 'Aceitar'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onUpdateStatus(order.id, 'cancelled')}
+              disabled={updatingStatus === order.id}
+              className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 disabled:opacity-50 transition-colors"
+            >
+              <X className="w-4 h-4" />
+              <span>{updatingStatus === order.id ? 'Cancelando...' : 'Cancelar'}</span>
+            </button>
+          </div>
+        )}
+
+        {order.status === 'accepted' && (
+          <div className="flex space-x-3 mt-4">
+            <button
+              type="button"
+              onClick={() => onUpdateStatus(order.id, 'preparing')}
+              disabled={updatingStatus === order.id}
+              className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            >
+              <ChefHat className="w-4 h-4" />
+              <span>{updatingStatus === order.id ? 'Preparando...' : 'Preparar'}</span>
+            </button>
+          </div>
+        )}
+
+        {order.status === 'preparing' && (
+          <div className="flex space-x-3 mt-4">
+            <button
+              type="button"
+              onClick={() => onUpdateStatus(order.id, 'delivering')}
+              disabled={updatingStatus === order.id}
+              className="flex items-center space-x-2 bg-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-700 disabled:opacity-50 transition-colors"
+            >
+              <Truck className="w-4 h-4" />
+              <span>{updatingStatus === order.id ? 'Enviando...' : 'Sair p/ Entrega'}</span>
+            </button>
+          </div>
+        )}
+
+        {order.status === 'delivering' && (
+          <div className="flex space-x-3 mt-4">
+            <button
+              type="button"
+              onClick={() => onUpdateStatus(order.id, 'delivered')}
+              disabled={updatingStatus === order.id}
+              className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 transition-colors"
+            >
+              <Package className="w-4 h-4" />
+              <span>{updatingStatus === order.id ? 'Finalizando...' : 'Marcar Entregue'}</span>
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Conteúdo Scrollável */}
+      <div className="flex-1 overflow-y-auto p-6">
+        <div className="space-y-6">
+          {/* Informações do Cliente */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">Informações do Cliente</h3>
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-center space-x-2">
+                  <Phone className="w-4 h-4 text-gray-600" />
+                  <div>
+                    <p className="text-sm text-gray-600">Nome</p>
+                    <p className="font-semibold text-gray-900">{order.customer_name}</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Phone className="w-4 h-4 text-gray-600" />
+                  <div>
+                    <p className="text-sm text-gray-600">Telefone</p>
+                    <p className="font-semibold text-gray-900">{order.customer_phone}</p>
+                  </div>
+                </div>
+                {order.customer_address && (
+                  <div className="md:col-span-2 flex items-center space-x-2">
+                    <MapPin className="w-4 h-4 text-gray-600" />
+                    <div>
+                      <p className="text-sm text-gray-600">Endereço</p>
+                      <p className="font-semibold text-gray-900">{order.customer_address}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Detalhes de Entrega e Pagamento */}
+          {(order.delivery_type || order.payment_method) && (
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">Detalhes do Pedido</h3>
+              <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                {order.delivery_type && (
+                  <div className="flex items-center space-x-2">
+                    <Truck className="w-4 h-4 text-gray-600" />
+                    <div>
+                      <p className="text-sm text-gray-600">Tipo de Entrega</p>
+                      <p className="font-semibold text-gray-900">
+                        {order.delivery_type === 'delivery' ? 'Entrega' : 'Retirada'}
+                        {order.delivery_type === 'delivery' && order.delivery_city && (
+                          <span> - {`${order.delivery_city}/${order.delivery_state}`}</span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {order.payment_method && (
+                  <div className="flex items-center space-x-2">
+                    <Package className="w-4 h-4 text-gray-600" />
+                    <div>
+                      <p className="text-sm text-gray-600">Forma de Pagamento</p>
+                      <p className="font-semibold text-gray-900">
+                        {order.payment_method === 'money' && 'Dinheiro'}
+                        {order.payment_method === 'pix' && 'PIX'}
+                        {order.payment_method === 'credit_card' && 'Cartão de Crédito'}
+                        {order.payment_method === 'debit_card' && 'Cartão de Débito'}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Itens do Pedido */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">Itens do Pedido</h3>
+            <div className="space-y-3">
+              {order.items.map((item, index) => (
+                <div key={`item-${order.id}-${index}`} className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-gray-900">{item.name}</h4>
+                      <p className="text-sm text-gray-600">Quantidade: {item.quantity}</p>
+                      <p className="text-sm text-gray-600">Preço unitário: {formatPrice(item.price)}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-gray-900">
+                        {formatPrice(item.price * item.quantity)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Observações */}
+          {order.notes && (
+            <div>
+              <div className="flex items-center space-x-2 mb-3">
+                <MessageCircle className="w-5 h-5 text-amber-600" />
+                <h3 className="text-lg font-semibold text-gray-900">Observações do Cliente</h3>
+              </div>
+              <div className="bg-amber-50 border-l-4 border-amber-400 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <div className="bg-amber-100 rounded-full p-2 flex-shrink-0">
+                    <MessageCircle className="w-4 h-4 text-amber-600" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-amber-900 font-medium leading-relaxed">{order.notes}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Footer com Ações Especiais do WhatsApp */}
+      {(order.status === 'pending' || order.status === 'accepted') && (
+        <div className="p-4 border-t bg-gray-50">
+          <div className="text-center">
+            <p className="text-sm text-gray-600 mb-3">Finalização Rápida via WhatsApp:</p>
+            <div className="flex space-x-3 justify-center">
+              <button
+                type="button"
+                onClick={() => onUpdateStatusWithNote(order.id, 'delivered', 'Concluído via WhatsApp')}
+                disabled={updatingStatus === order.id}
+                className="flex items-center space-x-2 bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-800 disabled:opacity-50 transition-colors"
+              >
+                <MessageCircle className="w-4 h-4" />
+                <span>{updatingStatus === order.id ? 'Concluindo...' : 'Marcar Concluído'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onUpdateStatusWithNote(order.id, 'cancelled', 'Não finalizado via WhatsApp')}
+                disabled={updatingStatus === order.id}
+                className="flex items-center space-x-2 bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-orange-700 disabled:opacity-50 transition-colors"
+              >
+                <AlertTriangle className="w-4 h-4" />
+                <span>{updatingStatus === order.id ? 'Cancelando...' : 'Não Finalizado'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {(order.status === 'delivered' || order.status === 'cancelled') && (
+        <div className="p-4 border-t bg-gray-50">
+          <div className="text-center">
+            <div className={`inline-flex items-center space-x-2 px-4 py-2 rounded-lg ${
+              order.status === 'delivered' 
+                ? 'bg-green-100 text-green-800' 
+                : 'bg-red-100 text-red-800'
+            }`}>
+              <StatusIcon className="w-5 h-5" />
+              <span className="font-medium">
+                Pedido {order.status === 'delivered' ? 'entregue com sucesso' : 'foi cancelado'}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface OrdersDashboardProps {
   storeSlug: string;
@@ -76,12 +360,16 @@ const statusConfig = {
 };
 
 export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardProps) {
+  
   const [orders, setOrders] = useState<Order[]>([]);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [loading, setLoading] = useState(true);
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'polling' | 'error'>('connecting');
   const [forceUpdate, setForceUpdate] = useState(0); // Força re-render quando necessário
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   
   // Store para salvar pedidos em aberto
   const { setPendingCount, incrementCount, decrementCount } = usePendingOrdersStore();
@@ -100,6 +388,8 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
   // Calcular estatísticas do dia
   const todayOrders = orders.filter(order => isToday(order.created_at));
   
+
+  
   const stats = {
     total: todayOrders.length,
     pending: todayOrders.filter(order => ['pending', 'accepted', 'preparing'].includes(order.status)).length,
@@ -110,141 +400,69 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
       .reduce((sum, order) => sum + order.total, 0)
   };
 
+  // Função para filtrar pedidos por status
+  const filterOrdersByStatus = (orders: Order[], status: string) => {
+    if (status === 'all') return orders;
+    if (status === 'pending') return orders.filter(order => ['pending', 'accepted', 'preparing'].includes(order.status));
+    return orders.filter(order => order.status === status);
+  };
+
+  // Pedidos filtrados
+  const filteredOrders = filterOrdersByStatus(todayOrders, statusFilter);
+
 
 
   // Carregar pedidos iniciais (otimizado - apenas de hoje)
-  const loadOrders = async () => {
+  const loadOrders = React.useCallback(async () => {
     try {
+  
+      
       // Carregar apenas pedidos de hoje para melhor performance
       const response = await fetch(`/api/stores/${storeSlug}/orders?onlyToday=true&limit=50`);
+      
       if (response.ok) {
         const data = await response.json();
+
         setOrders(data.orders || []);
+        
+        // Marcar que o carregamento inicial foi concluído
+        setIsInitialLoad(false);
         
         // Salvar no store o valor de pedidos em aberto
         const pendingCount = (data.orders || []).filter((order: Order) => 
           ['pending', 'accepted', 'preparing'].includes(order.status)
         ).length;
-        console.log('🔢 Dashboard: Atualizando store com', pendingCount, 'pedidos em aberto');
         setPendingCount(pendingCount);
+      } else {
+        toast.error(`Erro ao carregar pedidos: ${response.status}`);
       }
     } catch (error) {
-      console.error('Erro ao carregar pedidos:', error);
-      toast.error('Erro ao carregar pedidos');
+      // Verificar se é erro de rede
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        toast.error('Erro de conexão. Verifique sua internet.');
+      } else {
+        toast.error('Erro ao carregar pedidos');
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [storeSlug, setPendingCount]);
 
   // Configurar sistema de notificações em tempo real
   useEffect(() => {
+    if (!storeId) {
+      return;
+    }
+
+    // Carregar pedidos iniciais
     loadOrders();
 
     let pollingInterval: NodeJS.Timeout;
 
-    // Configuração simples do Realtime
-    
-    const channel = supabase
-      .channel(`dashboard-orders-${storeId}`)
-      .on('postgres_changes', 
-        { 
-          event: 'INSERT', 
-          schema: 'public', 
-          table: 'orders', 
-          filter: `store_id=eq.${storeId}` 
-        },
-        (payload) => {
-          console.log('🔍 Dashboard: Realtime detectou novo pedido:', payload.eventType, payload.new?.id);
-          // Novo pedido chegou!
-          const newOrder = payload.new as Order;
-          
-          // Verificar se é do store correto
-          if (newOrder.store_id !== storeId) {
-            console.log('❌ Dashboard: Pedido não é deste store:', newOrder.store_id, 'vs', storeId);
-            return;
-          }
-          
-          console.log('✅ Dashboard: Tocando som de notificação...');
-          // Tocar som de notificação
-          playNotificationSound();
-          
-          // Atualizar lista local (sempre adicionar, não filtrar por data)
-          setOrders(prev => {
-            // Verificar se já existe
-            const exists = prev.some(o => o.id === newOrder.id);
-            if (exists) {
-              console.log('❌ Dashboard: Pedido já existe na lista');
-              return prev;
-            }
-            
-            console.log('✅ Dashboard: Adicionando novo pedido à lista');
-            const updatedOrders = [newOrder, ...prev];
-            
-            // Incrementar contador no store (+1)
-            incrementCount();
-            
-            return updatedOrders;
-          });
-          
-          console.log('✅ Dashboard: Mostrando toast de notificação...');
-          // Mostrar toast de notificação
-          toast.success(`🔔 Novo pedido de ${newOrder.customer_name}!`, {
-            duration: 5000,
-            icon: '🛒'
-          });
-          
-
-          
-
-        }
-      )
-      .on('postgres_changes',
-        { 
-          event: 'UPDATE', 
-          schema: 'public', 
-          table: 'orders', 
-          filter: `store_id=eq.${storeId}` 
-        },
-        (payload) => {
-          // Status do pedido mudou
-          const updatedOrder = payload.new as Order;
-          const oldOrder = payload.old as Order;
-          
-          setOrders(prev => {
-            const updated = prev.map(order => 
-              order.id === updatedOrder.id ? updatedOrder : order
-            );
-            
-            // Atualizar contador no store quando status mudar
-            const newPendingCount = updated.filter(order => 
-              ['pending', 'accepted', 'preparing'].includes(order.status)
-            ).length;
-            setPendingCount(newPendingCount);
-            
-            return updated;
-          });
-          
-
-          
-          // Forçar re-render para atualizar estatísticas
-          setForceUpdate(prev => prev + 1);
-        }
-      )
-      .subscribe((status) => {
-        console.log('📡 Dashboard: Status do Realtime:', status);
-        if (status === 'SUBSCRIBED') {
-          setConnectionStatus('connected');
-          console.log('✅ Dashboard: Realtime conectado com sucesso!');
-        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          setConnectionStatus('polling');
-          console.log('🔄 Realtime falhou, ativando polling...');
-          startPolling();
-        }
-      });
-
-    // Função de polling como fallback
+    // Usar apenas polling para evitar conflitos com outros canais Realtime
     const startPolling = () => {
       setConnectionStatus('polling');
+      
       pollingInterval = setInterval(async () => {
         try {
           const response = await fetch(`/api/stores/${storeSlug}/orders?onlyToday=true&limit=50`);
@@ -253,41 +471,60 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
             const newOrders = data.orders || [];
             
             // Verificar se há novos pedidos
-            setOrders(prev => {
-              const currentIds = new Set(prev.map(o => o.id));
-              const newOrdersToAdd = newOrders.filter((o: Order) => !currentIds.has(o.id));
+            const currentIds = new Set(orders.map(o => o.id));
+            const newOrdersToAdd = newOrders.filter((o: Order) => !currentIds.has(o.id));
+            
+            if (newOrdersToAdd.length > 0 && !isInitialLoad) {
+              // Chamar som imediatamente
+              playNotificationSound();
               
-              if (newOrdersToAdd.length > 0) {
+              // Tentar novamente após 1 segundo
+              setTimeout(() => {
                 playNotificationSound();
-                return [...newOrdersToAdd, ...prev];
+              }, 1000);
+              
+              // Tentar uma terceira vez após 2 segundos
+              setTimeout(() => {
+                playNotificationSound();
+              }, 2000);
+              
+              // Mostrar toast para cada novo pedido (fora do setState)
+              for (const order of newOrdersToAdd) {
+                toast.success(`🔔 Novo pedido de ${order.customer_name}!`, {
+                  duration: 5000,
+                  icon: '🛒'
+                });
               }
               
-              return newOrders;
-            });
+              // Incrementar contador no store
+              incrementCount();
+              
+              // Atualizar lista (evitar duplicatas)
+              setOrders(prev => {
+                const existingIds = new Set(prev.map((o: Order) => o.id));
+                const uniqueNewOrders = newOrdersToAdd.filter((o: Order) => !existingIds.has(o.id));
+                return [...uniqueNewOrders, ...prev];
+              });
+            } else {
+              // Apenas atualizar se não há novos pedidos
+              setOrders(newOrders);
+            }
           }
         } catch (error) {
-          console.error('Erro no polling:', error);
+          // Erro no polling
         }
-      }, 5000); // Polling a cada 5 segundos
+      }, 2000); // Polling a cada 2 segundos (mais rápido)
     };
 
-    // Se Realtime não conectar em 3 segundos, ativar polling
-    const timeoutId = setTimeout(() => {
-      if (connectionStatus === 'connecting') {
-        setConnectionStatus('polling');
-        console.log('🔄 Realtime não conectou em 3 segundos, ativando polling...');
-        startPolling();
-      }
-    }, 3000);
+    // Iniciar polling imediatamente
+    startPolling();
 
     return () => {
-      supabase.removeChannel(channel);
-      clearTimeout(timeoutId);
       if (pollingInterval) {
         clearInterval(pollingInterval);
       }
     };
-  }, [storeSlug, storeId]);
+  }, [storeSlug, storeId, loadOrders, incrementCount, orders, isInitialLoad]);
 
   // Função para marcar notificação como lida
   const markNotificationAsRead = async (orderId: string) => {
@@ -298,65 +535,54 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
         .eq('id', orderId);
 
       if (error) throw error;
-      console.log('✅ Notificação marcada como lida:', orderId);
     } catch (err) {
-      console.error('❌ Erro ao marcar notificação como lida:', err);
+      // Erro ao marcar notificação como lida
     }
   };
 
-  // Função para tocar som de notificação
+    // Função para tocar som de notificação
   const playNotificationSound = () => {
-    try {
-      console.log('🔊 Tentando tocar som...');
-      
-      // Verificar se o usuário já interagiu com a página
-      if (document.visibilityState === 'visible') {
-        console.log('🔊 Página visível, tocando som...');
-        
-        // Usar Web Audio API para gerar beep duplo chamativo
+    // TOAST GARANTIDO (sempre funciona)
+    toast.success('🔔🔔🔔 NOVO PEDIDO CHEGOU! 🔔🔔🔔', {
+      duration: 3000,
+      icon: '🛒'
+    });
+    
+    // Som com múltiplas tentativas
+    const playBeep = () => {
+      try {
         const audioContext = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
         
-        // Primeiro beep (mais agudo)
-        const oscillator1 = audioContext.createOscillator();
-        const gainNode1 = audioContext.createGain();
+        if (audioContext.state === 'suspended') {
+          audioContext.resume();
+        }
         
-        oscillator1.connect(gainNode1);
-        gainNode1.connect(audioContext.destination);
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
         
-        oscillator1.frequency.value = 1000; // Frequência mais aguda
-        oscillator1.type = 'sine';
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
         
-        gainNode1.gain.setValueAtTime(0.4, audioContext.currentTime);
-        gainNode1.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+        oscillator.frequency.value = 800;
+        oscillator.type = 'sine';
         
-        oscillator1.start(audioContext.currentTime);
-        oscillator1.stop(audioContext.currentTime + 0.3);
+        gainNode.gain.setValueAtTime(0.8, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
         
-        // Segundo beep após pausa (mais grave)
-        setTimeout(() => {
-          const oscillator2 = audioContext.createOscillator();
-          const gainNode2 = audioContext.createGain();
-          
-          oscillator2.connect(gainNode2);
-          gainNode2.connect(audioContext.destination);
-          
-          oscillator2.frequency.value = 600; // Frequência mais grave
-          oscillator2.type = 'sine';
-          
-          gainNode2.gain.setValueAtTime(0.4, audioContext.currentTime);
-          gainNode2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
-          
-          oscillator2.start(audioContext.currentTime);
-          oscillator2.stop(audioContext.currentTime + 0.4);
-        }, 400); // Pausa entre os beeps
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.3);
         
-        console.log('🔊 Som tocado com sucesso!');
-      } else {
-        console.log('🔊 Página não visível, som não tocado');
+      } catch (error) {
+        // Erro no som
       }
-    } catch (error) {
-      console.error('🔊 Erro ao tocar som:', error);
-    }
+    };
+    
+    // Tentar tocar o som imediatamente
+    playBeep();
+    
+    // Tentar novamente após um pequeno delay (para casos onde o contexto está suspenso)
+    setTimeout(playBeep, 100);
+    setTimeout(playBeep, 500);
   };
 
   // Função para atualizar status do pedido com nota
@@ -379,7 +605,7 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
         },
         body: JSON.stringify({ 
           status: newStatus,
-          notes: `${currentOrder.notes ? currentOrder.notes + '\n' : ''}${note}` 
+          notes: `${currentOrder.notes ? `${currentOrder.notes}\n` : ''}${note}` 
         }),
       });
 
@@ -391,14 +617,21 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
         });
         
         // Atualizar localmente imediatamente
+        const updatedOrder = { 
+          ...currentOrder, 
+          status: newStatus,
+          notes: `${currentOrder.notes ? `${currentOrder.notes}\n` : ''}${note}`
+        };
+        
         setOrders(prev => 
           prev.map(order => 
-            order.id === orderId ? { 
-              ...order, 
-              status: newStatus,
-              notes: `${currentOrder.notes ? currentOrder.notes + '\n' : ''}${note}`
-            } : order
+            order.id === orderId ? updatedOrder : order
           )
+        );
+        
+        // Atualizar selectedOrder se for o mesmo pedido
+        setSelectedOrder(prev => 
+          prev?.id === orderId ? updatedOrder : prev
         );
         
         // Forçar re-render para atualizar estatísticas
@@ -439,8 +672,12 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
         body: JSON.stringify({ status: newStatus }),
       });
 
+      
+
       if (response.ok) {
         const result = await response.json();
+
+        
         toast.success('Status atualizado e cliente notificado via WhatsApp!', {
           duration: 4000,
           icon: '✅'
@@ -453,17 +690,31 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
           )
         );
         
+        // Atualizar selectedOrder se for o mesmo pedido
+        setSelectedOrder(prev => 
+          prev?.id === orderId ? { ...prev, status: newStatus } : prev
+        );
+        
         // Forçar re-render para atualizar estatísticas
         setForceUpdate(prev => prev + 1);
         
 
       } else {
-        const errorData = await response.json();
-        console.error('Erro na API:', errorData);
+        console.error('❌ Erro na resposta da API:', response.status, response.statusText);
+        
+        let errorData: { error?: string } = {};
+        try {
+          errorData = await response.json();
+          console.error('❌ Dados do erro:', errorData);
+        } catch (jsonError) {
+          console.error('❌ Erro ao ler JSON da resposta:', jsonError);
+          errorData = { error: 'Erro ao processar resposta da API' };
+        }
+        
         toast.error(`Erro ao atualizar status: ${errorData.error || 'Erro desconhecido'}`);
       }
     } catch (error) {
-      console.error('Erro ao atualizar status:', error);
+      console.error('❌ Erro ao atualizar status:', error);
       toast.error('Erro ao atualizar status');
     } finally {
       setUpdatingStatus(null);
@@ -496,7 +747,7 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
       <div className="space-y-4">
         {[1, 2, 3].map((i) => (
           <div key={i} className="animate-pulse">
-            <div className="bg-gray-200 h-32 rounded-lg"></div>
+            <div className="bg-gray-200 h-32 rounded-lg" />
           </div>
         ))}
       </div>
@@ -535,6 +786,7 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
           <button
             onClick={() => setShowCreateModal(true)}
             className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 mx-auto transition-colors shadow-lg hover:shadow-xl"
+            type="button"
           >
             <Plus className="w-5 h-5" />
             Criar Primeiro Pedido
@@ -549,43 +801,45 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h2 className="text-xl font-semibold text-gray-900">
-            Pedidos de Hoje
-          </h2>
-          
-          {/* Indicador de status da conexão */}
-          <div className="flex items-center gap-2">
-            {connectionStatus === 'connecting' && (
-              <div className="flex items-center gap-1 text-yellow-600">
-                <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
-                <span className="text-xs">Conectando...</span>
-              </div>
-            )}
-            {connectionStatus === 'connected' && (
-              <div className="flex items-center gap-1 text-green-600">
-                <div className="w-2 h-2 bg-green-500 rounded-full" />
-                <span className="text-xs">Tempo real</span>
-              </div>
-            )}
-            {connectionStatus === 'polling' && (
-              <div className="flex items-center gap-1 text-blue-600">
-                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-                <span className="text-xs">Polling</span>
-              </div>
-            )}
-            {connectionStatus === 'error' && (
-              <div className="flex items-center gap-1 text-red-600">
-                <div className="w-2 h-2 bg-red-500 rounded-full" />
-                <span className="text-xs">Erro</span>
-              </div>
-            )}
+    <div className="space-y-6">
+      {/* Header com Estatísticas */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        {/* Header principal */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <h2 className="text-2xl font-bold text-gray-900">
+              Gerenciar Pedidos
+        </h2>
+            
+            {/* Indicador de conexão */}
+            <div className="flex items-center gap-2">
+              {connectionStatus === 'connecting' && (
+                <div className="flex items-center gap-1 text-yellow-600">
+                  <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
+                  <span className="text-xs">Conectando...</span>
+                </div>
+              )}
+              {connectionStatus === 'connected' && (
+                <div className="flex items-center gap-1 text-green-600">
+                  <div className="w-2 h-2 bg-green-500 rounded-full" />
+                  <span className="text-xs">Tempo real</span>
+                </div>
+              )}
+              {connectionStatus === 'polling' && (
+                <div className="flex items-center gap-1 text-blue-600">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                  <span className="text-xs">Polling</span>
+                </div>
+              )}
+              {connectionStatus === 'error' && (
+                <div className="flex items-center gap-1 text-red-600">
+                  <div className="w-2 h-2 bg-red-500 rounded-full" />
+                  <span className="text-xs">Erro</span>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-        
+          
         <div className="flex items-center gap-4">
           <a
             href={`/admin/${storeSlug}/reports`}
@@ -602,15 +856,11 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
             <Plus className="w-4 h-4" />
             Adicionar Pedido
           </button>
-          <div className="text-sm text-gray-500">
-            {formatDate(new Date().toISOString())}
-          </div>
         </div>
       </div>
 
       {/* Cards de Estatísticas */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        {/* Pedidos Feitos */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div>
@@ -623,20 +873,30 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
           </div>
         </div>
 
-        {/* Em Aberto */}
-        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-orange-600">Em Aberto</p>
-              <p className="text-2xl font-bold text-orange-900">{stats.pending}</p>
-            </div>
-            <div className="bg-orange-100 p-2 rounded-lg">
-              <Clock className="w-5 h-5 text-orange-600" />
+                  <div className={`${stats.pending > 0 ? 'bg-gradient-to-r from-orange-100 to-red-50 border-2 border-orange-300 shadow-lg' : 'bg-orange-50 border border-orange-200'} rounded-lg p-4 transition-all duration-300`}>
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center space-x-2">
+                  <p className="text-sm font-medium text-orange-600">Em Aberto</p>
+                  {stats.pending > 0 && (
+                    <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                  )}
+                </div>
+                <p className={`text-2xl font-bold ${stats.pending > 0 ? 'text-red-700' : 'text-orange-900'}`}>
+                  {stats.pending}
+                </p>
+                {stats.pending > 0 && (
+                  <p className="text-xs text-red-600 font-semibold mt-1">
+                    {stats.pending === 1 ? 'PEDIDO AGUARDANDO' : 'PEDIDOS AGUARDANDO'}
+                  </p>
+                )}
+              </div>
+              <div className={`${stats.pending > 0 ? 'bg-red-100' : 'bg-orange-100'} p-2 rounded-lg`}>
+                <Clock className={`w-5 h-5 ${stats.pending > 0 ? 'text-red-600' : 'text-orange-600'}`} />
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Entregues */}
         <div className="bg-green-50 border border-green-200 rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div>
@@ -649,7 +909,6 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
           </div>
         </div>
 
-        {/* Cancelados */}
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div>
@@ -662,13 +921,12 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
           </div>
         </div>
 
-        {/* Total Vendido - Por último */}
         <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-purple-600">Total Vendido</p>
               <p className="text-2xl font-bold text-purple-900">
-                {formatPrice(stats.revenue)}
+                  {formatPrice(stats.revenue)}
               </p>
             </div>
             <div className="bg-purple-100 p-2 rounded-lg">
@@ -676,284 +934,210 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Título da Lista */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium text-gray-900">
-          Pedidos de Hoje ({todayOrders.length})
-        </h3>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-500">Atualizações em tempo real</span>
-          {todayOrders.length !== orders.length && (
-            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-              +{orders.length - todayOrders.length} anteriores
-            </span>
-          )}
         </div>
       </div>
 
-      {todayOrders.map((order) => {
-        const statusInfo = statusConfig[order.status];
-        const StatusIcon = statusInfo.icon;
-
-        return (
-          <div
-            key={order.id}
-            className={`border rounded-lg p-4 ${statusInfo.borderColor} ${statusInfo.bgColor}`}
-          >
-            {/* Header do pedido */}
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center space-x-2">
-                <StatusIcon className={`w-5 h-5 ${statusInfo.color}`} />
-                <span className={`font-medium ${statusInfo.color}`}>
-                  {statusInfo.label}
+      {/* Layout Horizontal - Lista + Detalhes */}
+      <div className="grid grid-cols-12 gap-6" style={{ height: 'calc(100vh - 400px)' }}>
+        {/* Lista de Pedidos - Lado Esquerdo */}
+        <div className="col-span-12 lg:col-span-5 xl:col-span-4">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 h-full flex flex-col">
+            {/* Header da Lista */}
+            <div className="p-6 border-b flex-shrink-0">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Lista de Pedidos</h3>
+                <span className="text-sm text-gray-500">
+                  {filteredOrders.length} {filteredOrders.length === 1 ? 'pedido' : 'pedidos'}
                 </span>
               </div>
-              <div className="text-sm text-gray-500">
-                #{order.id.slice(0, 8)}
-              </div>
-            </div>
 
-            {/* Informações do cliente */}
-            <div className="mb-3">
-              <div className="flex items-center space-x-2 mb-1">
-                <span className="font-medium text-gray-900">
-                  {order.customer_name}
-                </span>
-              </div>
-              <div className="flex items-center space-x-4 text-sm text-gray-600">
-                <div className="flex items-center space-x-1">
-                  <Phone className="w-4 h-4" />
-                  <span>{order.customer_phone}</span>
-                </div>
-                {order.customer_address && (
-                  <div className="flex items-center space-x-1">
-                    <MapPin className="w-4 h-4" />
-                    <span>{order.customer_address}</span>
-                  </div>
-                )}
-                <div className="flex items-center space-x-1">
-                  <Calendar className="w-4 h-4" />
-                  <span>{formatDate(order.created_at)}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Informações de entrega e pagamento */}
-            {(order.delivery_type || order.payment_method) && (
-              <div className="mb-3 p-2 bg-gray-50 rounded-lg">
-                <div className="text-sm font-medium text-gray-700 mb-1">
-                  Detalhes do pedido:
-                </div>
-                <div className="flex flex-wrap gap-3 text-sm text-gray-600">
-                  {order.delivery_type && (
-                    <div className="flex items-center space-x-1">
-                      <Truck className="w-4 h-4" />
-                      <span>
-                        {order.delivery_type === 'delivery' ? 'Entrega' : 'Retirada'}
-                        {order.delivery_type === 'delivery' && order.delivery_city && (
-                          <span> - {order.delivery_city}/{order.delivery_state}</span>
-                        )}
-                      </span>
-                    </div>
-                  )}
-                  {order.payment_method && (
-                    <div className="flex items-center space-x-1">
-                      <Package className="w-4 h-4" />
-                      <span>
-                        {order.payment_method === 'money' && 'Dinheiro'}
-                        {order.payment_method === 'pix' && 'PIX'}
-                        {order.payment_method === 'credit_card' && 'Cartão de Crédito'}
-                        {order.payment_method === 'debit_card' && 'Cartão de Débito'}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Itens do pedido */}
-            <div className="mb-3">
-              <div className="text-sm font-medium text-gray-700 mb-2">
-                Itens do pedido:
-              </div>
-              <div className="space-y-1">
-                {order.items.map((item, index) => (
-                  <div key={index} className="flex justify-between text-sm">
-                    <span>
-                      {item.quantity}x {item.name}
-                    </span>
-                    <span className="font-medium">
-                      {formatPrice(item.price * item.quantity)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Total e observações */}
-            <div className="flex items-center justify-between mb-3">
-              <div className="text-lg font-bold text-gray-900">
-                Total: {formatPrice(order.total)}
-              </div>
-            </div>
-
-            {order.notes && (
-              <div className="mb-3 p-2 bg-gray-100 rounded text-sm">
-                <span className="font-medium">Observações:</span> {order.notes}
-              </div>
-            )}
-
-            {/* Botões de ação */}
-            {order.status === 'pending' && (
-              <div className="space-y-3">
-                <div className="flex space-x-2">
-                  <button
-                    type="button"
-                    onClick={() => updateOrderStatus(order.id, 'accepted')}
-                    disabled={updatingStatus === order.id}
-                    className="flex-1 bg-green-600 text-white px-3 py-2 rounded-lg text-xs font-medium hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-1.5 transition-colors"
-                  >
-                    <Check className="w-3.5 h-3.5" />
-                    {updatingStatus === order.id ? 'Aceitando...' : 'Aceitar'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => updateOrderStatus(order.id, 'cancelled')}
-                    disabled={updatingStatus === order.id}
-                    className="flex-1 bg-red-600 text-white px-3 py-2 rounded-lg text-xs font-medium hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-1.5 transition-colors"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                    {updatingStatus === order.id ? 'Cancelando...' : 'Cancelar'}
-                  </button>
-                </div>
-                
-                {/* Botões específicos do WhatsApp */}
-                <div className="text-xs text-gray-500 text-center">Finalização via WhatsApp:</div>
-                <div className="flex space-x-2">
-                  <button
-                    type="button"
-                    onClick={() => updateOrderStatusWithNote(order.id, 'delivered', 'Concluído via WhatsApp')}
-                    disabled={updatingStatus === order.id}
-                    className="flex-1 bg-green-700 text-white px-2 py-1.5 rounded-lg text-xs font-medium hover:bg-green-800 disabled:opacity-50 flex items-center justify-center gap-1 transition-colors"
-                  >
-                    <MessageCircle className="w-3 h-3" />
-                    {updatingStatus === order.id ? 'Atualizando...' : '✅ Concluído'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => updateOrderStatusWithNote(order.id, 'cancelled', 'Não finalizado via WhatsApp')}
-                    disabled={updatingStatus === order.id}
-                    className="flex-1 bg-orange-600 text-white px-2 py-1.5 rounded-lg text-xs font-medium hover:bg-orange-700 disabled:opacity-50 flex items-center justify-center gap-1 transition-colors"
-                  >
-                    <AlertTriangle className="w-3 h-3" />
-                    {updatingStatus === order.id ? 'Atualizando...' : '❌ Não Finalizado'}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {order.status === 'accepted' && (
-              <div className="space-y-3">
-                <div className="flex space-x-2">
-                  <button
-                    type="button"
-                    onClick={() => updateOrderStatus(order.id, 'preparing')}
-                    disabled={updatingStatus === order.id}
-                    className="flex-1 bg-blue-600 text-white px-3 py-2 rounded-lg text-xs font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-1.5 transition-colors"
-                  >
-                    <ChefHat className="w-3.5 h-3.5" />
-                    {updatingStatus === order.id ? 'Atualizando...' : 'Preparar'}
-                  </button>
-                </div>
-                
-                {/* Botões específicos do WhatsApp */}
-                <div className="text-xs text-gray-500 text-center">Finalização via WhatsApp:</div>
-                <div className="flex space-x-2">
-                  <button
-                    type="button"
-                    onClick={() => updateOrderStatusWithNote(order.id, 'delivered', 'Concluído via WhatsApp')}
-                    disabled={updatingStatus === order.id}
-                    className="flex-1 bg-green-700 text-white px-2 py-1.5 rounded-lg text-xs font-medium hover:bg-green-800 disabled:opacity-50 flex items-center justify-center gap-1 transition-colors"
-                  >
-                    <MessageCircle className="w-3 h-3" />
-                    {updatingStatus === order.id ? 'Atualizando...' : '✅ Concluído'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => updateOrderStatusWithNote(order.id, 'cancelled', 'Não finalizado via WhatsApp')}
-                    disabled={updatingStatus === order.id}
-                    className="flex-1 bg-orange-600 text-white px-2 py-1.5 rounded-lg text-xs font-medium hover:bg-orange-700 disabled:opacity-50 flex items-center justify-center gap-1 transition-colors"
-                  >
-                    <AlertTriangle className="w-3 h-3" />
-                    {updatingStatus === order.id ? 'Atualizando...' : '❌ Não Finalizado'}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {order.status === 'preparing' && (
-              <div className="flex space-x-2">
+              {/* Filtros */}
+              <div className="flex space-x-2 overflow-x-auto pb-2">
                 <button
+                  onClick={() => setStatusFilter('all')}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                    statusFilter === 'all' 
+                      ? 'bg-blue-600 text-white' 
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
                   type="button"
-                  onClick={() => updateOrderStatus(order.id, 'delivering')}
-                  disabled={updatingStatus === order.id}
-                  className="flex-1 bg-purple-600 text-white px-3 py-2 rounded-lg text-xs font-medium hover:bg-purple-700 disabled:opacity-50 flex items-center justify-center gap-1.5 transition-colors"
                 >
-                  <Truck className="w-3.5 h-3.5" />
-                  {updatingStatus === order.id ? 'Atualizando...' : 'Sair p/ Entrega'}
+                  Todos ({todayOrders.length})
+                </button>
+                <button
+                  onClick={() => setStatusFilter('pending')}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                    statusFilter === 'pending' 
+                      ? 'bg-orange-600 text-white' 
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                  type="button"
+                >
+                  Em Aberto ({stats.pending})
+                </button>
+                <button
+                  onClick={() => setStatusFilter('delivered')}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                    statusFilter === 'delivered' 
+                      ? 'bg-green-600 text-white' 
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                  type="button"
+                >
+                  Entregues ({stats.delivered})
+                </button>
+                <button
+                  onClick={() => setStatusFilter('cancelled')}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                    statusFilter === 'cancelled' 
+                      ? 'bg-red-600 text-white' 
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                  type="button"
+                >
+                  Cancelados ({stats.cancelled})
                 </button>
               </div>
-            )}
+            </div>
 
-            {order.status === 'delivering' && (
-              <div className="flex space-x-2">
-                <button
-                  type="button"
-                  onClick={() => updateOrderStatus(order.id, 'delivered')}
-                  disabled={updatingStatus === order.id}
-                  className="flex-1 bg-green-600 text-white px-3 py-2 rounded-lg text-xs font-medium hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-1.5 transition-colors"
-                >
-                  <Package className="w-3.5 h-3.5" />
-                  {updatingStatus === order.id ? 'Atualizando...' : 'Marcar Entregue'}
-                </button>
+            {/* Lista Scrollável de Pedidos - Altura fixa com scroll independente */}
+            <div className="overflow-hidden" style={{ height: 'calc(6 * 120px + 1rem)' }}>
+              {loading ? (
+                <div className="flex justify-center items-center h-full">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-3" />
+                    <p className="text-gray-600">Carregando...</p>
+                  </div>
+                </div>
+              ) : filteredOrders.length === 0 ? (
+                <div className="text-center py-8 px-6">
+                  <Bell className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                  <h3 className="font-semibold text-gray-900 mb-2">Nenhum pedido encontrado</h3>
+                  <p className="text-gray-600 text-sm mb-4">
+                    {statusFilter === 'all' 
+                      ? 'Nenhum pedido hoje ainda' 
+                      : `Nenhum pedido ${statusFilter === 'pending' ? 'em aberto' : statusFilter === 'delivered' ? 'entregue' : 'cancelado'}`
+                    }
+                  </p>
+                  {statusFilter === 'all' && (
+                    <button
+                      onClick={() => setShowCreateModal(true)}
+                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                      type="button"
+                    >
+                      Criar Pedido
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                  <div className="space-y-1 p-2">
+                    {filteredOrders.map((order) => {
+                      const statusInfo = statusConfig[order.status];
+                      const StatusIcon = statusInfo.icon;
+
+                      return (
+                        <div
+                          key={order.id}
+                          onClick={() => setSelectedOrder(order)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              setSelectedOrder(order);
+                            }
+                          }}
+                          role="button"
+                          tabIndex={0}
+                          className={`p-4 rounded-lg cursor-pointer transition-all duration-200 ${
+                            selectedOrder?.id === order.id
+                              ? 'bg-blue-50 border-2 border-blue-200'
+                              : order.status === 'pending'
+                              ? 'bg-gradient-to-r from-orange-50 to-yellow-50 border-2 border-orange-200 shadow-md hover:shadow-lg'
+                              : 'bg-gray-50 border border-gray-200 hover:bg-gray-100 hover:border-gray-300'
+                          }`}
+                        >
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <div className="flex items-center space-x-2">
+                                <h4 className="font-semibold text-gray-900">
+                                  #{order.id.slice(0, 8).toUpperCase()}
+                                </h4>
+                                {order.notes && (
+                                  <div className="flex items-center space-x-1 text-amber-600" title="Pedido com observações">
+                                    <MessageCircle className="w-3 h-3" />
+                                    <span className="text-xs font-medium">Obs</span>
+                                  </div>
+                                )}
+                              </div>
+                              <p className="text-sm text-gray-600">{order.customer_name}</p>
+                              <p className="text-xs text-gray-500">
+                                {formatDate(order.created_at)}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <div className={`flex items-center space-x-1 mb-1 ${statusInfo.color}`}>
+                                <StatusIcon className="w-3 h-3" />
+                                <span className="text-xs font-medium">{statusInfo.label}</span>
+                              </div>
+                              <p className="text-sm font-bold text-gray-900">
+                                {formatPrice(order.total)}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <div className="text-xs text-gray-600">
+                            {order.items.length} {order.items.length === 1 ? 'item' : 'itens'}
+                          </div>
+                          
+                          {order.status === 'pending' && (
+                            <div className="mt-2 flex items-center space-x-1">
+                              <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
+                              <span className="text-orange-700 text-xs font-semibold">AGUARDANDO APROVAÇÃO</span>
+                            </div>
+                          )}
+                          
+                          {selectedOrder?.id === order.id && (
+                            <div className="mt-2">
+                              <span className="text-blue-600 text-xs font-medium">Selecionado</span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Detalhes do Pedido - Lado Direito */}
+        <div className="col-span-12 lg:col-span-7 xl:col-span-8">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 h-full">
+            {!selectedOrder ? (
+              <div className="p-8">
+                <div className="text-center">
+                  <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-500 mb-2">
+                    Selecione um pedido
+                  </h3>
+                  <p className="text-gray-400">
+                    Clique em um pedido da lista ao lado para gerenciar
+                  </p>
+                </div>
               </div>
+            ) : (
+              <OrderDetailsPanel 
+                order={selectedOrder} 
+                onUpdateStatus={updateOrderStatus}
+                onUpdateStatusWithNote={updateOrderStatusWithNote}
+                updatingStatus={updatingStatus}
+                formatDate={formatDate}
+                formatPrice={formatPrice}
+              />
             )}
           </div>
-        );
-      })}
-
-      {/* Mensagem quando não há pedidos hoje */}
-      {todayOrders.length === 0 && !loading && (
-        <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-          <Bell className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            Nenhum pedido hoje ainda
-          </h3>
-          <p className="text-gray-500 mb-4">
-            Quando chegarem novos pedidos, eles aparecerão aqui automaticamente.
-          </p>
-          
-          {/* Botão para criar pedido */}
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 mx-auto transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Registrar Venda do Balcão
-          </button>
         </div>
-      )}
-
-      {/* Link para relatórios */}
-      {orders.length > todayOrders.length && (
-        <div className="text-center py-4">
-          <p className="text-sm text-gray-500 mb-2">
-            Há {orders.length - todayOrders.length} pedidos de dias anteriores
-          </p>
-        </div>
-      )}
+      </div>
 
       {/* Modal de Criar Pedido */}
       {showCreateModal && (
@@ -964,6 +1148,7 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
           onOrderCreated={(newOrder) => {
             setOrders(prev => [newOrder, ...prev]);
             setShowCreateModal(false);
+            setSelectedOrder(newOrder);
             toast.success('Pedido criado com sucesso!');
           }}
         />

@@ -4,8 +4,8 @@ import { ArrowLeft, Instagram, MessageCircle, ShoppingCart } from "lucide-react"
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import FloatingCart from '../../../components/store/floating-cart';
 import CartControls from '../../components/cart-controls';
-import CartHeader from '../../components/cart-header';
 
 import { useCartStore } from '../../stores/cartStore';
 interface StoreData {
@@ -42,7 +42,8 @@ interface ProductPageClientProps {
 
 export default function ProductPageClient({ store, product }: ProductPageClientProps) {
   const [selectedImage, setSelectedImage] = useState(0);
-  const { cart, setStoreSlug, isLoading } = useCartStore();
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const { cart, setStoreSlug, isLoading, addToCart, removeFromCart } = useCartStore();
 
   // Configurar o store slug quando o componente montar
   useEffect(() => {
@@ -83,14 +84,11 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
         >
           <ArrowLeft className="w-6 h-6" />
         </Link>
-        <div className="text-center">
-          <div className="font-medium text-sm truncate max-w-48" style={{ color: store.colors.text }}>{product.name}</div>
-          <div className="text-xs" style={{ color: store.colors.text }}>{store.store_name}</div>
+        <div className="text-center flex-1">
+          <div className="font-semibold text-base" style={{ color: store.colors.text }}>{store.store_name}</div>
+          <div className="text-xs opacity-80" style={{ color: store.colors.text }}>Produto</div>
         </div>
-        <CartHeader 
-          storeSlug={store.slug}
-          colors={store.colors}
-        />
+        <div className="w-10" />
       </div>
 
       {/* Main Content */}
@@ -209,7 +207,7 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
         <div className="space-y-4">
           {/* Cart Controls */}
           <CartControls product={product} storeColors={store.colors} />
-
+{/* 
           <button
             type="button"
             onClick={() => {
@@ -252,7 +250,7 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
               <MessageCircle className="w-4 h-4 text-white" />
             </div>
             {isLoading ? 'Carregando...' : cart.length > 0 ? 'Comprar no WhatsApp' : 'Adicione itens ao carrinho'}
-          </button>
+          </button> */}
 
           <Link
             href={`/${store.slug}?showCatalog=true`}
@@ -294,6 +292,44 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
           </p>
         </div>
       </div>
+
+      {/* Carrinho Flutuante */}
+      <FloatingCart
+        items={cart.map(item => ({
+          id: item.name,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          image: item.image
+        }))}
+        totalItems={cart.reduce((total, item) => total + item.quantity, 0)}
+        totalValue={cart.reduce((total, item) => {
+          const price = Number.parseFloat(item.price.replace('R$', '').replace(',', '.').trim());
+          return total + (price * item.quantity);
+        }, 0)}
+        storeColors={store.colors}
+        isCheckingOut={isCheckingOut}
+        onOpenCart={() => {
+          // Ação para abrir carrinho (pode redirecionar para página de carrinho)
+          // Abrir carrinho
+        }}
+        onCheckout={() => {
+          // Mostrar loading e redirecionar para página de checkout
+          setIsCheckingOut(true);
+          setTimeout(() => {
+            window.location.href = `/${store.slug}/checkout`;
+          }, 100);
+        }}
+        onAddItem={(itemName: string) => {
+          // Encontrar o produto e adicionar ao carrinho
+          if (product.name === itemName) {
+            addToCart(product);
+          }
+        }}
+        onRemoveItem={(itemName: string) => {
+          removeFromCart(itemName);
+        }}
+      />
     </div>
   );
 } 

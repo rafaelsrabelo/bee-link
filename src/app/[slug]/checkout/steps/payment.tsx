@@ -99,6 +99,13 @@ export default function PaymentStep({
             <div
               key={method.id}
               onClick={() => setPaymentData({ ...paymentData, method: method.id })}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  setPaymentData({ ...paymentData, method: method.id });
+                }
+              }}
+              role="button"
+              tabIndex={0}
               className={`p-4 border rounded-lg cursor-pointer transition-colors ${
                 paymentData.method === method.id
                   ? 'bg-opacity-10 shadow-sm'
@@ -126,28 +133,7 @@ export default function PaymentStep({
                 />
                 <div className="flex-1">
                   <h3 className="font-medium text-gray-900">{method.name}</h3>
-                  <p className="text-sm text-gray-600 mb-2">{method.description}</p>
-                  
-                  {/* Descrições detalhadas integradas */}
-                  {paymentData.method === method.id && (
-                    <div className="mt-3 p-3 rounded-lg bg-gray-50 border border-gray-200">
-                      {method.id === 'money' && (
-                        <p className="text-sm text-gray-700">
-                          Tenha o valor exato ou informe se precisará de troco na finalização do pedido.
-                        </p>
-                      )}
-                      {method.id === 'pix' && (
-                        <p className="text-sm text-gray-700">
-                          Você receberá o código PIX ou chave para realizar o pagamento.
-                        </p>
-                      )}
-                      {(method.id === 'credit_card' || method.id === 'debit_card') && (
-                        <p className="text-sm text-gray-700">
-                          O pagamento será processado no momento da entrega ou retirada.
-                        </p>
-                      )}
-                    </div>
-                  )}
+                  <p className="text-sm text-gray-600">{method.description}</p>
                 </div>
                 <div 
                   className={`w-4 h-4 rounded-full border-2 mt-1 ${
@@ -163,7 +149,7 @@ export default function PaymentStep({
                   }}
                 >
                   {paymentData.method === method.id && (
-                    <div className="w-2 h-2 bg-white rounded-full mx-auto mt-0.5"></div>
+                    <div className="w-2 h-2 bg-white rounded-full mx-auto mt-0.5" />
                   )}
                 </div>
               </div>
@@ -179,6 +165,7 @@ export default function PaymentStep({
       {/* Botões */}
       <div className="flex space-x-4 mt-8">
         <button
+          type="button"
           onClick={onBack}
           className="flex-1 bg-gray-200 text-gray-800 py-3 px-4 rounded-lg font-medium hover:bg-gray-300 transition-colors"
         >

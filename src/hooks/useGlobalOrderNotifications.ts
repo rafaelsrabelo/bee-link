@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { Order } from '../types/order';
+import type { Order } from '../types/order';
 
 interface UseGlobalOrderNotificationsProps {
   storeSlug?: string;
@@ -27,7 +27,7 @@ export function useGlobalOrderNotifications({
   const [error, setError] = useState<string | null>(null);
 
   // Função para buscar pedidos pendentes
-  const fetchPendingOrders = async () => {
+  const fetchPendingOrders = useCallback(async () => {
     if (!enabled || !storeId) return;
 
     setLoading(true);
@@ -63,12 +63,12 @@ export function useGlobalOrderNotifications({
     } finally {
       setLoading(false);
     }
-  };
+  }, [enabled, storeId]);
 
   // Carregar dados iniciais
   useEffect(() => {
     fetchPendingOrders();
-  }, [storeId, enabled]);
+  }, [fetchPendingOrders]);
 
   // Configurar Realtime
   useEffect(() => {
@@ -84,17 +84,18 @@ export function useGlobalOrderNotifications({
           table: 'orders',
           filter: `store_id=eq.${storeId}`
         },
-        () => {
+        (payload) => {
           // Atualizar dados quando houver mudanças
           fetchPendingOrders();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+      });
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [storeId, enabled]);
+  }, [fetchPendingOrders, enabled, storeId]);
 
   return {
     pendingOrdersCount,
