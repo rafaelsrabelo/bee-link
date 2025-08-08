@@ -475,20 +475,10 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
             const newOrdersToAdd = newOrders.filter((o: Order) => !currentIds.has(o.id));
             
             if (newOrdersToAdd.length > 0 && !isInitialLoad) {
-              // Chamar som imediatamente
+              // Tocar som apenas uma vez
               playNotificationSound();
               
-              // Tentar novamente após 1 segundo
-              setTimeout(() => {
-                playNotificationSound();
-              }, 1000);
-              
-              // Tentar uma terceira vez após 2 segundos
-              setTimeout(() => {
-                playNotificationSound();
-              }, 2000);
-              
-              // Mostrar toast para cada novo pedido (fora do setState)
+              // Mostrar toast para cada novo pedido
               for (const order of newOrdersToAdd) {
                 toast.success(`🔔 Novo pedido de ${order.customer_name}!`, {
                   duration: 5000,
@@ -542,12 +532,6 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
 
     // Função para tocar som de notificação
   const playNotificationSound = () => {
-    // TOAST GARANTIDO (sempre funciona)
-    toast.success('🔔🔔🔔 NOVO PEDIDO CHEGOU! 🔔🔔🔔', {
-      duration: 3000,
-      icon: '🛒'
-    });
-    
     // Som com múltiplas tentativas
     const playBeep = () => {
       try {
