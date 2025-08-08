@@ -1,5 +1,7 @@
 'use client';
 
+import CouponCard from '@/components/store/coupon-card';
+import PriceWithDiscount from '@/components/ui/price-with-discount';
 import { CreditCard, MapPin, ShoppingBag, User } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
@@ -56,15 +58,51 @@ export default function SummaryStep({
   // totalSteps
 }: SummaryStepProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    couponCode: string;
+    calculated_discount: number;
+  } | null>(null);
   const { clearCart } = useCartStore();
 
   // Calcular total
-  const total = cart.reduce((sum, item) => {
+  const subtotal = cart.reduce((sum, item) => {
+    // Debug: verificar preços
+    console.log('Item no carrinho:', item.name, 'Preço:', item.price, 'Tipo:', typeof item.price);
+    
     // Garantir que price seja uma string antes de usar replace
     const priceString = typeof item.price === 'string' ? item.price : String(item.price);
     const price = Number.parseFloat(priceString.replace('R$', '').replace(',', '.').trim());
+    
+    console.log('Preço calculado:', price);
     return sum + (price * item.quantity);
   }, 0);
+
+  // Calcular total com desconto
+  const total = appliedCoupon ? subtotal - appliedCoupon.calculated_discount : subtotal;
+
+  // Função para lidar com cupom aplicado
+  const handleCouponApplied = (couponData: {
+    is_valid: boolean;
+    code?: string;
+    discount_type?: 'percentage' | 'fixed';
+    discount_value?: number;
+    calculated_discount?: number;
+    message: string;
+    couponCode?: string;
+  }) => {
+    if (couponData.is_valid && couponData.couponCode && couponData.calculated_discount) {
+      setAppliedCoupon({
+        couponCode: couponData.couponCode,
+        calculated_discount: couponData.calculated_discount
+      });
+    }
+  };
+
+  // Função para remover cupom
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    toast.success('Cupom removido');
+  };
 
   // Mapear nomes de pagamento
   const paymentMethodNames: {[key: string]: string} = {
@@ -134,6 +172,24 @@ export default function SummaryStep({
       }
 
       const result = await orderResponse.json();
+      
+      // Registrar uso do cupom se aplicado
+      if (appliedCoupon) {
+        try {
+          await fetch(`/api/stores/${store.slug}/register-coupon-usage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              coupon_code: appliedCoupon.couponCode,
+              order_id: result.orderId // Associar ao pedido criado
+            }),
+          });
+          console.log('Uso do cupom registrado com sucesso');
+        } catch (error) {
+          console.error('Erro ao registrar uso do cupom:', error);
+          // Não falhar se apenas o registro do cupom der erro
+        }
+      }
       
       // Sucesso - remover loading toast
       toast.success('Pedido criado com sucesso!', { id: loadingToast });
@@ -291,13 +347,50 @@ Pedido feito pelo site 🐝 Bee Link`;
           ))}
         </div>
         
+        {/* Cupom */}
+        <div className="border-t pt-3 mt-3">
+          <CouponCard
+            storeSlug={store?.slug || ''}
+            orderValue={subtotal}
+            appliedCoupon={appliedCoupon}
+            onCouponApplied={handleCouponApplied}
+            onRemoveCoupon={handleRemoveCoupon}
+          />
+        </div>
+        
         {/* Total */}
         <div className="border-t pt-3 mt-3">
-          <div className="flex justify-between items-center">
-            <span className="text-lg font-semibold text-gray-900">Total:</span>
-            <span className="text-xl font-bold text-green-600">
-              R$ {total.toFixed(2).replace('.', ',')}
-            </span>
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Subtotal:</span>
+              <span className="text-sm text-gray-600">
+                R$ {subtotal.toFixed(2).replace('.', ',')}
+              </span>
+            </div>
+            
+            {appliedCoupon && (
+              <div className="flex justify-between items-center text-green-600">
+                <span className="text-sm">Desconto ({appliedCoupon.couponCode}):</span>
+                <span className="text-sm">- R$ {appliedCoupon.calculated_discount.toFixed(2).replace('.', ',')}</span>
+              </div>
+            )}
+            
+            <div className="flex justify-between items-center pt-2 border-t">
+              <span className="text-lg font-semibold text-gray-900">Total:</span>
+              {appliedCoupon ? (
+                <PriceWithDiscount
+                  originalPrice={subtotal}
+                  discountAmount={appliedCoupon.calculated_discount}
+                  discountType="percentage"
+                  discountValue={10}
+                  size="lg"
+                />
+              ) : (
+                <span className="text-xl font-bold text-green-600">
+                  R$ {total.toFixed(2).replace('.', ',')}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>

@@ -15,10 +15,25 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import CategoryFilter from '../../components/store/category-filter';
+import ConfigurableBanner from '../../components/store/configurable-banner';
 import FloatingCart from '../../components/store/floating-cart';
 import ProductModal from '../../components/store/product-modal';
 import { trackProductClick } from '../../lib/analytics';
 import { useCartStore } from '../stores/cartStore';
+
+// Função para extrair parâmetros UTM da URL
+const getUTMParams = () => {
+  if (typeof window === 'undefined') return {};
+  
+  const urlParams = new URLSearchParams(window.location.search);
+  return {
+    utm_source: urlParams.get('utm_source') || '',
+    utm_medium: urlParams.get('utm_medium') || '',
+    utm_campaign: urlParams.get('utm_campaign') || '',
+    product_id: urlParams.get('product_id') || '',
+    is_direct_link: urlParams.has('product_id')
+  };
+};
 
 interface StoreData {
   store_name: string;
@@ -40,6 +55,33 @@ interface StoreData {
     tiktok?: string;
     spotify?: string;
     youtube?: string;
+  };
+  layout_settings?: {
+    // Componentes de banner
+    show_banner: boolean;
+    banner_type: 'single' | 'carousel';
+    banner_images: string[];
+    banner_height: 'small' | 'medium' | 'large';
+    banner_rounded: boolean;
+    banner_padding: boolean;
+    
+    // Configurações de exibição
+    show_store_description: boolean;
+    show_social_links: boolean;
+    show_contact_info: boolean;
+    
+    // Layout de produtos
+    products_per_row: 2 | 3 | 4;
+    show_product_badges: boolean;
+    show_quick_add: boolean;
+    
+    // Configurações de carrinho
+    show_floating_cart: boolean;
+    cart_position: 'bottom-right' | 'bottom-left';
+    
+    // Configurações de categoria
+    category_display: 'tabs' | 'filters' | 'none';
+    show_category_icons: boolean;
   };
 }
 
@@ -85,7 +127,8 @@ export default function StorePageClient({ store }: StorePageClientProps) {
     clearCart, 
     getCartItemQuantity,
     getCartTotal,
-    getCartItemCount
+    getCartItemCount,
+    setStoreSlug
   } = useCartStore();
 
   // Verificar se deve mostrar o catálogo baseado na URL
@@ -94,6 +137,11 @@ export default function StorePageClient({ store }: StorePageClientProps) {
       setShowCatalog(true);
     }
   }, [searchParams]);
+
+  // Definir storeSlug e limpar carrinho quando mudar de loja
+  useEffect(() => {
+    setStoreSlug(store.slug);
+  }, [store.slug, setStoreSlug]);
 
   // Limpar carrinho quando mudar de loja
   useEffect(() => {
@@ -126,6 +174,35 @@ export default function StorePageClient({ store }: StorePageClientProps) {
     loadProducts();
   }, [store.slug]);
 
+  // Rastrear links diretos de produtos
+  useEffect(() => {
+    const utmParams = getUTMParams();
+    
+    if (utmParams.is_direct_link && utmParams.product_id && products.length > 0) {
+      // Encontrar o produto pelo ID
+      const product = products.find(p => p.id === utmParams.product_id);
+      
+      if (product) {
+        // Rastrear o acesso direto ao produto
+        trackProductClick({
+          product_id: product.id,
+          product_name: product.name,
+          product_price: Number.parseFloat(product.price.replace(/[^\d,]/g, '').replace(',', '.')),
+          category: product.category_data?.name || product.category,
+          is_direct_link: true,
+          referrer: document.referrer,
+          utm_source: utmParams.utm_source,
+          utm_medium: utmParams.utm_medium,
+          utm_campaign: utmParams.utm_campaign
+        });
+
+        // Abrir o modal do produto automaticamente
+        setSelectedProduct(product);
+        setIsModalOpen(true);
+      }
+    }
+  }, [products]);
+
   const handleAddToCart = (product: Product, quantity = 1) => {
     for (let i = 0; i < quantity; i++) {
       addToCart({
@@ -148,11 +225,18 @@ export default function StorePageClient({ store }: StorePageClientProps) {
     // No web, abrir modal
     setSelectedProduct(product);
     setIsModalOpen(true);
+    
+    const utmParams = getUTMParams();
     trackProductClick({
       product_id: product.id,
       product_name: product.name,
       product_price: Number.parseFloat(product.price.replace('R$ ', '').replace(',', '.')),
-      category: product.category_data?.name || product.category
+      category: product.category_data?.name || product.category,
+      is_direct_link: false,
+      referrer: document.referrer,
+      utm_source: utmParams.utm_source,
+      utm_medium: utmParams.utm_medium,
+      utm_campaign: utmParams.utm_campaign
     });
   };
 
@@ -217,29 +301,17 @@ export default function StorePageClient({ store }: StorePageClientProps) {
           </div>
         </div>
 
-        {/* Catalog Header - Layout Condicional */}
+        {/* Banner Configurável */}
         <div className="mb-6 pt-20">
-          {store.layout_type === 'banner' && (
-            <div className="max-w-4xl mx-auto px-4">
-              <div className="w-full h-32 overflow-hidden mb-4 rounded-lg">
-                {store.banner_image ? (
-                  <Image
-                    src={store.banner_image}
-                    alt="Banner da loja"
-                    width={400}
-                    height={128}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div 
-                    className="w-full h-full flex items-center justify-center text-white font-medium rounded-lg"
-                    style={{ backgroundColor: store.colors.primary }}
-                  >
-                    Banner da Loja
-                  </div>
-                )}
-              </div>
-            </div>
+          {store.layout_settings?.show_banner && (
+            <ConfigurableBanner
+              images={store.layout_settings.banner_images || [store.banner_image || '']}
+              type={store.layout_settings.banner_type || 'single'}
+              height={store.layout_settings.banner_height || 'medium'}
+              rounded={store.layout_settings.banner_rounded || false}
+              padding={store.layout_settings.banner_padding || false}
+              colors={store.colors}
+            />
           )}
         </div>
 
@@ -305,7 +377,13 @@ export default function StorePageClient({ store }: StorePageClientProps) {
                       </div>
 
                       {/* Grid de produtos da categoria */}
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+                      <div className={`grid gap-3 md:gap-4 ${
+                        store.layout_settings?.products_per_row === 2 
+                          ? 'grid-cols-2' 
+                          : store.layout_settings?.products_per_row === 4 
+                          ? 'grid-cols-2 md:grid-cols-4' 
+                          : 'grid-cols-2 md:grid-cols-3'
+                      }`}>
                         {categoryProducts.map((product: Product, index: number) => {
                           const quantity = getCartItemQuantity(product.name);
 
@@ -386,7 +464,13 @@ export default function StorePageClient({ store }: StorePageClientProps) {
             </div>
           ) : (
             /* Produtos em grid simples */
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+            <div className={`grid gap-3 md:gap-4 ${
+              store.layout_settings?.products_per_row === 2 
+                ? 'grid-cols-2' 
+                : store.layout_settings?.products_per_row === 4 
+                ? 'grid-cols-2 md:grid-cols-4' 
+                : 'grid-cols-2 md:grid-cols-3'
+            }`}>
               {products.filter((p: Product) => p.available !== false).map((product: Product, index: number) => {
                 const quantity = getCartItemQuantity(product.name);
 

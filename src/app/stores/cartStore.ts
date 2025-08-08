@@ -37,8 +37,8 @@ export const useCartStore = create<CartStore>()(
       // Ações
       setStoreSlug: (slug: string) => {
         set((state) => {
-          // Se mudou de loja, limpar o carrinho
-          if (state.storeSlug && state.storeSlug !== slug) {
+          // Se mudou de loja OU se não há storeSlug definido, limpar o carrinho
+          if (!state.storeSlug || state.storeSlug !== slug) {
             return { storeSlug: slug, cart: [] };
           }
           return { storeSlug: slug };
@@ -51,6 +51,12 @@ export const useCartStore = create<CartStore>()(
 
       addToCart: (product: { name: string; price: string; image: string; description?: string }) => {
         set((state) => {
+          // Verificar se o storeSlug está definido
+          if (!state.storeSlug) {
+            console.error('Tentativa de adicionar produto sem storeSlug definido');
+            return state;
+          }
+
           const existingItem = state.cart.find(item => item.name === product.name);
           if (existingItem) {
             return {

@@ -1,6 +1,6 @@
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,12 +16,17 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { store_name, slug, logo, colors, description, category_id } = body;
+    const { store_name, slug, store_type, logo, colors, description, category_id } = body;
 
 
     // Validações
-    if (!store_name || !slug) {
-      return NextResponse.json({ error: 'Nome da loja e slug são obrigatórios' }, { status: 400 });
+    if (!store_name || !slug || !store_type) {
+      return NextResponse.json({ error: 'Nome da loja, slug e tipo de comércio são obrigatórios' }, { status: 400 });
+    }
+
+    // Validar tipo de comércio
+    if (!['ecommerce', 'restaurant'].includes(store_type)) {
+      return NextResponse.json({ error: 'Tipo de comércio inválido' }, { status: 400 });
     }
 
     // Verificar se o slug já existe
@@ -42,11 +47,13 @@ export async function POST(request: NextRequest) {
                .insert({
                  name: store_name, // Corrigido: store_name -> name
                  slug,
+                 store_type: store_type || 'ecommerce',
                  logo: logo || '',
                  colors: colors || {
-                   primary: '#8B5CF6',
-                   secondary: '#7C3AED',
-                   accent: '#A855F7'
+                   text: "#1A202C",
+                   header: "#3b7af7",
+                   primary: "#3b7af7",
+                   background: "#F0F9FF"
                  },
                  description: description || '',
                  category_id: category_id || null,

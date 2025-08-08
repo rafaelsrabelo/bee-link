@@ -7,7 +7,18 @@ export async function POST(request: NextRequest) {
     const supabase = createRouteHandlerClient({ cookies });
     const body = await request.json();
     
-    const { event_type, store_slug, product_id, product_name, product_price } = body;
+    const { 
+      event_type, 
+      store_slug, 
+      product_id, 
+      product_name, 
+      product_price,
+      referrer,
+      is_direct_link = false,
+      utm_source,
+      utm_medium,
+      utm_campaign
+    } = body;
 
     // Registrar o evento no banco de dados
     const { error } = await supabase
@@ -18,6 +29,11 @@ export async function POST(request: NextRequest) {
         product_id,
         product_name,
         product_price,
+        referrer,
+        is_direct_link,
+        utm_source,
+        utm_medium,
+        utm_campaign,
         user_agent: request.headers.get('user-agent'),
         ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),
         created_at: new Date().toISOString()

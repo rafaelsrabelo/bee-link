@@ -38,10 +38,10 @@ export async function GET(
       );
     }
 
-    // Converter preços para number e garantir que não sejam zero
+    // Formatar produtos mantendo os preços originais
     const formattedProducts = (products || []).map(product => ({
       ...product,
-      price: Number(product.price) || 9.99 // Preço padrão se vier 0
+      price: product.price // Manter o preço original do banco
     }));
 
     return NextResponse.json({

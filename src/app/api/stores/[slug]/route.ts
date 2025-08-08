@@ -45,7 +45,20 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { name, description, logo, colors, social_networks, category_id, layout_type, banner_image, show_products_by_category } = body;
+    const { 
+      name, 
+      store_type, 
+      description, 
+      logo, 
+      colors, 
+      address, 
+      social_networks, 
+      category_id, 
+      layout_type, 
+      banner_image, 
+      show_products_by_category,
+      layout_settings
+    } = body;
     // Validações
     if (!name?.trim()) {
       return NextResponse.json({ error: 'Nome da loja é obrigatório' }, { status: 400 });
@@ -73,6 +86,7 @@ export async function PUT(
     // Preparar dados para atualização
     const updateData = {
       name: name.trim(),
+      store_type: store_type || 'ecommerce',
       description: description?.trim() || '',
       logo: logo || '',
       category_id: category_id || null,
@@ -80,11 +94,32 @@ export async function PUT(
       banner_image: banner_image || null,
       show_products_by_category: show_products_by_category || false,
       colors: colors || {
-        primary: '#8B5CF6',
-        secondary: '#7C3AED',
-        accent: '#A855F7'
+        text: "#1A202C",
+        header: "#3b7af7",
+        primary: "#3b7af7",
+        background: "#F0F9FF"
       },
+      address: address || null,
       social_networks: social_networks || {},
+      layout_settings: layout_settings || {
+        // Configurações padrão
+        show_banner: false,
+        banner_type: 'single',
+        banner_images: [],
+        banner_height: 'medium',
+        banner_rounded: false,
+        banner_padding: false,
+        show_store_description: true,
+        show_social_links: true,
+        show_contact_info: true,
+        products_per_row: 3,
+        show_product_badges: true,
+        show_quick_add: true,
+        show_floating_cart: true,
+        cart_position: 'bottom-right',
+        category_display: 'filters',
+        show_category_icons: true
+      },
       updated_at: new Date().toISOString()
     };
 

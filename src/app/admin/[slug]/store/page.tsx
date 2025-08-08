@@ -1,6 +1,6 @@
 'use client';
 
-import { Instagram, MessageCircle, Music, Palette, Save, Settings, Store, Upload, Youtube } from 'lucide-react';
+import { Instagram, MapPin, MessageCircle, Music, Palette, Save, Settings, Store, Upload, Youtube } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { use, useEffect, useState } from 'react';
@@ -12,6 +12,8 @@ import CategorySelector from '../../../../components/ui/category-selector';
 import LayoutSelector from '../../../../components/ui/layout-selector';
 import LottieLoader from '../../../../components/ui/lottie-loader';
 import MobileImageUpload from '../../../../components/ui/mobile-image-upload';
+
+import PromotionsManager from '../../../../components/ui/promotions-manager';
 import StorePreview from '../../../../components/ui/store-preview';
 import Tabs from '../../../../components/ui/tabs';
 import { useAuth } from '../../../../contexts/AuthContext';
@@ -76,12 +78,48 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
       text: '#1A202C',
       header: '#8B5CF6'
     },
+    address: {
+      street: '',
+      number: '',
+      complement: '',
+      neighborhood: '',
+      city: '',
+      state: '',
+      zip_code: ''
+    },
     social_networks: {
       instagram: '',
       whatsapp: '',
       tiktok: '',
       spotify: '',
       youtube: ''
+    },
+    layout_settings: {
+      // Componentes de banner
+      show_banner: false,
+      banner_type: 'single' as 'single' | 'carousel',
+      banner_images: [],
+      banner_height: 'medium' as 'small' | 'medium' | 'large',
+      banner_rounded: false,
+      banner_padding: false,
+      
+      // Configurações de exibição
+      show_store_description: true,
+      show_social_links: true,
+      show_contact_info: true,
+      
+      // Layout de produtos
+      products_per_row: 3 as 2 | 3 | 4,
+      show_product_badges: true,
+      show_quick_add: true,
+      
+      // Configurações de carrinho
+      show_floating_cart: true,
+      cart_position: 'bottom-right' as 'bottom-right' | 'bottom-left',
+      
+      // Configurações de categoria
+      category_display: 'filters' as 'tabs' | 'filters' | 'none',
+      show_category_icons: true
     }
   });
 
@@ -134,6 +172,7 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
   // Tabs
   const tabs = [
     { id: 'basic', label: 'Informações Básicas', icon: <Store className="w-4 h-4" /> },
+    { id: 'address', label: 'Endereço', icon: <MapPin className="w-4 h-4" /> },
     { id: 'layout', label: 'Layout da Loja', icon: <Palette className="w-4 h-4" /> }
   ];
 
@@ -191,7 +230,17 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
         colors: storeData.colors || {
           background: '#F8F9FA',
           primary: '#8B5CF6',
-          accent: '#A855F7'
+          text: '#1A202C',
+          header: '#8B5CF6'
+        },
+        address: {
+          street: storeData.address?.street || '',
+          number: storeData.address?.number || '',
+          complement: storeData.address?.complement || '',
+          neighborhood: storeData.address?.neighborhood || '',
+          city: storeData.address?.city || '',
+          state: storeData.address?.state || '',
+          zip_code: storeData.address?.zip_code || ''
         },
         social_networks: {
           instagram: storeData.social_networks?.instagram || '',
@@ -199,6 +248,33 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
           tiktok: storeData.social_networks?.tiktok || '',
           spotify: storeData.social_networks?.spotify || '',
           youtube: storeData.social_networks?.youtube || ''
+        },
+        layout_settings: storeData.layout_settings || {
+          // Componentes de banner
+          show_banner: false,
+          banner_type: 'single' as 'single' | 'carousel',
+          banner_images: [],
+          banner_height: 'medium' as 'small' | 'medium' | 'large',
+          banner_rounded: false,
+          banner_padding: false,
+          
+          // Configurações de exibição
+          show_store_description: true,
+          show_social_links: true,
+          show_contact_info: true,
+          
+          // Layout de produtos
+          products_per_row: 3 as 2 | 3 | 4,
+          show_product_badges: true,
+          show_quick_add: true,
+          
+          // Configurações de carrinho
+          show_floating_cart: true,
+          cart_position: 'bottom-right' as 'bottom-right' | 'bottom-left',
+          
+          // Configurações de categoria
+          category_display: 'filters' as 'tabs' | 'filters' | 'none',
+          show_category_icons: true
         }
       };
 
@@ -598,6 +674,121 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
                   </div>
                 )}
 
+                {activeTab === 'address' && (
+                  <div className="space-y-8">
+                    {/* Endereço da Loja */}
+                    <div>
+                      <h2 className="text-lg font-semibold text-gray-900 mb-4">Endereço da Loja</h2>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Rua *
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.address?.street || ''}
+                            onChange={(e) => updateFormData({
+                              address: { ...formData.address, street: e.target.value }
+                            })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            placeholder="Rua das Flores"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Número *
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.address?.number || ''}
+                            onChange={(e) => updateFormData({
+                              address: { ...formData.address, number: e.target.value }
+                            })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            placeholder="123"
+                          />
+                        </div>
+                        
+                        <div className="md:col-span-2">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Complemento
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.address?.complement || ''}
+                            onChange={(e) => updateFormData({
+                              address: { ...formData.address, complement: e.target.value }
+                            })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            placeholder="Apto 101, Bloco B"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Bairro
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.address?.neighborhood || ''}
+                            onChange={(e) => updateFormData({
+                              address: { ...formData.address, neighborhood: e.target.value }
+                            })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            placeholder="Centro"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            CEP
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.address?.zip_code || ''}
+                            onChange={(e) => updateFormData({
+                              address: { ...formData.address, zip_code: e.target.value }
+                            })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            placeholder="12345-678"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Cidade *
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.address?.city || ''}
+                            onChange={(e) => updateFormData({
+                              address: { ...formData.address, city: e.target.value }
+                            })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            placeholder="São Paulo"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Estado *
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.address?.state || ''}
+                            onChange={(e) => updateFormData({
+                              address: { ...formData.address, state: e.target.value }
+                            })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            placeholder="SP"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {activeTab === 'layout' && (
                   <div className="space-y-8">
                     {/* Layout da Loja */}
@@ -804,6 +995,157 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
                          </div>
                          <p className="text-xs text-gray-500 mt-1">Cor do header da vitrine (página do cliente)</p>
                        </div>
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'promotions' && (
+                  <div className="space-y-8">
+                    <PromotionsManager 
+                      storeSlug={slug} 
+                      onPromotionChange={() => {
+                        // Recarregar dados se necessário
+                      }}
+                    />
+                  </div>
+                )}
+
+                {activeTab === 'settings' && (
+                  <div className="space-y-8">
+                    {/* Configurações de Banner */}
+                    <div>
+                      <h2 className="text-lg font-semibold text-gray-900 mb-4">Configurações de Banner</h2>
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Mostrar Banner
+                            </label>
+                            <p className="text-xs text-gray-500">
+                              Ative para exibir um banner na página da loja
+                            </p>
+                          </div>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={formData.layout_settings?.show_banner || false}
+                              onChange={(e) => updateFormData({
+                                layout_settings: {
+                                  ...formData.layout_settings,
+                                  show_banner: e.target.checked
+                                }
+                              })}
+                              className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Configurações de Layout de Produtos */}
+                    <div>
+                      <h2 className="text-lg font-semibold text-gray-900 mb-4">Layout de Produtos</h2>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Produtos por Linha
+                          </label>
+                          <select
+                            value={formData.layout_settings?.products_per_row || 3}
+                            onChange={(e) => updateFormData({
+                              layout_settings: {
+                                ...formData.layout_settings,
+                                products_per_row: Number.parseInt(e.target.value) as 2 | 3 | 4
+                              }
+                            })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          >
+                            <option value={2}>2 produtos</option>
+                            <option value={3}>3 produtos</option>
+                            <option value={4}>4 produtos</option>
+                          </select>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Mostrar Badges nos Produtos
+                            </label>
+                            <p className="text-xs text-gray-500">
+                              Exibe badges como &quot;Pronta entrega&quot; nos produtos
+                            </p>
+                          </div>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={formData.layout_settings?.show_product_badges !== false}
+                              onChange={(e) => updateFormData({
+                                layout_settings: {
+                                  ...formData.layout_settings,
+                                  show_product_badges: e.target.checked
+                                }
+                              })}
+                              className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Configurações de Carrinho */}
+                    <div>
+                      <h2 className="text-lg font-semibold text-gray-900 mb-4">Configurações de Carrinho</h2>
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Carrinho Flutuante
+                            </label>
+                            <p className="text-xs text-gray-500">
+                              Mostra o carrinho flutuante na página
+                            </p>
+                          </div>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={formData.layout_settings?.show_floating_cart !== false}
+                              onChange={(e) => updateFormData({
+                                layout_settings: {
+                                  ...formData.layout_settings,
+                                  show_floating_cart: e.target.checked
+                                }
+                              })}
+                              className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                          </label>
+                        </div>
+
+                        {formData.layout_settings?.show_floating_cart !== false && (
+                          <div className="pl-4 border-l-2 border-gray-200">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Posição do Carrinho
+                              </label>
+                              <select
+                                value={formData.layout_settings?.cart_position || 'bottom-right'}
+                                onChange={(e) => updateFormData({
+                                  layout_settings: {
+                                    ...formData.layout_settings,
+                                    cart_position: e.target.value as 'bottom-right' | 'bottom-left'
+                                  }
+                                })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                              >
+                                <option value="bottom-right">Canto inferior direito</option>
+                                <option value="bottom-left">Canto inferior esquerdo</option>
+                              </select>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}

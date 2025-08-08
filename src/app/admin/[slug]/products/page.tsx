@@ -1,6 +1,6 @@
 'use client';
 
-import { Edit, Eye, EyeOff, FolderPlus, MousePointer, Package, Plus, ShoppingCart, Star, Trash2, X } from 'lucide-react';
+import { Edit, Eye, EyeOff, FolderPlus, MousePointer, Package, Plus, ShoppingCart, Star, Tag, Trash2, X } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { use, useEffect, useState } from 'react';
@@ -14,6 +14,8 @@ import DeleteModal from '../../../../components/ui/delete-modal';
 import LottieLoader from '../../../../components/ui/lottie-loader';
 import MobileImageUpload from '../../../../components/ui/mobile-image-upload';
 import ProductCategorySelector from '../../../../components/ui/product-category-selector';
+import PromotionsManager from '../../../../components/ui/promotions-manager';
+import AddProductModal from '../../../../components/ui/add-product-modal';
 import { useAuth } from '../../../../contexts/AuthContext';
 
 interface Product {
@@ -92,6 +94,8 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
   const [categoriesRefreshKey, setCategoriesRefreshKey] = useState(0);
   const [savingProduct, setSavingProduct] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
+  const [activeTab, setActiveTab] = useState('products');
+  const [showAddProductModal, setShowAddProductModal] = useState(false);
 
   // Função para buscar nome da categoria pelo ID
   const getCategoryNameById = async (categoryId: number): Promise<string> => {
@@ -481,24 +485,59 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 mb-8">
+          {/* Section Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div 
+              className={`p-6 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                activeTab === 'products'
+                  ? 'border-blue-500 bg-blue-50 shadow-lg'
+                  : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-md'
+              }`}
+              onClick={() => setActiveTab('products')}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`p-3 rounded-lg ${
+                  activeTab === 'products' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'
+                }`}>
+                  <Package className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Produtos</h3>
+                  <p className="text-sm text-gray-600">Gerencie seus produtos</p>
+                </div>
+              </div>
+            </div>
+            
+            <div 
+              className={`p-6 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                activeTab === 'promotions'
+                  ? 'border-blue-500 bg-blue-50 shadow-lg'
+                  : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-md'
+              }`}
+              onClick={() => setActiveTab('promotions')}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`p-3 rounded-lg ${
+                  activeTab === 'promotions' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'
+                }`}>
+                  <Tag className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Promoções</h3>
+                  <p className="text-sm text-gray-600">Crie cupons e promoções</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons - Only show for products tab */}
+          {activeTab === 'products' && (
+            <div className="flex flex-col sm:flex-row gap-3 mb-8">
             <button
               type="button"
-              onClick={() => {
-                setShowAddForm(true);
-                setTimeout(() => {
-                  const formElement = document.getElementById('add-product-form');
-                  if (formElement) {
-                    formElement.scrollIntoView({ 
-                      behavior: 'smooth', 
-                      block: 'start' 
-                    });
-                  }
-                }, 100);
-              }}
+              onClick={() => setShowAddProductModal(true)}
               className="w-full sm:w-auto text-white bg-blue-600 px-6 py-3 rounded-lg flex items-center justify-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg font-medium"
-              // style={{ backgroundColor: `${store.colors.primary}CC` }}
+              style={{ backgroundColor: store?.colors?.primary || '#3B82F6' }}
             >
               <Plus className="w-5 h-5" />
               <span>Adicionar Produto</span>
@@ -528,9 +567,13 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
               <span>Gerenciar Categorias</span>
             </button>
           </div>
+          )}
 
-          {/* Products List */}
-          {!productsLoaded ? (
+          {/* Tab Content */}
+          {activeTab === 'products' && (
+            <>
+              {/* Products List */}
+              {!productsLoaded ? (
             <div className="flex justify-center py-12">
               <LottieLoader 
                 animationData={loadingAnimation}
@@ -1011,6 +1054,39 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
                 refreshCategories(); // Força refresh das categorias
               }}
             />
+          )}
+
+          {/* Modal de Adicionar Produto */}
+          <AddProductModal
+            isOpen={showAddProductModal}
+            onClose={() => setShowAddProductModal(false)}
+            onProductAdded={(product) => {
+              setProducts(prev => [product, ...prev]);
+              setShowAddProductModal(false);
+            }}
+            storeSlug={slug || ''}
+            colors={store?.colors}
+          />
+            </>
+          )}
+
+          {/* Promotions Tab */}
+          {activeTab === 'promotions' && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Gerenciar Promoções</h3>
+                <p className="text-sm text-gray-600 mb-6">
+                  Crie e gerencie promoções para sua loja. Configure cupons de desconto, 
+                  promoções por período, categoria ou produto específico.
+                </p>
+                <PromotionsManager 
+                  storeSlug={slug || ''} 
+                  onPromotionChange={() => {
+                    // Atualizar se necessário
+                  }}
+                />
+              </div>
+            </div>
           )}
         </div>
       </div>

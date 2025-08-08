@@ -65,6 +65,7 @@ export interface StoreAnalytics {
   total_clicks: number;
   unique_visitors: number;
   avg_views_per_session: number;
+  direct_links: number;
   top_products: TopProduct[];
   daily_stats: DailyStats[];
 }

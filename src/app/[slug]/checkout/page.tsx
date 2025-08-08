@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ShoppingBag } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { use, useEffect, useState } from 'react';
 import { useCartStore } from '../../stores/cartStore';
@@ -31,14 +31,14 @@ interface CheckoutPageProps {
 
 export default function CheckoutPage({ params }: CheckoutPageProps) {
   const router = useRouter();
-  const { cart } = useCartStore();
+  const { cart, setStoreSlug } = useCartStore();
   const [currentStep, setCurrentStep] = useState(1);
   const [store, setStore] = useState<StoreData | null>(null);
   
   // Unwrap params usando React.use()
   const resolvedParams = use(params);
   
-  // Buscar dados da loja
+  // Buscar dados da loja e definir storeSlug
   useEffect(() => {
     const fetchStore = async () => {
       try {
@@ -46,6 +46,7 @@ export default function CheckoutPage({ params }: CheckoutPageProps) {
         if (response.ok) {
           const storeData = await response.json();
           setStore(storeData);
+          setStoreSlug(resolvedParams.slug);
         }
       } catch (error) {
         console.error('Erro ao buscar loja:', error);
@@ -53,7 +54,7 @@ export default function CheckoutPage({ params }: CheckoutPageProps) {
     };
 
     fetchStore();
-  }, [resolvedParams.slug]);
+  }, [resolvedParams.slug, setStoreSlug]);
   
   // Dados do checkout
   const [customerData, setCustomerData] = useState({
@@ -141,6 +142,16 @@ export default function CheckoutPage({ params }: CheckoutPageProps) {
                 </p>
               )}
             </div>
+
+            {/* Botão Continuar Comprando */}
+            <button
+              type="button"
+              onClick={() => router.push(`/${resolvedParams.slug}`)}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              title="Continuar Comprando"
+            >
+              <ShoppingBag className="w-5 h-5 text-gray-600" />
+            </button>
           </div>
         </div>
       </div>

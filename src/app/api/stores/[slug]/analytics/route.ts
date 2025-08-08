@@ -44,6 +44,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
     }
 
+    // Buscar dados de links diretos
+    const { data: directLinksData, error: directLinksError } = await supabase
+      .from('analytics_events')
+      .select('*')
+      .eq('store_slug', slug)
+      .eq('is_direct_link', true)
+      .gte('created_at', new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString());
+
+    const directLinksCount = directLinksData?.length || 0;
+
     // Formatar dados para resposta
     const analyticsData = {
       total_views: analytics?.[0]?.total_views || 0,
@@ -52,6 +62,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       total_header_cart_clicks: analytics?.[0]?.total_header_cart_clicks || 0,
       unique_visitors: analytics?.[0]?.unique_visitors || 0,
       avg_views_per_session: Number(analytics?.[0]?.avg_views_per_session) || 0,
+      direct_links: directLinksCount,
       top_products: analytics?.[0]?.top_products || [],
       top_cart_products: analytics?.[0]?.top_cart_products || [],
       daily_stats: analytics?.[0]?.daily_stats || []

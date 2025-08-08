@@ -6,6 +6,7 @@ import {
   BarChart3,
   Calendar,
   Eye, 
+  Link,
   Minus,
   MousePointer, 
   TrendingUp, 
@@ -199,6 +200,21 @@ export default function AnalyticsDashboard({ storeSlug }: AnalyticsDashboardProp
             </div>
             <div className="p-3 bg-orange-100 rounded-lg">
               <TrendingUp className="w-6 h-6 text-orange-600" />
+            </div>
+          </div>
+        </div>
+
+        {/* Links diretos */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Links diretos</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {analytics.direct_links || 0}
+              </p>
+            </div>
+            <div className="p-3 bg-pink-100 rounded-lg">
+              <Link className="w-6 h-6 text-pink-600" />
             </div>
           </div>
         </div>

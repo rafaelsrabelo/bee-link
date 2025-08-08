@@ -21,6 +21,11 @@ export interface ProductClickEvent {
   product_name: string;
   product_price?: number;
   category?: string;
+  is_direct_link?: boolean;
+  referrer?: string;
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
 }
 
 export interface PageViewEvent {
@@ -75,7 +80,12 @@ class Analytics {
           product_price: event.product_price,
           product_category: event.category,
           currency: 'BRL',
-          value: event.product_price || 0
+          value: event.product_price || 0,
+          is_direct_link: event.is_direct_link || false,
+          referrer: event.referrer || '',
+          utm_source: event.utm_source || '',
+          utm_medium: event.utm_medium || '',
+          utm_campaign: event.utm_campaign || ''
         });
       }
 
@@ -86,7 +96,12 @@ class Analytics {
           product_id: event.product_id,
           product_name: event.product_name,
           session_id: this.sessionId,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          is_direct_link: event.is_direct_link || false,
+          referrer: event.referrer || '',
+          utm_source: event.utm_source || '',
+          utm_medium: event.utm_medium || '',
+          utm_campaign: event.utm_campaign || ''
         });
       }
     } catch {
@@ -128,6 +143,11 @@ class Analytics {
     page_title?: string;
     session_id: string;
     timestamp: string;
+    is_direct_link?: boolean;
+    referrer?: string;
+    utm_source?: string;
+    utm_medium?: string;
+    utm_campaign?: string;
   }) {
     try {
       const response = await fetch('/api/analytics/track', {
