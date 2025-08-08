@@ -56,10 +56,7 @@ export default function AdminHeader({ store: propStore, currentPage, title, icon
 
   const isActive = (page: string) => currentPage === page;
 
-  const handleNavigation = (path: string) => {
-    router.push(path);
-    setShowMobileMenu(false);
-  };
+
 
   // Se a loja ainda não foi carregada, mostrar loading
   if (!store) {
@@ -276,7 +273,10 @@ export default function AdminHeader({ store: propStore, currentPage, title, icon
                 {/* 1. Dashboard */}
                 {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
                 <button
-                  onClick={() => handleNavigation(`/admin/${store.slug}`)}
+                  onClick={() => {
+                  router.push(`/admin/${store.slug}`);
+                  setShowMobileMenu(false);
+                }}
                   className={`w-full px-3 py-2 rounded-lg text-sm transition-all duration-200 text-left ${
                     isActive('dashboard') 
                       ? 'text-white bg-white/20 border-l-4 border-white' 
@@ -289,7 +289,10 @@ export default function AdminHeader({ store: propStore, currentPage, title, icon
                 {/* 2. Pedidos */}
                 {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
                 <button
-                  onClick={() => handleNavigation(`/admin/${store.slug}/orders`)}
+                  onClick={() => {
+                  router.push(`/admin/${store.slug}/orders`);
+                  setShowMobileMenu(false);
+                }}
                   className={`w-full px-3 py-2 rounded-lg text-sm transition-all duration-200 text-left ${
                     isActive('orders') 
                       ? 'text-white bg-white/20 border-l-4 border-white' 
@@ -309,7 +312,10 @@ export default function AdminHeader({ store: propStore, currentPage, title, icon
                 {/* 3. Minha Loja */}
                 {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
                 <button
-                  onClick={() => handleNavigation(`/admin/${store.slug}/store`)}
+                  onClick={() => {
+                  router.push(`/admin/${store.slug}/store`);
+                  setShowMobileMenu(false);
+                }}
                   className={`w-full px-3 py-2 rounded-lg text-sm transition-all duration-200 text-left ${
                     isActive('store') 
                       ? 'text-white bg-white/20 border-l-4 border-white' 
@@ -322,7 +328,10 @@ export default function AdminHeader({ store: propStore, currentPage, title, icon
                 {/* 4. Produtos */}
                 {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
                 <button
-                  onClick={() => handleNavigation(`/admin/${store.slug}/products`)}
+                  onClick={() => {
+                  router.push(`/admin/${store.slug}/products`);
+                  setShowMobileMenu(false);
+                }}
                   className={`w-full px-3 py-2 rounded-lg text-sm transition-all duration-200 text-left ${
                     isActive('products') 
                       ? 'text-white bg-white/20 border-l-4 border-white' 
@@ -335,7 +344,10 @@ export default function AdminHeader({ store: propStore, currentPage, title, icon
                 {/* 5. Relatórios */}
                 {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
                 <button
-                  onClick={() => handleNavigation(`/admin/${store.slug}/reports`)}
+                  onClick={() => {
+                  router.push(`/admin/${store.slug}/reports`);
+                  setShowMobileMenu(false);
+                }}
                   className={`w-full px-3 py-2 rounded-lg text-sm transition-all duration-200 text-left ${
                     isActive('reports') 
                       ? 'text-white bg-white/20 border-l-4 border-white' 
