@@ -32,6 +32,7 @@ export interface PageViewEvent {
   page_title: string;
   page_url: string;
   referrer?: string;
+  is_direct_link?: boolean;
 }
 
 class Analytics {
@@ -209,7 +210,8 @@ class Analytics {
         store_slug: storeSlug,
         product_id: data.product_id,
         product_name: data.product_name,
-        product_price: data.product_id ? 0 : undefined // Placeholder, será calculado se necessário
+        product_price: data.product_id ? 0 : undefined, // Placeholder, será calculado se necessário
+        referrer: data.referrer || ''
       };
       
       console.log('📦 Analytics: Payload:', payload);

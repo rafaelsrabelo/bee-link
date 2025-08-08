@@ -16,7 +16,8 @@ export async function POST(request: NextRequest) {
       store_slug, 
       product_id, 
       product_name, 
-      product_price
+      product_price,
+      referrer
     } = body;
 
     console.log('🔍 Analytics API: Extracted data:', {
@@ -24,7 +25,8 @@ export async function POST(request: NextRequest) {
       store_slug,
       product_id,
       product_name,
-      product_price
+      product_price,
+      referrer
     });
 
     // Registrar o evento no banco de dados - apenas campos que existem na tabela

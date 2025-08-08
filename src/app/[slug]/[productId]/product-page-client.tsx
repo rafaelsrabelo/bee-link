@@ -71,11 +71,23 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
   useEffect(() => {
     const utmParams = getUTMParams();
     
+    // Detectar se é um link direto
+    const isDirectLink = !document.referrer || 
+                        document.referrer === '' || 
+                        document.referrer === window.location.origin ||
+                        document.referrer.includes('whatsapp') ||
+                        document.referrer.includes('telegram') ||
+                        document.referrer.includes('email');
+    
+    console.log('🔍 Analytics: Referrer:', document.referrer);
+    console.log('🔍 Analytics: Is direct link:', isDirectLink);
+    
     // Track page view
     trackPageView({
       page_title: `${product.name} - ${store.store_name}`,
       page_url: window.location.href,
-      referrer: document.referrer
+      referrer: document.referrer,
+      is_direct_link: isDirectLink
     });
 
     // Track product visit (similar to click but for direct visits)
@@ -84,7 +96,7 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
       product_name: product.name,
       product_price: Number.parseFloat(product.price.replace('R$ ', '').replace(',', '.')),
       category: product.category,
-      is_direct_link: utmParams.is_direct_link,
+      is_direct_link: isDirectLink || utmParams.is_direct_link,
       referrer: document.referrer,
       utm_source: utmParams.utm_source,
       utm_medium: utmParams.utm_medium,

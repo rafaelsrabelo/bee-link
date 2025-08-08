@@ -30,7 +30,6 @@ export default function AdminDashboardPage({ params }: { params: Promise<{ slug:
     total_views: number;
     total_clicks: number;
     total_cart_clicks: number;
-    direct_links: number;
     unique_visitors: number;
     avg_views_per_session: number;
     top_products: Array<{
@@ -252,9 +251,9 @@ export default function AdminDashboardPage({ params }: { params: Promise<{ slug:
                   <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-medium text-gray-600">Links Diretos</p>
+                        <p className="text-sm font-medium text-gray-600">Taxa de Conversão</p>
                         <p className="text-2xl font-bold text-gray-900">
-                          {analytics.direct_links?.toLocaleString() || 0}
+                          {analytics.total_views > 0 ? ((analytics.total_cart_clicks / analytics.total_views) * 100).toFixed(1) : 0}%
                         </p>
                       </div>
                       <div className="p-3 bg-indigo-100 rounded-lg">

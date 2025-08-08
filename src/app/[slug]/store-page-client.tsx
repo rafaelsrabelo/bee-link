@@ -145,10 +145,22 @@ export default function StorePageClient({ store }: StorePageClientProps) {
 
   // Tracking de visita na página da loja
   useEffect(() => {
+    // Detectar se é um link direto
+    const isDirectLink = !document.referrer || 
+                        document.referrer === '' || 
+                        document.referrer === window.location.origin ||
+                        document.referrer.includes('whatsapp') ||
+                        document.referrer.includes('telegram') ||
+                        document.referrer.includes('email');
+    
+    console.log('🔍 Analytics: Referrer:', document.referrer);
+    console.log('🔍 Analytics: Is direct link:', isDirectLink);
+    
     trackPageView({
       page_title: `${store.store_name} - Loja`,
       page_url: window.location.href,
-      referrer: document.referrer
+      referrer: document.referrer,
+      is_direct_link: isDirectLink
     });
   }, [store.store_name]);
 

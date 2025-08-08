@@ -52,7 +52,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const totalClicks = analyticsData?.filter(e => e.event_type === 'product_click').length || 0;
     const totalCartClicks = analyticsData?.filter(e => e.event_type === 'cart_add').length || 0;
     const uniqueVisitors = new Set(analyticsData?.map(e => e.ip_address).filter(Boolean)).size;
-    const directLinks = analyticsData?.filter(e => e.is_direct_link === true).length || 0;
+    // Links diretos: vamos estimar baseado em page_views sem product_id (acesso direto à loja)
+    // Isso é uma aproximação - em uma implementação futura, adicionaremos a coluna referrer
+    const directLinks = analyticsData?.filter(e => 
+      e.event_type === 'page_view' && !e.product_id
+    ).length || 0;
 
     // Calcular produtos mais clicados
     const productClicks = analyticsData
