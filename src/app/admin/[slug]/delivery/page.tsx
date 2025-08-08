@@ -1,11 +1,11 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { Calculator, Clock, MapPin, RefreshCw, Save } from 'lucide-react';
+import { Truck } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { use } from 'react';
 import { toast } from 'react-hot-toast';
-import { MapPin, Calculator, Clock, Save, RefreshCw } from 'lucide-react';
 import ProtectedRoute from '../../../../components/auth/ProtectedRoute';
 import AdminHeader from '../../../../components/ui/admin-header';
-import { Truck } from 'lucide-react';
 
 interface DeliverySettings {
   id: string;
@@ -15,13 +15,21 @@ interface DeliverySettings {
   price_per_km: number;
   minimum_delivery_fee: number;
   free_delivery_threshold: number;
-  estimated_delivery_time_hours: number;
+  estimated_delivery_time_from: string;
+  estimated_delivery_time_to: string;
 }
 
 interface Store {
   id: string;
   name: string;
   slug: string;
+  logo: string;
+  colors: {
+    background: string;
+    primary: string;
+    text: string;
+    header: string;
+  };
   user_id: string;
 }
 
@@ -67,7 +75,13 @@ export default function DeliveryManagementPage({ params }: { params: Promise<{ s
       const response = await fetch(`/api/stores/${slug}/delivery-settings`);
       if (response.ok) {
         const data = await response.json();
-        setSettings(data);
+        // Garantir que os campos de tempo tenham valores padrão
+        const settingsWithDefaults = {
+          ...data,
+          estimated_delivery_time_from: data.estimated_delivery_time_from || "00:30",
+          estimated_delivery_time_to: data.estimated_delivery_time_to || "01:00"
+        };
+        setSettings(settingsWithDefaults);
       } else {
         toast.error('Erro ao carregar configurações de entrega');
       }
@@ -83,12 +97,23 @@ export default function DeliveryManagementPage({ params }: { params: Promise<{ s
     
     setSaving(true);
     try {
+      // Preparar dados para envio (apenas campos corretos)
+      const dataToSend = {
+        delivery_enabled: settings.delivery_enabled,
+        delivery_radius_km: settings.delivery_radius_km,
+        price_per_km: settings.price_per_km,
+        minimum_delivery_fee: settings.minimum_delivery_fee,
+        free_delivery_threshold: settings.free_delivery_threshold,
+        estimated_delivery_time_from: settings.estimated_delivery_time_from,
+        estimated_delivery_time_to: settings.estimated_delivery_time_to,
+      };
+
       const response = await fetch(`/api/stores/${slug}/delivery-settings`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(settings),
+        body: JSON.stringify(dataToSend),
       });
 
       if (response.ok) {
@@ -127,7 +152,7 @@ export default function DeliveryManagementPage({ params }: { params: Promise<{ s
     }
   };
 
-  const updateSetting = (field: keyof DeliverySettings, value: any) => {
+  const updateSetting = (field: keyof DeliverySettings, value: string | number | boolean) => {
     if (!settings) return;
     setSettings({ ...settings, [field]: value });
   };
@@ -135,9 +160,14 @@ export default function DeliveryManagementPage({ params }: { params: Promise<{ s
   if (loading) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-gray-50">
-          <AdminHeader store={store} />
-          <div className="p-6">
+        <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-violet-50">
+          <AdminHeader 
+            store={store} 
+            currentPage="delivery"
+            title="Gestão de Entregas"
+            icon={Truck}
+          />
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="animate-pulse">
               <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
               <div className="space-y-4">
@@ -154,7 +184,7 @@ export default function DeliveryManagementPage({ params }: { params: Promise<{ s
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-violet-50">
         <AdminHeader 
           store={store} 
           currentPage="delivery"
@@ -162,7 +192,7 @@ export default function DeliveryManagementPage({ params }: { params: Promise<{ s
           icon={Truck}
         />
         
-        <div className="p-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Header */}
           <div className="mb-8">
             <div className="flex items-center space-x-3 mb-2">
@@ -213,7 +243,7 @@ export default function DeliveryManagementPage({ params }: { params: Promise<{ s
                     step="0.1"
                     min="0"
                     value={settings?.delivery_radius_km || 0}
-                    onChange={(e) => updateSetting('delivery_radius_km', parseFloat(e.target.value) || 0)}
+                    onChange={(e) => updateSetting('delivery_radius_km', Number.parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="5.0"
                   />
@@ -232,7 +262,7 @@ export default function DeliveryManagementPage({ params }: { params: Promise<{ s
                     step="0.01"
                     min="0"
                     value={settings?.price_per_km || 0}
-                    onChange={(e) => updateSetting('price_per_km', parseFloat(e.target.value) || 0)}
+                    onChange={(e) => updateSetting('price_per_km', Number.parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="2.50"
                   />
@@ -251,7 +281,7 @@ export default function DeliveryManagementPage({ params }: { params: Promise<{ s
                     step="0.01"
                     min="0"
                     value={settings?.minimum_delivery_fee || 0}
-                    onChange={(e) => updateSetting('minimum_delivery_fee', parseFloat(e.target.value) || 0)}
+                    onChange={(e) => updateSetting('minimum_delivery_fee', Number.parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="5.00"
                   />
@@ -270,7 +300,7 @@ export default function DeliveryManagementPage({ params }: { params: Promise<{ s
                     step="0.01"
                     min="0"
                     value={settings?.free_delivery_threshold || 0}
-                    onChange={(e) => updateSetting('free_delivery_threshold', parseFloat(e.target.value) || 0)}
+                    onChange={(e) => updateSetting('free_delivery_threshold', Number.parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="50.00"
                   />
@@ -282,18 +312,30 @@ export default function DeliveryManagementPage({ params }: { params: Promise<{ s
                 {/* Tempo Estimado de Entrega */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tempo Estimado de Entrega (horas)
+                    Tempo Estimado de Entrega
                   </label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={settings?.estimated_delivery_time_hours || 24}
-                    onChange={(e) => updateSetting('estimated_delivery_time_hours', parseInt(e.target.value) || 24)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="24"
-                  />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">De:</label>
+                      <input
+                        type="time"
+                        value={settings?.estimated_delivery_time_from || "00:30"}
+                        onChange={(e) => updateSetting('estimated_delivery_time_from', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Até:</label>
+                      <input
+                        type="time"
+                        value={settings?.estimated_delivery_time_to || "01:00"}
+                        onChange={(e) => updateSetting('estimated_delivery_time_to', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
                   <p className="text-xs text-gray-500 mt-1">
-                    Tempo estimado para entrega em horas
+                    Ex: 00:30 a 01:00 = entre 30 min e 1 hora
                   </p>
                 </div>
 
@@ -335,7 +377,7 @@ export default function DeliveryManagementPage({ params }: { params: Promise<{ s
                     step="0.1"
                     min="0"
                     value={testDistance}
-                    onChange={(e) => setTestDistance(parseFloat(e.target.value) || 0)}
+                    onChange={(e) => setTestDistance(Number.parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     placeholder="2.0"
                   />
@@ -351,7 +393,7 @@ export default function DeliveryManagementPage({ params }: { params: Promise<{ s
                     step="0.01"
                     min="0"
                     value={testOrderTotal}
-                    onChange={(e) => setTestOrderTotal(parseFloat(e.target.value) || 0)}
+                    onChange={(e) => setTestOrderTotal(Number.parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     placeholder="30.00"
                   />
@@ -387,7 +429,7 @@ export default function DeliveryManagementPage({ params }: { params: Promise<{ s
                     <li>• Entrega gratuita para pedidos acima de R$ {settings?.free_delivery_threshold?.toFixed(2) || '0.00'}</li>
                     <li>• Taxa mínima de R$ {settings?.minimum_delivery_fee?.toFixed(2) || '0.00'}</li>
                     <li>• Raio máximo de {settings?.delivery_radius_km || 0} km</li>
-                    <li>• Tempo estimado: {settings?.estimated_delivery_time_hours || 24} horas</li>
+                    <li>• Tempo estimado: {settings?.estimated_delivery_time_from || "00:30"} a {settings?.estimated_delivery_time_to || "01:00"}</li>
                   </ul>
                 </div>
               </div>

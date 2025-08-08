@@ -1,7 +1,7 @@
 'use client';
 
 import { MapPin, Store, Truck } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface DeliveryData {
   type: string;
@@ -22,6 +22,7 @@ interface DeliveryStepProps {
   currentStep: number;
   totalSteps: number;
   store?: {
+    slug?: string;
     colors?: {
       primary: string;
     };
@@ -39,6 +40,40 @@ export default function DeliveryStep({
 }: DeliveryStepProps) {
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [loadingCep, setLoadingCep] = useState(false);
+  const [deliverySettings, setDeliverySettings] = useState<{
+    delivery_enabled: boolean;
+    delivery_radius_km: number;
+    price_per_km: number;
+    minimum_delivery_fee: number;
+    free_delivery_threshold: number;
+  } | null>(null);
+  const [loadingSettings, setLoadingSettings] = useState(true);
+
+  // Buscar configurações de entrega da loja
+  useEffect(() => {
+    const fetchDeliverySettings = async () => {
+      if (!store?.slug) return;
+
+      try {
+        const response = await fetch(`/api/stores/${store.slug}/delivery-settings`);
+        if (response.ok) {
+          const settings = await response.json();
+          setDeliverySettings(settings);
+
+          // Se entrega está desabilitada, forçar retirada
+          if (!settings.delivery_enabled && deliveryData.type === 'delivery') {
+            setDeliveryData({ ...deliveryData, type: 'pickup' });
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao buscar configurações de entrega:', error);
+      } finally {
+        setLoadingSettings(false);
+      }
+    };
+
+    fetchDeliverySettings();
+  }, [store?.slug, deliveryData, setDeliveryData]);
 
   const searchCep = async (cep: string) => {
     const cleanCep = cep.replace(/\D/g, '');
@@ -124,55 +159,83 @@ export default function DeliveryStep({
         </p>
       </div>
 
-      {/* Opções de Entrega */}
-      <div className="space-y-3 mb-6">
-        {/* Entrega */}
-        <div
-          onClick={() => setDeliveryData({ ...deliveryData, type: 'delivery' })}
-          className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-            deliveryData.type === 'delivery'
-              ? 'bg-opacity-10 shadow-sm'
-              : 'border-gray-300 hover:border-gray-400'
-          }`}
-          style={{
-            borderColor: deliveryData.type === 'delivery' 
-              ? store?.colors?.primary || '#3b82f6' 
-              : undefined,
-            backgroundColor: deliveryData.type === 'delivery' 
-              ? `${store?.colors?.primary || '#3b82f6'}15` 
-              : undefined
-          }}
-        >
-          <div className="flex items-center space-x-3">
-            <Truck 
-              className={`w-6 h-6 ${
-                deliveryData.type === 'delivery' ? '' : 'text-gray-400'
-              }`} 
+      {/* Loading ou opções de entrega */}
+      {loadingSettings ? (
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600" />
+          <span className="ml-2 text-gray-600">Carregando opções de entrega...</span>
+        </div>
+      ) : (
+        <div className="space-y-3 mb-6">
+          {/* Entrega - só mostra se habilitada */}
+          {deliverySettings?.delivery_enabled && (
+            <div
+              onClick={() => setDeliveryData({ ...deliveryData, type: 'delivery' })}
+              onKeyDown={(e) => e.key === 'Enter' && setDeliveryData({ ...deliveryData, type: 'delivery' })}
+              role="button"
+              tabIndex={0}
+              className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                deliveryData.type === 'delivery'
+                  ? 'bg-opacity-10 shadow-sm'
+                  : 'border-gray-300 hover:border-gray-400'
+              }`}
               style={{
-                color: deliveryData.type === 'delivery' 
+                borderColor: deliveryData.type === 'delivery' 
                   ? store?.colors?.primary || '#3b82f6' 
+                  : undefined,
+                backgroundColor: deliveryData.type === 'delivery' 
+                  ? `${store?.colors?.primary || '#3b82f6'}15` 
                   : undefined
               }}
-            />
-            <div className="flex-1">
-              <h3 className="font-medium text-gray-900">Entrega</h3>
-              <p className="text-sm text-gray-600">Receba em casa</p>
+            >
+              <div className="flex items-center space-x-3">
+                <Truck 
+                  className={`w-6 h-6 ${
+                    deliveryData.type === 'delivery' ? '' : 'text-gray-400'
+                  }`} 
+                  style={{
+                    color: deliveryData.type === 'delivery' 
+                      ? store?.colors?.primary || '#3b82f6' 
+                      : undefined
+                  }}
+                />
+                <div className="flex-1">
+                  <h3 className="font-medium text-gray-900">Entrega</h3>
+                  <p className="text-sm text-gray-600">
+                    Receba em casa • Raio de {deliverySettings.delivery_radius_km}km
+                  </p>
+                </div>
+                <div className={`w-4 h-4 rounded-full border-2 ${
+                  deliveryData.type === 'delivery'
+                    ? 'border-blue-500 bg-blue-500'
+                    : 'border-gray-300'
+                }`}>
+                  {deliveryData.type === 'delivery' && (
+                    <div className="w-2 h-2 bg-white rounded-full mx-auto mt-0.5" />
+                  )}
+                </div>
+              </div>
             </div>
-            <div className={`w-4 h-4 rounded-full border-2 ${
-              deliveryData.type === 'delivery'
-                ? 'border-blue-500 bg-blue-500'
-                : 'border-gray-300'
-            }`}>
-              {deliveryData.type === 'delivery' && (
-                <div className="w-2 h-2 bg-white rounded-full mx-auto mt-0.5"></div>
-              )}
-            </div>
-          </div>
-        </div>
+          )}
 
-        {/* Retirada */}
-        <div
+          {/* Aviso se entrega estiver desabilitada */}
+          {!deliverySettings?.delivery_enabled && (
+            <div className="p-4 border border-amber-200 bg-amber-50 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 bg-amber-400 rounded-full" />
+                <p className="text-sm text-amber-700">
+                  <strong>Entrega indisponível:</strong> Esta loja oferece apenas retirada no local.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Retirada */}
+          <div
           onClick={() => setDeliveryData({ ...deliveryData, type: 'pickup' })}
+          onKeyDown={(e) => e.key === 'Enter' && setDeliveryData({ ...deliveryData, type: 'pickup' })}
+          role="button"
+          tabIndex={0}
           className={`p-4 border rounded-lg cursor-pointer transition-colors ${
             deliveryData.type === 'pickup'
               ? 'border-blue-500 bg-blue-50'
@@ -193,12 +256,13 @@ export default function DeliveryStep({
                 : 'border-gray-300'
             }`}>
               {deliveryData.type === 'pickup' && (
-                <div className="w-2 h-2 bg-white rounded-full mx-auto mt-0.5"></div>
+                <div className="w-2 h-2 bg-white rounded-full mx-auto mt-0.5" />
               )}
             </div>
           </div>
         </div>
-      </div>
+        </div>
+      )}
 
       {errors.type && (
         <p className="mb-4 text-sm text-red-600">{errors.type}</p>
@@ -228,7 +292,7 @@ export default function DeliveryStep({
               />
               {loadingCep && (
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600" />
                 </div>
               )}
             </div>

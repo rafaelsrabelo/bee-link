@@ -44,6 +44,11 @@ export interface CreateOrderRequest {
   delivery_cep?: string;
   delivery_city?: string;
   delivery_state?: string;
+  delivery_fee?: number;
+  delivery_distance_km?: number;
+  coupon_code?: string;
+  coupon_discount?: number;
+  subtotal?: number;
   payment_method?: 'money' | 'pix' | 'credit_card' | 'debit_card';
 }
 

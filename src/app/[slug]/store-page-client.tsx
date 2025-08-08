@@ -669,12 +669,18 @@ export default function StorePageClient({ store }: StorePageClientProps) {
         {/* Logo */}
         <div className="mb-8">
           <div className="w-48 h-48 rounded-full flex items-center justify-center relative overflow-hidden" style={{ backgroundColor: store.colors.primary }}>
-            <Image
-              src={store.logo}
-              alt={`${store.store_name} Logo`}
-              fill
-              className="object-cover"
-            />
+            {store.logo && store.logo.trim() !== '' ? (
+              <Image
+                src={store.logo}
+                alt={`${store.store_name} Logo`}
+                fill
+                className="object-cover"
+              />
+            ) : (
+              <span className="text-6xl font-bold text-white opacity-80">
+                {store.store_name.charAt(0).toUpperCase()}
+              </span>
+            )}
             <div className="absolute inset-0 bg-white/10 rounded-full" />
           </div>
         </div>

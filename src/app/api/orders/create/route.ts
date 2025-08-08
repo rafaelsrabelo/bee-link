@@ -21,6 +21,24 @@ function formatWhatsAppMessage(order: OrderWithItems, store: StoreData) {
     `• ${item.quantity}x ${item.name} - R$ ${item.price.toFixed(2).replace('.', ',')}`
   ).join('\n');
 
+  // Extrair informações das notes (temporário até migração)
+  const notes = order.notes || '';
+  const deliveryFeeMatch = notes.match(/Taxa entrega: R\$ ([\d,\.]+)/);
+  const couponMatch = notes.match(/Cupom: (\w+) \(-R\$ ([\d,\.]+)\)/);
+  const subtotalMatch = notes.match(/Subtotal: R\$ ([\d,\.]+)/);
+  
+  const discountInfo = couponMatch 
+    ? `\n🎫 *Desconto (${couponMatch[1]}):* - R$ ${couponMatch[2]}`
+    : '';
+  
+  const deliveryFeeInfo = deliveryFeeMatch
+    ? `\n🚚 *Taxa de Entrega:* + R$ ${deliveryFeeMatch[1]}`
+    : '';
+
+  const subtotalInfo = subtotalMatch && subtotalMatch[1] !== order.total.toFixed(2)
+    ? `\n💰 *Subtotal: R$ ${subtotalMatch[1]}*`
+    : '';
+
   const message = `🛒 *NOVO PEDIDO RECEBIDO!*
 
 📋 *Pedido #${order.id.slice(0, 8)}*
@@ -31,7 +49,9 @@ ${order.customer_address ? `📍 *Endereço:* ${order.customer_address}\n` : ''}
 🛍️ *Itens:*
 ${items}
 
-💰 *Total:* R$ ${order.total.toFixed(2).replace('.', ',')}
+${subtotalInfo}${discountInfo}${deliveryFeeInfo}
+
+💵 *Total Final:* R$ ${order.total.toFixed(2).replace('.', ',')}
 ${order.notes ? `📝 *Observações:* ${order.notes}\n` : ''}
 
 ⏰ *Horário:* ${new Date().toLocaleString('pt-BR')}
@@ -69,7 +89,12 @@ export async function POST(request: NextRequest) {
       delivery_cep,
       delivery_city,
       delivery_state,
-      payment_method
+      payment_method,
+      delivery_fee,
+      delivery_distance_km,
+      coupon_code,
+      coupon_discount,
+      subtotal
     } = body;
 
     // 1. Buscar a loja pelo slug
@@ -138,17 +163,19 @@ export async function POST(request: NextRequest) {
       status: isManualOrder ? 'delivered' : 'pending'
     };
 
-    // Adicionar novos campos opcionais (só se existirem no schema)
-    try {
-      if (delivery_type) orderInsert.delivery_type = delivery_type;
-      if (payment_method) orderInsert.payment_method = payment_method;
-      if (delivery_cep) orderInsert.delivery_cep = delivery_cep;
-      if (delivery_city) orderInsert.delivery_city = delivery_city;
-      if (delivery_state) orderInsert.delivery_state = delivery_state;
-      // Manter compatibility com delivery_address
-      orderInsert.delivery_address = customer_address;
-    } catch {
-    }
+    // Adicionar campos básicos que sabemos que existem
+    orderInsert.delivery_address = customer_address;
+    
+    // Incluir informações novas nas notes temporariamente até migração do banco
+    let notesWithExtras = notes || '';
+    if (delivery_type) notesWithExtras += `\nTipo entrega: ${delivery_type}`;
+    if (payment_method) notesWithExtras += `\nPagamento: ${payment_method}`;
+    if (delivery_fee && delivery_fee > 0) notesWithExtras += `\nTaxa entrega: R$ ${delivery_fee.toFixed(2)}`;
+    if (coupon_code) notesWithExtras += `\nCupom: ${coupon_code} (-R$ ${coupon_discount?.toFixed(2) || '0'})`;
+    if (subtotal) notesWithExtras += `\nSubtotal: R$ ${subtotal.toFixed(2)}`;
+    notesWithExtras += `\nTotal Final: R$ ${total.toFixed(2)}`;
+    
+    orderInsert.notes = notesWithExtras;
 
     // Se uma data foi fornecida, usar ela; senão usar a data atual
     if (order_date) {

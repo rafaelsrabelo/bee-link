@@ -1,6 +1,6 @@
 'use client';
 
-import { Instagram, MapPin, MessageCircle, Music, Palette, Save, Settings, Store, Upload, Youtube } from 'lucide-react';
+import { Instagram, MapPin, MessageCircle, Music, Palette, Save, Settings, Store as StoreIcon, Upload, Youtube } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { use, useEffect, useState } from 'react';
@@ -17,8 +17,9 @@ import PromotionsManager from '../../../../components/ui/promotions-manager';
 import StorePreview from '../../../../components/ui/store-preview';
 import Tabs from '../../../../components/ui/tabs';
 import { useAuth } from '../../../../contexts/AuthContext';
+import type { Store } from '../../../../contexts/StoreContext';
 
-interface Store {
+interface StoreData {
   id: string;
   name: string;
   store_name: string;
@@ -51,10 +52,21 @@ interface Store {
     youtube?: string;
   };
   user_id: string;
+  address?: {
+    street: string;
+    number: string;
+    complement: string;
+    neighborhood: string;
+    city: string;
+    state: string;
+    zip_code: string;
+  };
+  latitude?: number;
+  longitude?: number;
 }
 
 export default function StoreSettingsPage({ params }: { params: Promise<{ slug: string }> }) {
-  const [store, setStore] = useState<Store | null>(null);
+  const [store, setStore] = useState<StoreData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -62,6 +74,7 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [originalFormData, setOriginalFormData] = useState<typeof formData | null>(null);
   const [activeTab, setActiveTab] = useState('basic');
+  const [searchingCep, setSearchingCep] = useState(false);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -87,6 +100,8 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
       state: '',
       zip_code: ''
     },
+    latitude: undefined as number | undefined,
+    longitude: undefined as number | undefined,
     social_networks: {
       instagram: '',
       whatsapp: '',
@@ -171,7 +186,7 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
 
   // Tabs
   const tabs = [
-    { id: 'basic', label: 'Informações Básicas', icon: <Store className="w-4 h-4" /> },
+    { id: 'basic', label: 'Informações Básicas', icon: <StoreIcon className="w-4 h-4" /> },
     { id: 'address', label: 'Endereço', icon: <MapPin className="w-4 h-4" /> },
     { id: 'layout', label: 'Layout da Loja', icon: <Palette className="w-4 h-4" /> }
   ];
@@ -242,6 +257,8 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
           state: storeData.address?.state || '',
           zip_code: storeData.address?.zip_code || ''
         },
+        latitude: storeData.latitude || undefined,
+        longitude: storeData.longitude || undefined,
         social_networks: {
           instagram: storeData.social_networks?.instagram || '',
           whatsapp: storeData.social_networks?.whatsapp || '',
@@ -338,6 +355,98 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
     }
   };
 
+  // Função para buscar CEP
+  const searchCep = async (cep: string) => {
+    if (cep.length !== 8) return;
+
+    setSearchingCep(true);
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      const data = await response.json();
+
+      if (data.erro) {
+        toast.error('CEP não encontrado');
+        return;
+      }
+
+      // Preencher campos automaticamente
+      updateFormData({
+        address: {
+          ...formData.address,
+          zip_code: cep.replace(/(\d{5})(\d{3})/, '$1-$2'),
+          street: data.logradouro || formData.address?.street || '',
+          neighborhood: data.bairro || '',
+          city: data.localidade || '',
+          state: data.uf || ''
+        }
+      });
+
+      toast.success('Endereço encontrado!');
+    } catch (error) {
+      toast.error('Erro ao buscar CEP');
+    } finally {
+      setSearchingCep(false);
+    }
+  };
+
+  // Função para tratar mudança do CEP
+  const handleCepChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/\D/g, ''); // Remove tudo que não é número
+    
+    // Aplica máscara
+    if (value.length > 5) {
+      value = value.replace(/(\d{5})(\d{1,3})/, '$1-$2');
+    }
+
+    updateFormData({
+      address: { ...formData.address, zip_code: value }
+    });
+
+    // Busca automaticamente quando completar o CEP
+    const cleanCep = value.replace(/\D/g, '');
+    if (cleanCep.length === 8) {
+      searchCep(cleanCep);
+    }
+  };
+
+  const handleGeocodeAddress = async () => {
+    if (!formData.address?.street || !formData.address?.city || !formData.address?.state) {
+      toast.error('Preencha pelo menos rua, cidade e estado');
+      return;
+    }
+
+    try {
+      const address = `${formData.address.street}, ${formData.address.number || ''}, ${formData.address.neighborhood || ''}, ${formData.address.city}, ${formData.address.state}, ${formData.address.zip_code || ''}`;
+      
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        if (data && data.length > 0) {
+          const coords = {
+            lat: Number.parseFloat(data[0].lat),
+            lng: Number.parseFloat(data[0].lon)
+          };
+          
+          updateFormData({
+            latitude: coords.lat,
+            longitude: coords.lng
+          });
+          
+          toast.success(`Coordenadas calculadas: ${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}`);
+        } else {
+          toast.error('Não foi possível encontrar as coordenadas para este endereço');
+        }
+      } else {
+        toast.error('Erro ao calcular coordenadas');
+      }
+    } catch (error) {
+      console.error('Erro ao geocodificar endereço:', error);
+      toast.error('Erro ao calcular coordenadas');
+    }
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -372,8 +481,12 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
     banner_image: formData.banner_image,
     layout_type: formData.layout_type,
     show_products_by_category: formData.show_products_by_category,
-    colors: formData.colors
-  } : null;
+    colors: formData.colors,
+    // Converter address de objeto para string para compatibilidade com StorePreview
+    address: formData.address ? 
+      `${formData.address.street}, ${formData.address.number}${formData.address.complement ? ', ' + formData.address.complement : ''} - ${formData.address.neighborhood}, ${formData.address.city}/${formData.address.state} - CEP: ${formData.address.zip_code}` 
+      : store.address
+  } as Store : null;
 
   if (loading) {
     return (
@@ -680,6 +793,31 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
                     <div>
                       <h2 className="text-lg font-semibold text-gray-900 mb-4">Endereço da Loja</h2>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* CEP - PRIMEIRO CAMPO */}
+                        <div className="md:col-span-2">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            CEP *
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="text"
+                              value={formData.address?.zip_code || ''}
+                              onChange={handleCepChange}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                              placeholder="12345-678"
+                              maxLength={9}
+                            />
+                            {searchingCep && (
+                              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600"></div>
+                              </div>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Digite o CEP para buscar automaticamente o endereço
+                          </p>
+                        </div>
+                        
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
                             Rua *
@@ -737,21 +875,7 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
                             })}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                             placeholder="Centro"
-                          />
-                        </div>
-                        
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            CEP
-                          </label>
-                          <input
-                            type="text"
-                            value={formData.address?.zip_code || ''}
-                            onChange={(e) => updateFormData({
-                              address: { ...formData.address, zip_code: e.target.value }
-                            })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                            placeholder="12345-678"
+                            readOnly={searchingCep}
                           />
                         </div>
                         
@@ -767,6 +891,7 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
                             })}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                             placeholder="São Paulo"
+                            readOnly={searchingCep}
                           />
                         </div>
                         
@@ -782,8 +907,25 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
                             })}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                             placeholder="SP"
+                            maxLength={2}
+                            readOnly={searchingCep}
                           />
                         </div>
+                      </div>
+                      
+                      {/* Botão para geocodificar endereço */}
+                      <div className="mt-4">
+                        <button
+                          type="button"
+                          onClick={handleGeocodeAddress}
+                          disabled={!formData.address?.street || !formData.address?.city || !formData.address?.state}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                        >
+                          📍 Calcular Coordenadas do Endereço
+                        </button>
+                        <p className="text-xs text-gray-500 mt-2">
+                          Clique para calcular as coordenadas da loja (necessário para cálculo de frete). Preencha o endereço completo primeiro.
+                        </p>
                       </div>
                     </div>
                   </div>

@@ -27,6 +27,12 @@ export interface Store {
   layout_type?: 'default' | 'banner';
   banner_image?: string;
   show_products_by_category?: boolean;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
+  city?: string;
+  state?: string;
+  zip_code?: string;
 }
 
 interface StoreContextType {

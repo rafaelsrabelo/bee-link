@@ -3,7 +3,7 @@
 import CouponCard from '@/components/store/coupon-card';
 import PriceWithDiscount from '@/components/ui/price-with-discount';
 import { CreditCard, MapPin, ShoppingBag, User } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { useCartStore } from '../../../stores/cartStore';
 
@@ -58,10 +58,13 @@ export default function SummaryStep({
   // totalSteps
 }: SummaryStepProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCalculatingDelivery, setIsCalculatingDelivery] = useState(false);
   const [appliedCoupon, setAppliedCoupon] = useState<{
     couponCode: string;
     calculated_discount: number;
   } | null>(null);
+  const [deliveryFee, setDeliveryFee] = useState<number>(0);
+  const [deliveryDistance, setDeliveryDistance] = useState<number>(0);
   const { clearCart } = useCartStore();
 
   // Calcular total
@@ -77,8 +80,60 @@ export default function SummaryStep({
     return sum + (price * item.quantity);
   }, 0);
 
-  // Calcular total com desconto
-  const total = appliedCoupon ? subtotal - appliedCoupon.calculated_discount : subtotal;
+  // Calcular total com desconto e taxa de entrega
+  const totalWithDiscount = appliedCoupon ? subtotal - appliedCoupon.calculated_discount : subtotal;
+  const total = totalWithDiscount + deliveryFee;
+
+  // Função para calcular taxa de entrega
+  const calculateDeliveryFee = async () => {
+    if (deliveryData.type !== 'delivery' || !store?.slug) {
+      setDeliveryFee(0);
+      setDeliveryDistance(0);
+      setIsCalculatingDelivery(false);
+      return;
+    }
+
+    setIsCalculatingDelivery(true);
+    
+    try {
+      // Montar endereço completo do cliente
+      const customerAddress = `${deliveryData.address}, ${deliveryData.number}, ${deliveryData.neighborhood}, ${deliveryData.city}/${deliveryData.state}, ${deliveryData.cep}`;
+
+      const response = await fetch(`/api/stores/${store.slug}/calculate-delivery-public`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          customer_address: customerAddress,
+          order_total: totalWithDiscount,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setDeliveryFee(data.delivery_fee || 0);
+        setDeliveryDistance(data.distance_km || 0);
+      } else {
+        const data = await response.json();
+        console.error('Erro ao calcular taxa de entrega:', data.error);
+        toast.error(data.error || 'Erro ao calcular taxa de entrega');
+        setDeliveryFee(0);
+        setDeliveryDistance(0);
+      }
+    } catch (error) {
+      console.error('Erro ao calcular taxa de entrega:', error);
+      setDeliveryFee(0);
+      setDeliveryDistance(0);
+    } finally {
+      setIsCalculatingDelivery(false);
+    }
+  };
+
+  // Calcular taxa de entrega quando o componente montar ou quando mudar o tipo de entrega
+  useEffect(() => {
+    calculateDeliveryFee();
+  }, [deliveryData.type, subtotal, store?.slug]);
 
   // Função para lidar com cupom aplicado
   const handleCouponApplied = (couponData: {
@@ -147,6 +202,11 @@ export default function SummaryStep({
           : 'Retirada no estabelecimento',
         items: orderItems,
         total,
+        subtotal,
+        delivery_fee: deliveryData.type === 'delivery' ? deliveryFee : 0,
+        delivery_distance_km: deliveryData.type === 'delivery' ? deliveryDistance : 0,
+        coupon_code: appliedCoupon?.couponCode || null,
+        coupon_discount: appliedCoupon?.calculated_discount || 0,
         source: 'checkout',
         notes: `Forma de pagamento: ${paymentMethodNames[paymentData.method]}${deliveryData.type === 'pickup' ? ' | Retirada no estabelecimento' : ''}`,
         // Novas informações estruturadas
@@ -203,6 +263,15 @@ export default function SummaryStep({
         ? `📍 *Entrega:*\n${deliveryData.address}, ${deliveryData.number}${deliveryData.complement ? `, ${deliveryData.complement}` : ''}\n${deliveryData.neighborhood} - ${deliveryData.city}/${deliveryData.state}\nCEP: ${deliveryData.cep}`
         : '🏪 *Retirada:* No estabelecimento';
 
+      // Preparar informações de desconto e entrega
+      const discountInfo = appliedCoupon 
+        ? `\n🎫 *Desconto (${appliedCoupon.couponCode}):* - R$ ${appliedCoupon.calculated_discount.toFixed(2).replace('.', ',')}`
+        : '';
+      
+      const deliveryFeeInfo = deliveryData.type === 'delivery' && deliveryFee > 0
+        ? `\n🚚 *Taxa de Entrega (${deliveryDistance.toFixed(1)}km):* + R$ ${deliveryFee.toFixed(2).replace('.', ',')}`
+        : '';
+
       const message = `🛒 *NOVO PEDIDO* #${result.orderId?.slice(0, 8) || 'NOVO'}
 
 👤 *Cliente:* ${customerData.name}
@@ -215,7 +284,9 @@ ${deliveryInfo}
 
 💳 *Pagamento:* ${paymentMethodNames[paymentData.method]}
 
-💰 *Total: R$ ${total.toFixed(2).replace('.', ',')}*
+💰 *Subtotal: R$ ${subtotal.toFixed(2).replace('.', ',')}*${discountInfo}${deliveryFeeInfo}
+
+💵 *Total Final: R$ ${total.toFixed(2).replace('.', ',')}*
 
 ---
 Pedido feito pelo site 🐝 Bee Link`;
@@ -375,21 +446,27 @@ Pedido feito pelo site 🐝 Bee Link`;
               </div>
             )}
             
+            {deliveryData.type === 'delivery' && (
+              <div className="flex justify-between items-center text-blue-600">
+                <span className="text-sm">Taxa de Entrega:</span>
+                {isCalculatingDelivery ? (
+                  <div className="flex items-center space-x-2">
+                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600" />
+                    <span className="text-sm">Calculando...</span>
+                  </div>
+                ) : deliveryFee > 0 ? (
+                  <span className="text-sm">+ R$ {deliveryFee.toFixed(2).replace('.', ',')} ({deliveryDistance.toFixed(1)}km)</span>
+                ) : (
+                  <span className="text-sm">Grátis</span>
+                )}
+              </div>
+            )}
+            
             <div className="flex justify-between items-center pt-2 border-t">
               <span className="text-lg font-semibold text-gray-900">Total:</span>
-              {appliedCoupon ? (
-                <PriceWithDiscount
-                  originalPrice={subtotal}
-                  discountAmount={appliedCoupon.calculated_discount}
-                  discountType="percentage"
-                  discountValue={10}
-                  size="lg"
-                />
-              ) : (
-                <span className="text-xl font-bold text-green-600">
-                  R$ {total.toFixed(2).replace('.', ',')}
-                </span>
-              )}
+              <span className="text-xl font-bold text-green-600">
+                R$ {total.toFixed(2).replace('.', ',')}
+              </span>
             </div>
           </div>
         </div>
