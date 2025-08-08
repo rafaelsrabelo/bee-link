@@ -532,7 +532,7 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
 
     // Função para tocar som de notificação
   const playNotificationSound = () => {
-    // Som com múltiplas tentativas
+    // Som com múltiplas tentativas e fallbacks
     const playBeep = () => {
       try {
         const audioContext = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
@@ -557,16 +557,25 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
         oscillator.stop(audioContext.currentTime + 0.3);
         
       } catch (error) {
-        // Erro no som
+        // Fallback: tentar com HTML5 Audio
+        try {
+          const audio = new Audio();
+          audio.src = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT';
+          audio.play();
+        } catch (audioError) {
+          // Último fallback: alert (sempre funciona)
+          alert('🔔 NOVO PEDIDO!');
+        }
       }
     };
     
     // Tentar tocar o som imediatamente
     playBeep();
     
-    // Tentar novamente após um pequeno delay (para casos onde o contexto está suspenso)
+    // Tentar novamente após delays (para casos onde o contexto está suspenso)
     setTimeout(playBeep, 100);
     setTimeout(playBeep, 500);
+    setTimeout(playBeep, 1000);
   };
 
   // Função para atualizar status do pedido com nota
