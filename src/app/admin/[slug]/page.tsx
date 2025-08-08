@@ -32,6 +32,7 @@ export default function AdminDashboardPage({ params }: { params: Promise<{ slug:
     total_cart_clicks: number;
     unique_visitors: number;
     avg_views_per_session: number;
+    growth_percentage?: number | null;
     top_products: Array<{
       product_id: string;
       product_name: string;
@@ -251,13 +252,19 @@ export default function AdminDashboardPage({ params }: { params: Promise<{ slug:
                   <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-medium text-gray-600">Taxa de Conversão</p>
+                        <p className="text-sm font-medium text-gray-600">Crescimento vs Período Anterior</p>
                         <p className="text-2xl font-bold text-gray-900">
-                          {analytics.total_views > 0 ? ((analytics.total_cart_clicks / analytics.total_views) * 100).toFixed(1) : 0}%
+                          {analytics.growth_percentage !== null ? `${analytics.growth_percentage > 0 ? '+' : ''}${analytics.growth_percentage.toFixed(1)}%` : 'N/A'}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {analytics.growth_percentage !== null 
+                            ? (analytics.growth_percentage > 0 ? 'Crescimento positivo' : analytics.growth_percentage < 0 ? 'Crescimento negativo' : 'Sem mudança')
+                            : 'Dados insuficientes'
+                          }
                         </p>
                       </div>
-                      <div className="p-3 bg-indigo-100 rounded-lg">
-                        <TrendingUp className="w-6 h-6 text-indigo-600" />
+                      <div className={`p-3 rounded-lg ${analytics.growth_percentage > 0 ? 'bg-green-100' : analytics.growth_percentage < 0 ? 'bg-red-100' : 'bg-gray-100'}`}>
+                        <TrendingUp className={`w-6 h-6 ${analytics.growth_percentage > 0 ? 'text-green-600' : analytics.growth_percentage < 0 ? 'text-red-600' : 'text-gray-600'}`} />
                       </div>
                     </div>
                   </div>

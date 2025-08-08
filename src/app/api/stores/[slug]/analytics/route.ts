@@ -52,11 +52,32 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const totalClicks = analyticsData?.filter(e => e.event_type === 'product_click').length || 0;
     const totalCartClicks = analyticsData?.filter(e => e.event_type === 'cart_add').length || 0;
     const uniqueVisitors = new Set(analyticsData?.map(e => e.ip_address).filter(Boolean)).size;
-    // Links diretos: vamos estimar baseado em page_views sem product_id (acesso direto à loja)
-    // Isso é uma aproximação - em uma implementação futura, adicionaremos a coluna referrer
-    const directLinks = analyticsData?.filter(e => 
-      e.event_type === 'page_view' && !e.product_id
-    ).length || 0;
+    // Calcular crescimento comparando com período anterior
+    const currentPeriodViews = totalViews;
+    const previousPeriodDays = days;
+    const previousPeriodStart = new Date(Date.now() - (previousPeriodDays * 2) * 24 * 60 * 60 * 1000);
+    const previousPeriodEnd = new Date(Date.now() - previousPeriodDays * 24 * 60 * 60 * 1000);
+    
+    const { data: previousAnalyticsData } = await supabase
+      .from('analytics_events')
+      .select('*')
+      .eq('store_slug', slug)
+      .gte('created_at', previousPeriodStart.toISOString())
+      .lt('created_at', previousPeriodEnd.toISOString());
+    
+    const previousPeriodViews = previousAnalyticsData?.filter(e => e.event_type === 'page_view').length || 0;
+    
+    let growthPercentage = 0;
+    let hasEnoughData = false;
+    
+    if (previousPeriodViews > 0) {
+      growthPercentage = ((currentPeriodViews - previousPeriodViews) / previousPeriodViews) * 100;
+      hasEnoughData = true;
+    } else if (currentPeriodViews > 0 && previousPeriodViews === 0) {
+      // Se não havia dados no período anterior, não mostrar crescimento
+      growthPercentage = 0;
+      hasEnoughData = false;
+    }
 
     // Calcular produtos mais clicados
     const productClicks = analyticsData
@@ -130,7 +151,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       total_cart_clicks: totalCartClicks,
       unique_visitors: uniqueVisitors,
       avg_views_per_session: uniqueVisitors > 0 ? Number((totalViews / uniqueVisitors).toFixed(1)) : 0,
-      direct_links: directLinks,
+      growth_percentage: hasEnoughData ? growthPercentage : null,
       top_products: topProducts,
       top_cart_products: topCartProducts,
       daily_stats: dailyStatsArray
