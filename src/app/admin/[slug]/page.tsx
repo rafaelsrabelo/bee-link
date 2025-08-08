@@ -30,7 +30,7 @@ export default function AdminDashboardPage({ params }: { params: Promise<{ slug:
     total_views: number;
     total_clicks: number;
     total_cart_clicks: number;
-    total_header_cart_clicks: number;
+    direct_links: number;
     unique_visitors: number;
     avg_views_per_session: number;
     top_products: Array<{
@@ -252,13 +252,13 @@ export default function AdminDashboardPage({ params }: { params: Promise<{ slug:
                   <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-medium text-gray-600">Carrinho Header</p>
+                        <p className="text-sm font-medium text-gray-600">Links Diretos</p>
                         <p className="text-2xl font-bold text-gray-900">
-                          {analytics.total_header_cart_clicks?.toLocaleString() || 0}
+                          {analytics.direct_links?.toLocaleString() || 0}
                         </p>
                       </div>
-                      <div className="p-3 bg-orange-100 rounded-lg">
-                        <ShoppingCart className="w-6 h-6 text-orange-600" />
+                      <div className="p-3 bg-indigo-100 rounded-lg">
+                        <TrendingUp className="w-6 h-6 text-indigo-600" />
                       </div>
                     </div>
                   </div>
