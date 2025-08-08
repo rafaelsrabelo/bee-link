@@ -2,7 +2,8 @@
 
 import { Minus, Plus, ShoppingCart, X } from 'lucide-react';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { trackAddToCart } from '../../lib/analytics';
 
 interface Product {
   id: string;
@@ -46,11 +47,27 @@ export default function ProductModal({
 }: ProductModalProps) {
   const [quantity, setQuantity] = useState(1);
 
-  if (!isOpen || !product) return null;
+  useEffect(() => {
+    if (isOpen) {
+      setQuantity(1);
+    }
+  }, [isOpen]);
+
+  if (!product) return null;
 
   const currentQuantity = getCartItemQuantity(product.name);
 
   const handleAddToCart = () => {
+    // Track add to cart event
+    trackAddToCart({
+      product_id: product.id,
+      product_name: product.name,
+      product_price: Number.parseFloat(product.price.replace('R$ ', '').replace(',', '.')),
+      category: product.category_data?.name || product.category,
+      is_direct_link: false,
+      referrer: document.referrer
+    });
+
     onAddToCart(product, quantity);
     setQuantity(1);
     onClose();

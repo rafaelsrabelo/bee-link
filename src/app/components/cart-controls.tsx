@@ -1,15 +1,18 @@
 "use client";
 
 import { Minus, Plus } from "lucide-react";
+import { trackAddToCart, trackProductClick } from "../../lib/analytics";
 import { useCartStore } from "../stores/cartStore";
 import CartControlsLoading from "./cart-controls-loading";
 
 interface CartControlsProps {
   product: {
+    id: string;
     name: string;
     price: string;
     image: string;
     description?: string;
+    category?: string;
   };
   storeColors: {
     primary: string;
@@ -25,13 +28,41 @@ export default function CartControls({ product, storeColors }: CartControlsProps
     return <CartControlsLoading />;
   }
 
+  const handleAddToCart = () => {
+    addToCart(product);
+    
+    // Track add to cart event
+    trackAddToCart({
+      product_id: product.id,
+      product_name: product.name,
+      product_price: Number.parseFloat(product.price.replace('R$ ', '').replace(',', '.')),
+      category: product.category || '',
+      is_direct_link: false,
+      referrer: document.referrer
+    });
+  };
+
+  const handleRemoveFromCart = () => {
+    removeFromCart(product.name);
+    
+    // Track remove from cart event
+    trackProductClick({
+      product_id: product.id,
+      product_name: product.name,
+      product_price: Number.parseFloat(product.price.replace('R$ ', '').replace(',', '.')),
+      category: product.category || '',
+      is_direct_link: false,
+      referrer: document.referrer
+    });
+  };
+
   return (
     <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-4 mb-4 shadow-xl">
       <div className="flex items-center justify-center gap-6">
         {quantity > 0 && (
           <button
             type="button"
-            onClick={() => removeFromCart(product.name)}
+            onClick={handleRemoveFromCart}
             className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-white/30 transition-all border border-white/30"
             style={{ color: storeColors.primary }}
           >
@@ -47,7 +78,7 @@ export default function CartControls({ product, storeColors }: CartControlsProps
         
         <button
           type="button"
-          onClick={() => addToCart(product)}
+          onClick={handleAddToCart}
           className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-white/30 transition-all border border-white/30"
           style={{ color: storeColors.primary }}
         >

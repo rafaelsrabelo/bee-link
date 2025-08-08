@@ -63,10 +63,13 @@ export interface DailyClick {
 export interface StoreAnalytics {
   total_views: number;
   total_clicks: number;
+  total_cart_clicks?: number;
+  total_header_cart_clicks?: number;
   unique_visitors: number;
   avg_views_per_session: number;
   direct_links: number;
   top_products: TopProduct[];
+  top_cart_products?: TopProduct[];
   daily_stats: DailyStats[];
 }
 
@@ -77,7 +80,7 @@ export interface AnalyticsFilters {
 }
 
 export interface AnalyticsEvent {
-  type: 'page_view' | 'product_click';
+  type: 'page_view' | 'product_click' | 'cart_add' | 'cart_remove';
   store_id: string;
   session_id: string;
   user_agent?: string;
@@ -85,6 +88,12 @@ export interface AnalyticsEvent {
   referrer?: string;
   page_url?: string;
   product_id?: string;
+  product_name?: string;
+  category?: string;
+  is_direct_link?: boolean;
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
 }
 
 // Tipos para componentes de dashboard

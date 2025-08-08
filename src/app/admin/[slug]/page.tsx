@@ -42,7 +42,7 @@ export default function AdminDashboardPage({ params }: { params: Promise<{ slug:
     top_cart_products: Array<{
       product_id: string;
       product_name: string;
-      cart_clicks: number;
+      clicks: number;
       rank: number;
     }>;
     daily_stats: Array<{
@@ -374,7 +374,7 @@ export default function AdminDashboardPage({ params }: { params: Promise<{ slug:
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-medium text-gray-900">{product.cart_clicks} adições</p>
+                        <p className="text-sm font-medium text-gray-900">{product.clicks} adições</p>
                       </div>
                     </div>
                   ))}

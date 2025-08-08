@@ -18,7 +18,7 @@ import CategoryFilter from '../../components/store/category-filter';
 import ConfigurableBanner from '../../components/store/configurable-banner';
 import FloatingCart from '../../components/store/floating-cart';
 import ProductModal from '../../components/store/product-modal';
-import { trackProductClick } from '../../lib/analytics';
+import { trackAddToCart, trackPageView, trackProductClick } from '../../lib/analytics';
 import { useCartStore } from '../stores/cartStore';
 
 // Função para extrair parâmetros UTM da URL
@@ -143,6 +143,15 @@ export default function StorePageClient({ store }: StorePageClientProps) {
     setStoreSlug(store.slug);
   }, [store.slug, setStoreSlug]);
 
+  // Tracking de visita na página da loja
+  useEffect(() => {
+    trackPageView({
+      page_title: `${store.store_name} - Loja`,
+      page_url: window.location.href,
+      referrer: document.referrer
+    });
+  }, [store.store_name]);
+
   // Limpar carrinho quando mudar de loja
   useEffect(() => {
     const handleCartCleared = () => {
@@ -211,6 +220,16 @@ export default function StorePageClient({ store }: StorePageClientProps) {
         image: product.image
       });
     }
+    
+    // Track add to cart event
+    trackAddToCart({
+      product_id: product.id,
+      product_name: product.name,
+      product_price: Number.parseFloat(product.price.replace('R$ ', '').replace(',', '.')),
+      category: product.category_data?.name || product.category,
+      is_direct_link: false,
+      referrer: document.referrer
+    });
     
     toast.success(`${quantity}x ${product.name} adicionado ao carrinho!`);
   };

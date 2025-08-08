@@ -44,7 +44,7 @@ class Analytics {
     this.initializeGA4();
   }
 
-  private   generateSessionId(): string {
+  private generateSessionId(): string {
     // Evitar Date.now() e Math.random() para problemas de hidratação
     if (typeof window === 'undefined') {
       return 'server-session';
@@ -72,6 +72,8 @@ class Analytics {
   // Rastrear clique em produto
   async trackProductClick(event: ProductClickEvent) {
     try {
+      console.log('🔍 Analytics: Tracking product click:', event);
+      
       // GA4 Tracking
       if (this.config.enableGA4 && typeof gtag !== 'undefined') {
         gtag('event', 'product_click', {
@@ -91,20 +93,63 @@ class Analytics {
 
       // Local Tracking (apenas dados essenciais)
       if (this.config.enableLocalTracking) {
+        console.log('📊 Analytics: Sending to local API...');
         await this.sendToLocalAPI({
           type: 'product_click',
           product_id: event.product_id,
           product_name: event.product_name,
+          category: event.category,
           session_id: this.sessionId,
           timestamp: new Date().toISOString(),
           is_direct_link: event.is_direct_link || false,
           referrer: event.referrer || '',
           utm_source: event.utm_source || '',
           utm_medium: event.utm_medium || '',
-          utm_campaign: event.utm_campaign || ''
+          utm_campaign: event.utm_campaign || '',
+          page_url: typeof window !== 'undefined' ? window.location.href : '',
+          page_title: typeof window !== 'undefined' ? document.title : ''
+        });
+        console.log('✅ Analytics: Successfully sent to local API');
+      }
+    } catch (error) {
+      console.error('❌ Erro ao rastrear clique em produto:', error);
+    }
+  }
+
+  // Rastrear adição ao carrinho
+  async trackAddToCart(event: ProductClickEvent) {
+    try {
+      console.log('🛒 Analytics: Tracking add to cart:', event);
+      
+      // GA4 Tracking
+      if (this.config.enableGA4 && typeof gtag !== 'undefined') {
+        gtag('event', 'add_to_cart', {
+          product_id: event.product_id,
+          product_name: event.product_name,
+          product_price: event.product_price,
+          product_category: event.category,
+          currency: 'BRL',
+          value: event.product_price || 0
         });
       }
-    } catch {
+
+      // Local Tracking
+      if (this.config.enableLocalTracking) {
+        console.log('📊 Analytics: Sending add to cart to local API...');
+        await this.sendToLocalAPI({
+          type: 'cart_add',
+          product_id: event.product_id,
+          product_name: event.product_name,
+          category: event.category,
+          session_id: this.sessionId,
+          timestamp: new Date().toISOString(),
+          page_url: typeof window !== 'undefined' ? window.location.href : '',
+          page_title: typeof window !== 'undefined' ? document.title : ''
+        });
+        console.log('✅ Analytics: Successfully sent add to cart to local API');
+      }
+    } catch (error) {
+      console.error('❌ Erro ao rastrear adição ao carrinho:', error);
     }
   }
 
@@ -116,29 +161,31 @@ class Analytics {
         gtag('event', 'page_view', {
           page_title: event.page_title,
           page_url: event.page_url,
-          referrer: event.referrer
+          referrer: event.referrer || ''
         });
       }
 
-      // Local Tracking (apenas dados essenciais)
+      // Local Tracking
       if (this.config.enableLocalTracking) {
         await this.sendToLocalAPI({
           type: 'page_view',
           page_url: event.page_url,
           page_title: event.page_title,
           session_id: this.sessionId,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          referrer: event.referrer || ''
         });
       }
-    } catch {
+    } catch (error) {
+      console.error('Erro ao rastrear visualização de página:', error);
     }
   }
 
-  // Enviar dados para API local
   private async sendToLocalAPI(data: {
     type: string;
     product_id?: string;
     product_name?: string;
+    category?: string;
     page_url?: string;
     page_title?: string;
     session_id: string;
@@ -150,22 +197,46 @@ class Analytics {
     utm_campaign?: string;
   }) {
     try {
+      // Extrair store_slug da URL atual
+      const storeSlug = typeof window !== 'undefined' ? window.location.pathname.split('/')[1] : '';
+      
+      console.log('🌐 Analytics: Extracted store slug:', storeSlug);
+      console.log('📤 Analytics: Sending data:', data);
+      
+      // Enviar apenas os campos que existem na tabela analytics_events
+      const payload = {
+        event_type: data.type,
+        store_slug: storeSlug,
+        product_id: data.product_id,
+        product_name: data.product_name,
+        product_price: data.product_id ? 0 : undefined // Placeholder, será calculado se necessário
+      };
+      
+      console.log('📦 Analytics: Payload:', payload);
+      
       const response = await fetch('/api/analytics/track', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       });
 
+      console.log('📡 Analytics: Response status:', response.status);
+
       if (!response.ok) {
-        throw new Error('Falha ao enviar dados');
+        const errorText = await response.text();
+        console.error('❌ Analytics: API Error:', errorText);
+        throw new Error(`Falha ao enviar dados de analytics: ${response.status} - ${errorText}`);
       }
-    } catch {
+      
+      const result = await response.json();
+      console.log('✅ Analytics: API Success:', result);
+    } catch (error) {
+      console.error('❌ Erro ao enviar dados para API local:', error);
     }
   }
 
-  // Obter session ID
   getSessionId(): string {
     return this.sessionId;
   }
@@ -186,6 +257,12 @@ export const trackProductClick = (event: ProductClickEvent) => {
   }
 };
 
+export const trackAddToCart = (event: ProductClickEvent) => {
+  if (analyticsInstance) {
+    analyticsInstance.trackAddToCart(event);
+  }
+};
+
 export const trackPageView = (event: PageViewEvent) => {
   if (analyticsInstance) {
     analyticsInstance.trackPageView(event);
@@ -193,13 +270,13 @@ export const trackPageView = (event: PageViewEvent) => {
 };
 
 export const getSessionId = (): string => {
-  return analyticsInstance?.getSessionId() || '';
+  return analyticsInstance?.getSessionId() || 'no-session';
 };
 
-// Hook para React
 export const useAnalytics = () => {
   return {
     trackProductClick,
+    trackAddToCart,
     trackPageView,
     getSessionId
   };

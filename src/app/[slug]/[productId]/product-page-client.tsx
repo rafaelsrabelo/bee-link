@@ -5,9 +5,25 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import FloatingCart from '../../../components/store/floating-cart';
+import { trackAddToCart, trackPageView, trackProductClick } from '../../../lib/analytics';
 import CartControls from '../../components/cart-controls';
 
 import { useCartStore } from '../../stores/cartStore';
+
+// Função para extrair parâmetros UTM da URL
+const getUTMParams = () => {
+  if (typeof window === 'undefined') return {};
+  
+  const urlParams = new URLSearchParams(window.location.search);
+  return {
+    utm_source: urlParams.get('utm_source') || '',
+    utm_medium: urlParams.get('utm_medium') || '',
+    utm_campaign: urlParams.get('utm_campaign') || '',
+    product_id: urlParams.get('product_id') || '',
+    is_direct_link: urlParams.has('product_id')
+  };
+};
+
 interface StoreData {
   store_name: string;
   description: string;
@@ -31,6 +47,7 @@ interface StoreData {
 interface ProductPageClientProps {
   store: StoreData;
   product: {
+    id: string;
     name: string;
     price: string;
     image: string;
@@ -49,14 +66,49 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
   useEffect(() => {
     setStoreSlug(store.slug);
   }, [store.slug, setStoreSlug]);
+
+  // Tracking de visita na página do produto
+  useEffect(() => {
+    const utmParams = getUTMParams();
+    
+    // Track page view
+    trackPageView({
+      page_title: `${product.name} - ${store.store_name}`,
+      page_url: window.location.href,
+      referrer: document.referrer
+    });
+
+    // Track product visit (similar to click but for direct visits)
+    trackProductClick({
+      product_id: product.id,
+      product_name: product.name,
+      product_price: Number.parseFloat(product.price.replace('R$ ', '').replace(',', '.')),
+      category: product.category,
+      is_direct_link: utmParams.is_direct_link,
+      referrer: document.referrer,
+      utm_source: utmParams.utm_source,
+      utm_medium: utmParams.utm_medium,
+      utm_campaign: utmParams.utm_campaign
+    });
+  }, [product.id, product.name, product.price, product.category, store.store_name]);
   
   // Array de imagens do produto (por enquanto só uma, mas pode ser expandido)
   const productImages = [product.image];
 
-
-
-
-
+  // Função para adicionar ao carrinho com tracking
+  const handleAddToCart = () => {
+    addToCart(product);
+    
+    // Track add to cart event
+    trackAddToCart({
+      product_id: product.id,
+      product_name: product.name,
+      product_price: Number.parseFloat(product.price.replace('R$ ', '').replace(',', '.')),
+      category: product.category,
+      is_direct_link: false,
+      referrer: document.referrer
+    });
+  };
 
 
   return (
