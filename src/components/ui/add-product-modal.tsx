@@ -2,6 +2,7 @@
 
 import { Package, Upload, X } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'react-hot-toast';
 import MobileImageUpload from './mobile-image-upload';
 import ProductCategorySelector from './product-category-selector';
 
@@ -48,10 +49,22 @@ export default function AddProductModal({
   const [uploadingImage, setUploadingImage] = useState(false);
   const [saving, setSaving] = useState(false);
   const [categories, setCategories] = useState<{id: number; name: string}[]>([]);
+  const [errors, setErrors] = useState<{[key: string]: string}>({});
 
   const handleImageUpload = async (file: File) => {
     setUploadingImage(true);
     try {
+      // Validações no frontend
+      if (!file.type.startsWith('image/')) {
+        toast.error('O arquivo deve ser uma imagem (JPG, PNG, etc)');
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('A imagem deve ter menos de 5MB');
+        return;
+      }
+
       const formData = new FormData();
       formData.append('file', file);
       formData.append('folder', 'bee-link-products');
@@ -61,13 +74,17 @@ export default function AddProductModal({
         body: formData,
       });
 
+      const data = await response.json();
+
       if (response.ok) {
-        const data = await response.json();
-        setNewProduct(prev => ({ ...prev, image: data.url }));
+        setNewProduct(prev => ({ ...prev, image: data.imageUrl }));
+        toast.success('Imagem enviada com sucesso!');
       } else {
-        console.error('Erro ao fazer upload da imagem');
+        // Mostrar mensagem de erro específica do backend
+        toast.error(data.error || 'Erro ao fazer upload da imagem');
       }
     } catch (error) {
+      toast.error('Erro ao fazer upload da imagem. Tente novamente.');
       console.error('Erro ao fazer upload:', error);
     } finally {
       setUploadingImage(false);
@@ -75,8 +92,31 @@ export default function AddProductModal({
   };
 
   const handleAddProduct = async () => {
-    if (!newProduct.name || !newProduct.price) {
-      alert('Nome e preço são obrigatórios');
+    // Limpar erros anteriores
+    setErrors({});
+    
+    const newErrors: {[key: string]: string} = {};
+
+    // Validação mais detalhada
+    if (!newProduct.name?.trim()) {
+      newErrors.name = 'O nome do produto é obrigatório';
+    }
+
+    if (!newProduct.price?.trim()) {
+      newErrors.price = 'O preço do produto é obrigatório';
+    } else {
+      // Validar formato do preço (agora sempre será R$ X,XX)
+      const priceRegex = /^R\$ \d{1,3}(\.\d{3})*,\d{2}$/;
+      if (!priceRegex.test(newProduct.price.trim())) {
+        newErrors.price = 'Digite um preço válido';
+      }
+    }
+
+    // Se há erros, mostra o primeiro e para
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      const firstError = Object.values(newErrors)[0];
+      toast.error(firstError);
       return;
     }
 
@@ -88,12 +128,12 @@ export default function AddProductModal({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name: newProduct.name,
-          price: newProduct.price,
+          name: newProduct.name?.trim() || '',
+          price: newProduct.price?.trim() || '',
           image: newProduct.image,
           category: newProduct.category,
           category_id: newProduct.category_id,
-          description: newProduct.description,
+          description: newProduct.description?.trim(),
           readyToShip: newProduct.readyToShip,
           available: newProduct.available,
         }),
@@ -102,6 +142,7 @@ export default function AddProductModal({
       if (response.ok) {
         const product = await response.json();
         onProductAdded(product);
+        toast.success('Produto adicionado com sucesso!');
         onClose();
         // Reset form
         setNewProduct({
@@ -115,9 +156,11 @@ export default function AddProductModal({
           available: true
         });
       } else {
-        console.error('Erro ao adicionar produto');
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Erro ao adicionar produto');
       }
     } catch (error) {
+      toast.error('Erro ao conectar com o servidor. Tente novamente.');
       console.error('Erro ao adicionar produto:', error);
     } finally {
       setSaving(false);
@@ -156,10 +199,23 @@ export default function AddProductModal({
             <input
               type="text"
               value={newProduct.name}
-              onChange={(e) => setNewProduct({...newProduct, name: e.target.value})}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              onChange={(e) => {
+                setNewProduct({...newProduct, name: e.target.value});
+                // Limpar erro quando usuário começar a digitar
+                if (errors.name) {
+                  setErrors({...errors, name: ''});
+                }
+              }}
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:border-transparent transition-colors ${
+                errors.name 
+                  ? 'border-red-500 focus:ring-red-500 bg-red-50' 
+                  : 'border-gray-300 focus:ring-blue-500'
+              }`}
               placeholder="Digite o nome do produto"
             />
+            {errors.name && (
+              <p className="mt-1 text-sm text-red-600">{errors.name}</p>
+            )}
           </div>
 
           {/* Preço */}
@@ -170,10 +226,46 @@ export default function AddProductModal({
             <input
               type="text"
               value={newProduct.price}
-              onChange={(e) => setNewProduct({...newProduct, price: e.target.value})}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              onChange={(e) => {
+                // Aplicar máscara de dinheiro
+                let value = e.target.value;
+                
+                // Remove tudo que não é número
+                value = value.replace(/\D/g, '');
+                
+                // Converte para centavos
+                value = (Number(value) / 100).toFixed(2) + '';
+                
+                // Aplica formatação brasileira
+                value = value.replace('.', ',');
+                value = value.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
+                
+                // Adiciona R$ no início
+                if (value !== '0,00') {
+                  value = 'R$ ' + value;
+                } else {
+                  value = '';
+                }
+                
+                setNewProduct({...newProduct, price: value});
+                // Limpar erro quando usuário começar a digitar
+                if (errors.price) {
+                  setErrors({...errors, price: ''});
+                }
+              }}
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:border-transparent transition-colors ${
+                errors.price 
+                  ? 'border-red-500 focus:ring-red-500 bg-red-50' 
+                  : 'border-gray-300 focus:ring-blue-500'
+              }`}
               placeholder="R$ 0,00"
             />
+            {errors.price && (
+              <p className="mt-1 text-sm text-red-600">{errors.price}</p>
+            )}
+            <p className="mt-1 text-xs text-gray-500">
+              Digite apenas os números (ex: 1050 = R$ 10,50)
+            </p>
           </div>
 
           {/* Categoria */}

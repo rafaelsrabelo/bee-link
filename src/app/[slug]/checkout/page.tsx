@@ -147,10 +147,11 @@ export default function CheckoutPage({ params }: CheckoutPageProps) {
             <button
               type="button"
               onClick={() => router.push(`/${resolvedParams.slug}`)}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-              title="Continuar Comprando"
+              className="flex items-center space-x-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors hover:bg-gray-100"
+              style={{ color: store?.colors?.primary || '#10b981' }}
             >
-              <ShoppingBag className="w-5 h-5 text-gray-600" />
+              <ShoppingBag className="w-4 h-4" />
+              <span>+ Produtos</span>
             </button>
           </div>
         </div>
@@ -181,6 +182,19 @@ export default function CheckoutPage({ params }: CheckoutPageProps) {
 
       {/* Content */}
       <div className="max-w-md mx-auto">
+        {/* Dica para adicionar mais produtos */}
+        {currentStep === 1 && (
+          <div className="mx-4 mb-4 p-3 rounded-lg border border-blue-100 bg-blue-50">
+            <div className="flex items-center space-x-2">
+              <ShoppingBag className="w-4 h-4 text-blue-600" />
+              <p className="text-sm text-blue-700">
+                <span className="font-medium">Dica:</span> Você pode adicionar mais produtos clicando em &quot;
+                <span className="font-semibold">+ Produtos</span>&quot; no topo da tela.
+              </p>
+            </div>
+          </div>
+        )}
+        
         <CurrentStepComponent
           customerData={customerData}
           setCustomerData={setCustomerData}

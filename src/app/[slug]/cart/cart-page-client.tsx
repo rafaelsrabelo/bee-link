@@ -163,10 +163,11 @@ export default function CartPageClient({ store }: CartPageClientProps) {
         <div className="flex justify-between items-center px-4 py-4 fixed top-0 left-0 right-0 z-50 backdrop-blur-sm border-b border-white/10" style={{ backgroundColor: `${store.colors.primary}95` }}>
           <button
             type="button"
-            className="text-white hover:bg-white/10 p-2 rounded-full transition-all"
+            className="flex items-center space-x-1 text-white hover:bg-white/10 px-3 py-2 rounded-lg transition-all"
             onClick={handleBackToStore}
           >
-            <ArrowLeft className="w-6 h-6" />
+            <ArrowLeft className="w-4 h-4" />
+            <span className="text-sm font-medium">Loja</span>
           </button>
           <div className="text-center">
             <div className="text-white font-medium">Carrinho</div>
@@ -213,10 +214,11 @@ export default function CartPageClient({ store }: CartPageClientProps) {
       <div className="flex justify-between items-center px-4 py-4 fixed top-0 left-0 right-0 z-50 backdrop-blur-sm border-b border-white/10" style={{ backgroundColor: `${store.colors.primary}95` }}>
         <button
           type="button"
-          className="text-white hover:bg-white/10 p-2 rounded-full transition-all"
+          className="flex items-center space-x-1 text-white hover:bg-white/10 px-3 py-2 rounded-lg transition-all"
           onClick={handleBackToStore}
         >
-          <ArrowLeft className="w-6 h-6" />
+          <ArrowLeft className="w-4 h-4" />
+          <span className="text-sm font-medium">Loja</span>
         </button>
         <div className="text-center">
           <div className="text-white font-medium">Carrinho</div>

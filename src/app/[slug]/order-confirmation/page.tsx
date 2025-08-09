@@ -408,7 +408,7 @@ export default function OrderConfirmationPage({ params }: OrderConfirmationProps
             onClick={() => router.push(`/${slug}`)}
             className="w-full px-4 py-3 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50"
           >
-            Voltar ao Catálogo
+            Continuar Comprando
           </button>
         </div>
       </div>

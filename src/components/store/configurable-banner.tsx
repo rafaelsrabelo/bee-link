@@ -1,133 +1,131 @@
-'use client';
-
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import Image from 'next/image';
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+
+interface BannerImage {
+  url: string;
+  id: string;
+}
 
 interface ConfigurableBannerProps {
   images: string[];
   type: 'single' | 'carousel';
-  height: 'small' | 'medium' | 'large';
-  rounded: boolean;
-  padding: boolean;
-  colors: {
+  height: 'small' | 'medium' | 'large' | 'full';
+  rounded?: boolean;
+  padding?: boolean;
+  colors?: {
     primary: string;
-    text: string;
+    background: string;
   };
 }
 
 const heightClasses = {
-  small: 'h-24',
-  medium: 'h-32',
-  large: 'h-48'
+  small: 'h-32 sm:h-40 md:h-48',
+  medium: 'h-40 sm:h-56 md:h-64 lg:h-72',
+  large: 'h-56 sm:h-72 md:h-96 lg:h-[28rem]',
+  full: 'h-[50vh] sm:h-[60vh] md:h-[70vh] lg:h-[80vh]'
 };
 
 export default function ConfigurableBanner({ 
   images, 
   type, 
   height, 
-  rounded, 
-  padding, 
+  rounded = true, 
+  padding = true,
   colors 
 }: ConfigurableBannerProps) {
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
-  // Auto-advance carousel
+  // Filtrar imagens válidas
+  const validImages = images.filter(img => img && img.trim() !== '');
+  
+  // Converter para formato esperado pelo componente Banner
+  const bannerImages: BannerImage[] = validImages.map((img, index) => ({
+    url: img,
+    id: `banner-${index}`
+  }));
+
   useEffect(() => {
-    if (type === 'carousel' && images.length > 1) {
+    if (type === 'carousel' && bannerImages.length > 1) {
       const interval = setInterval(() => {
-        setCurrentImageIndex((prev) => (prev + 1) % images.length);
-      }, 5000); // 5 seconds
-
+        setCurrentIndex((current) => (current + 1) % bannerImages.length);
+      }, 5000);
       return () => clearInterval(interval);
     }
-  }, [type, images.length]);
+  }, [type, bannerImages.length]);
 
-  const nextImage = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % images.length);
+  if (validImages.length === 0) return null;
+
+  const nextSlide = () => {
+    setCurrentIndex((current) => (current + 1) % bannerImages.length);
   };
 
-  const prevImage = () => {
-    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+  const prevSlide = () => {
+    setCurrentIndex((current) => (current - 1 + bannerImages.length) % bannerImages.length);
   };
-
-  if (!images || images.length === 0) {
-    return null;
-  }
-
-  const containerClasses = `
-    ${padding ? 'px-4' : ''} 
-    ${rounded ? 'rounded-xl' : ''} 
-    overflow-hidden
-  `;
-
-  const bannerClasses = `
-    ${heightClasses[height]} 
-    w-full 
-    relative 
-    ${rounded ? 'rounded-xl' : ''}
-  `;
 
   return (
-    <div className={`max-w-4xl mx-auto ${containerClasses}`}>
-      <div className={bannerClasses}>
-        {type === 'single' ? (
-          // Banner único
-          <Image
-            src={images[0]}
-            alt="Banner da loja"
-            fill
-            className="object-cover"
-          />
-        ) : (
-          // Carrossel
-          <>
-            {images.map((image, index) => (
+    <div className={`${padding ? 'px-4 sm:px-6 lg:px-8 mb-4 sm:mb-6 mt-4 sm:mt-6' : ''}`}>
+      <div
+        className={`relative w-full overflow-hidden ${
+          rounded ? 'rounded-lg' : ''
+        } ${heightClasses[height]} bg-gray-100`}
+      >
+        <div
+          className="h-full w-full transition-transform duration-500 ease-in-out"
+          style={{
+            transform: type === 'carousel' ? `translateX(-${currentIndex * 100}%)` : 'none',
+            width: type === 'carousel' ? `${bannerImages.length * 100}%` : '100%',
+            display: 'flex',
+          }}
+        >
+          {bannerImages.map((image, index) => (
+            <div
+              key={image.id}
+              className="relative h-full"
+              style={{ width: type === 'carousel' ? `${100 / bannerImages.length}%` : '100%' }}
+            >
               <Image
-                key={index}
-                src={image}
+                src={image.url}
                 alt={`Banner ${index + 1}`}
                 fill
-                className={`object-cover transition-opacity duration-500 ${
-                  index === currentImageIndex ? 'opacity-100' : 'opacity-0'
-                }`}
+                className="object-cover"
+                priority={index === 0}
               />
-            ))}
-            
-            {/* Indicadores */}
-            {images.length > 1 && (
-              <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2 flex space-x-2">
-                {images.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentImageIndex(index)}
-                    className={`w-2 h-2 rounded-full transition-all ${
-                      index === currentImageIndex 
-                        ? 'bg-white' 
-                        : 'bg-white/50 hover:bg-white/75'
-                    }`}
-                  />
-                ))}
-              </div>
-            )}
-            
-            {/* Botões de navegação */}
-            {images.length > 1 && (
-              <>
+            </div>
+          ))}
+        </div>
+
+        {type === 'carousel' && bannerImages.length > 1 && (
+          <>
+            <button
+              type="button"
+              onClick={prevSlide}
+              className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-1.5 sm:p-2 shadow-lg hover:bg-white transition-colors"
+              style={{ color: colors?.primary || '#10b981' }}
+            >
+              <ChevronLeft className="h-4 w-4 sm:h-6 sm:w-6" />
+            </button>
+            <button
+              type="button"
+              onClick={nextSlide}
+              className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-1.5 sm:p-2 shadow-lg hover:bg-white transition-colors"
+              style={{ color: colors?.primary || '#10b981' }}
+            >
+              <ChevronRight className="h-4 w-4 sm:h-6 sm:w-6" />
+            </button>
+            <div className="absolute bottom-2 sm:bottom-4 left-1/2 flex -translate-x-1/2 gap-1.5 sm:gap-2">
+              {bannerImages.map((image, index) => (
                 <button
-                  onClick={prevImage}
-                  className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white p-2 rounded-full transition-all"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={nextImage}
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white p-2 rounded-full transition-all"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </>
-            )}
+                  type="button"
+                  key={image.id}
+                  onClick={() => setCurrentIndex(index)}
+                  className={`h-2 w-2 rounded-full transition-all ${
+                    index === currentIndex ? 'bg-white w-4' : 'bg-white/50'
+                  }`}
+                />
+              ))}
+            </div>
           </>
         )}
       </div>

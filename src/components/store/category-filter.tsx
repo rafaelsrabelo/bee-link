@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface Product {
   id: string;
@@ -15,7 +15,7 @@ interface Product {
     description?: string;
     color?: string;
   };
-  description: string;
+  description?: string;
   available?: boolean;
 }
 
@@ -31,7 +31,7 @@ interface CategoryFilterProps {
 }
 
 export default function CategoryFilter({ products, storeColors, onCategoryClick }: CategoryFilterProps) {
-  const [activeCategory, setActiveCategory] = useState<string>('Todos');
+  const [activeCategory, setActiveCategory] = useState<string>('');
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const categoryRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
 
@@ -52,24 +52,15 @@ export default function CategoryFilter({ products, storeColors, onCategoryClick 
     return 'Geral';
   }))];
 
-  // Filtrar categorias vazias e adicionar "Todos" como primeira opção
+  // Filtrar categorias vazias
   const validCategories = categories.filter(cat => cat && cat.trim() !== '');
-  const allCategories = ['Todos', ...validCategories];
+  const allCategories = validCategories;
 
   // Função para rolar até a categoria na página
   const scrollToCategory = (category: string) => {
     setActiveCategory(category);
     
-    if (category === 'Todos') {
-      // Rolar para o topo da seção de produtos
-      const productsSection = document.getElementById('products-section');
-      if (productsSection) {
-        productsSection.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'start' 
-        });
-      }
-    } else {
+    {
       // Rolar para a categoria específica
       const categoryElement = document.getElementById(`category-${category}`);
       if (categoryElement) {
@@ -123,15 +114,8 @@ export default function CategoryFilter({ products, storeColors, onCategoryClick 
     };
   }, [activeCategory]);
 
-  // Inicializar com "Todos" selecionado quando o componente montar
-  useEffect(() => {
-    // Sempre começar com "Todos" selecionado
-    setActiveCategory('Todos');
-    centerActiveCategory('Todos');
-  }, []);
-
   // Centralizar categoria ativa no scroll horizontal
-  const centerActiveCategory = (category: string) => {
+  const centerActiveCategory = useCallback((category: string) => {
     const container = scrollContainerRef.current;
     const categoryButton = categoryRefs.current[category];
     
@@ -147,14 +131,22 @@ export default function CategoryFilter({ products, storeColors, onCategoryClick 
         behavior: 'smooth'
       });
     }
-  };
+  }, []);
+
+  // Inicializar com a primeira categoria selecionada quando o componente montar
+  useEffect(() => {
+    if (validCategories.length > 0) {
+      setActiveCategory(validCategories[0]);
+      centerActiveCategory(validCategories[0]);
+    }
+  }, [validCategories, centerActiveCategory]);
 
   // Centralizar quando a categoria ativa mudar
   useEffect(() => {
     if (activeCategory) {
       centerActiveCategory(activeCategory);
     }
-  }, [activeCategory]);
+  }, [activeCategory, centerActiveCategory]);
 
   // Se não há categorias suficientes, não renderizar
   if (categories.length <= 1) {
@@ -166,7 +158,7 @@ export default function CategoryFilter({ products, storeColors, onCategoryClick 
          style={{ backgroundColor: `${storeColors.background}95` }}>
       <div 
         ref={scrollContainerRef}
-        className="flex gap-2 px-4 py-3 overflow-x-auto scrollbar-hide"
+        className="flex gap-2 px-4 py-2 overflow-x-auto scrollbar-hide"
       >
         {allCategories.map((category) => {
           const isActive = activeCategory === category;
@@ -180,16 +172,16 @@ export default function CategoryFilter({ products, storeColors, onCategoryClick 
               }}
               onClick={() => scrollToCategory(category)}
               className={`
-                flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200
+                flex-shrink-0 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200
                 ${isActive 
-                  ? 'shadow-lg transform scale-105' 
-                  : 'hover:scale-105 hover:shadow-md'
+                  ? 'shadow-sm' 
+                  : 'hover:shadow-sm'
                 }
               `}
               style={{
-                backgroundColor: isActive ? storeColors.primary : 'rgba(255, 255, 255, 0.1)',
+                backgroundColor: isActive ? storeColors.primary : 'rgba(255, 255, 255, 0.8)',
                 color: isActive ? '#ffffff' : storeColors.text,
-                border: isActive ? 'none' : `1px solid ${storeColors.primary}40`
+                border: isActive ? 'none' : `1px solid ${storeColors.primary}30`
               }}
             >
               {category}

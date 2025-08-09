@@ -7,6 +7,7 @@ import { use, useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import loadingAnimation from '../../../../../public/animations/loading-dots-blue.json';
 import ProtectedRoute from '../../../../components/auth/ProtectedRoute';
+import AddProductModal from '../../../../components/ui/add-product-modal';
 import AdminHeader from '../../../../components/ui/admin-header';
 import CategoriesManager from '../../../../components/ui/categories-manager';
 import CreateStoreCategoryModal from '../../../../components/ui/create-store-category-modal';
@@ -15,7 +16,6 @@ import LottieLoader from '../../../../components/ui/lottie-loader';
 import MobileImageUpload from '../../../../components/ui/mobile-image-upload';
 import ProductCategorySelector from '../../../../components/ui/product-category-selector';
 import PromotionsManager from '../../../../components/ui/promotions-manager';
-import AddProductModal from '../../../../components/ui/add-product-modal';
 import { useAuth } from '../../../../contexts/AuthContext';
 
 interface Product {
@@ -224,7 +224,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
     
     setProducts(newProducts);
     try {
-      const response = await fetch(`/api/stores/${slug}/products`, {
+      const response = await fetch(`/api/stores/${slug}/products/bulk`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -301,12 +301,25 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
 
     setSavingProduct(true);
     try {
-      // Buscar nome real da categoria se foi selecionada uma categoria personalizada
-      let categoryName = newProduct.category || 'Geral';
+      // Buscar nome real da categoria
+      let categoryName = 'Geral'; // Default
       
-      if (newProduct.category === 'selected' && newProduct.category_id) {
+      console.log('Debug categoria:', {
+        category: newProduct.category,
+        category_id: newProduct.category_id
+      });
+      
+      if (newProduct.category_id) {
+        // Se tem category_id, buscar o nome real da categoria
         categoryName = await getCategoryNameById(newProduct.category_id);
+        console.log('Categoria encontrada pelo ID:', categoryName);
+      } else if (newProduct.category && newProduct.category !== 'selected') {
+        // Se não tem category_id mas tem category (e não é 'selected'), usar o valor
+        categoryName = newProduct.category;
+        console.log('Usando categoria direta:', categoryName);
       }
+      
+      console.log('Categoria final:', categoryName);
 
       const product: Product = {
         id: Date.now().toString(),
@@ -321,8 +334,24 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
         store_id: store?.id
       };
 
-      const updatedProducts = [...products, product];
-      await saveProducts(updatedProducts);
+      // Usar API específica para CREATE - NÃO deleta todos os produtos!
+      const response = await fetch(`/api/stores/${slug}/products`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(product),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erro ao criar produto');
+      }
+
+      const savedProduct = await response.json();
+
+      // Adicionar apenas localmente - não recarregar todos
+      setProducts([...products, savedProduct]);
 
       setNewProduct({
         name: '',
@@ -367,10 +396,27 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
         category_id: editingProduct.category_id || undefined // Simplificado: sempre usar category_id se existir
       };
 
+      // Usar API específica para UPDATE - NÃO deleta todos os produtos!
+      const response = await fetch(`/api/stores/${slug}/products`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedProduct),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erro ao atualizar produto');
+      }
+
+      const savedProduct = await response.json();
+
+      // Atualizar apenas localmente - não recarregar todos
       const updatedProducts = products.map(p => 
-        p.id === editingProduct.id ? updatedProduct : p
+        p.id === editingProduct.id ? savedProduct : p
       );
-      await saveProducts(updatedProducts);
+      setProducts(updatedProducts);
 
       setIsEditing(null);
       setEditingProduct(null);
@@ -401,19 +447,63 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
   const confirmDeleteProduct = async () => {
     if (!deleteModal.productId) return;
 
-    const updatedProducts = products.filter(p => p.id !== deleteModal.productId);
-    await saveProducts(updatedProducts);
+    try {
+      // Usar API específica para DELETE - NÃO deleta todos os produtos!
+      const response = await fetch(`/api/stores/${slug}/products?id=${deleteModal.productId}`, {
+        method: 'DELETE'
+      });
 
-    setDeleteModal({ isOpen: false, productId: null, productName: '' });
-    toast.success('Produto deletado com sucesso!');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erro ao deletar produto');
+      }
+
+      // Remover apenas localmente - não recarregar todos
+      const updatedProducts = products.filter(p => p.id !== deleteModal.productId);
+      setProducts(updatedProducts);
+
+      setDeleteModal({ isOpen: false, productId: null, productName: '' });
+      toast.success('Produto deletado com sucesso!');
+    } catch (error) {
+      toast.error('Erro ao deletar produto');
+      console.error('Erro ao deletar produto:', error);
+    }
   };
 
   const toggleAvailability = async (id: string) => {
-    const updatedProducts = products.map(p => 
-      p.id === id ? { ...p, available: !p.available } : p
-    );
-    await saveProducts(updatedProducts);
-    toast.success('Disponibilidade atualizada!');
+    try {
+      const product = products.find(p => p.id === id);
+      if (!product) return;
+
+      const updatedProduct = { ...product, available: !product.available };
+
+      // Usar API específica para UPDATE
+      const response = await fetch(`/api/stores/${slug}/products`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedProduct),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erro ao atualizar disponibilidade');
+      }
+
+      const savedProduct = await response.json();
+
+      // Atualizar apenas localmente
+      const updatedProducts = products.map(p => 
+        p.id === id ? savedProduct : p
+      );
+      setProducts(updatedProducts);
+
+      toast.success('Disponibilidade atualizada!');
+    } catch (error) {
+      toast.error('Erro ao atualizar disponibilidade');
+      console.error('Erro ao atualizar disponibilidade:', error);
+    }
   };
 
   const handleReset = async () => {

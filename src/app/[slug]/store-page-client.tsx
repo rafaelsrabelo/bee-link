@@ -16,7 +16,9 @@ import { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import CategoryFilter from '../../components/store/category-filter';
 import ConfigurableBanner from '../../components/store/configurable-banner';
+import EnhancedProductCard from '../../components/store/enhanced-product-card';
 import FloatingCart from '../../components/store/floating-cart';
+import HorizontalProductCard from '../../components/store/horizontal-product-card';
 import ProductModal from '../../components/store/product-modal';
 import { trackAddToCart, trackPageView, trackProductClick } from '../../lib/analytics';
 import { useCartStore } from '../stores/cartStore';
@@ -61,7 +63,7 @@ interface StoreData {
     show_banner: boolean;
     banner_type: 'single' | 'carousel';
     banner_images: string[];
-    banner_height: 'small' | 'medium' | 'large';
+    banner_height: 'small' | 'medium' | 'large' | 'full';
     banner_rounded: boolean;
     banner_padding: boolean;
     
@@ -72,7 +74,12 @@ interface StoreData {
     
     // Layout de produtos
     products_per_row: 2 | 3 | 4;
+    card_layout: 'grid' | 'horizontal';
     show_product_badges: boolean;
+    show_product_description: boolean;
+    show_product_price: boolean;
+    show_product_rating: boolean;
+    show_product_stock: boolean;
     show_quick_add: boolean;
     
     // Configurações de carrinho
@@ -98,7 +105,7 @@ interface Product {
     description?: string;
     color?: string;
   };
-  description: string;
+  description?: string;
   readyToShip?: boolean;
   available?: boolean;
 }
@@ -242,8 +249,6 @@ export default function StorePageClient({ store }: StorePageClientProps) {
       is_direct_link: false,
       referrer: document.referrer
     });
-    
-    toast.success(`${quantity}x ${product.name} adicionado ao carrinho!`);
   };
 
   const handleProductClick = (product: Product) => {
@@ -276,6 +281,54 @@ export default function StorePageClient({ store }: StorePageClientProps) {
     setSelectedProduct(null);
   };
 
+  // Função para renderizar o card baseado no layout
+  const renderProductCard = (product: Product, index: number) => {
+    const cardLayout = store.layout_settings?.card_layout || 'grid';
+    
+    if (cardLayout === 'horizontal') {
+      return (
+        <HorizontalProductCard
+          key={`product-${product.name}-${index}`}
+          product={product}
+          storeColors={store.colors}
+          layoutSettings={store.layout_settings}
+          onProductClick={handleProductClick}
+          onAddToCart={handleAddToCart}
+        />
+      );
+    }
+    
+    return (
+      <EnhancedProductCard
+        key={`product-${product.name}-${index}`}
+        product={product}
+        storeColors={store.colors}
+        layoutSettings={store.layout_settings}
+        onProductClick={handleProductClick}
+        onAddToCart={handleAddToCart}
+        getCartItemQuantity={getCartItemQuantity}
+      />
+    );
+  };
+
+  // Função para definir as classes do grid baseado no layout
+  const getGridClasses = () => {
+    const cardLayout = store.layout_settings?.card_layout || 'grid';
+    
+    if (cardLayout === 'horizontal') {
+      return 'grid grid-cols-1 gap-2 sm:gap-3 md:gap-4';
+    }
+    
+    // Layout grid normal
+    return `grid gap-2 sm:gap-3 md:gap-4 ${
+      store.layout_settings?.products_per_row === 2 
+        ? 'grid-cols-2' 
+        : store.layout_settings?.products_per_row === 4 
+        ? 'grid-cols-2 md:grid-cols-4' 
+        : 'grid-cols-2 md:grid-cols-3'
+    }`;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: store.colors.background }}>
@@ -291,7 +344,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
     return (
       <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: store.colors.background }}>
         {/* Header Centralizado */}
-        <div className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md border-b border-white/10" style={{ backgroundColor: `${store.colors.header}95` }}>
+        <div className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md border-b border-white/10" style={{ backgroundColor: `${store.colors.header}` }}>
           <div className="max-w-4xl mx-auto px-4 py-4">
             <div className="flex justify-between items-center">
               {/* Logo + Store Name */}
@@ -332,18 +385,27 @@ export default function StorePageClient({ store }: StorePageClientProps) {
           </div>
         </div>
 
-        {/* Banner Configurável */}
-        <div className="mb-6 pt-20">
-          {store.layout_settings?.show_banner && (
+        {/* Banner Configurável - Centralizado */}
+        <div className="pt-24 sm:pt-28 md:pt-32 mb-4 max-w-4xl mx-auto px-4">
+          {store.layout_settings?.show_banner && store.layout_settings.banner_images?.length > 0 ? (
             <ConfigurableBanner
-              images={store.layout_settings.banner_images || [store.banner_image || '']}
+              images={store.layout_settings.banner_images}
               type={store.layout_settings.banner_type || 'single'}
               height={store.layout_settings.banner_height || 'medium'}
-              rounded={store.layout_settings.banner_rounded || false}
-              padding={store.layout_settings.banner_padding || false}
+              rounded={store.layout_settings.banner_rounded !== false}
+              padding={false}
               colors={store.colors}
             />
-          )}
+          ) : store.layout_type === 'banner' && store.banner_image ? (
+            <ConfigurableBanner
+              images={[store.banner_image]}
+              type="single"
+              height="medium"
+              rounded={true}
+              padding={false}
+              colors={store.colors}
+            />
+          ) : null}
         </div>
 
         {/* Category Filter - Centralizado */}
@@ -379,7 +441,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
             </div>
           ) : store.show_products_by_category ? (
             /* Produtos organizados por categoria */
-            <div className="space-y-6">
+            <div className="space-y-4">
               {(() => {
                 const availableProducts = products.filter((p: Product) => p.available !== false);
                 
@@ -400,93 +462,17 @@ export default function StorePageClient({ store }: StorePageClientProps) {
                   });
 
                   return (
-                    <div key={`category-${category}`} id={`category-${category}`} data-category={category} className="space-y-3">
+                    <div key={`category-${category}`} id={`category-${category}`} data-category={category} className="space-y-2">
                       {/* Título da categoria */}
-                      <div className="flex items-center space-x-2">
-                        <div className="w-1 h-6 rounded-full" style={{ backgroundColor: store.colors.primary }} />
+                      <div className="mb-2">
                         <h3 className="font-semibold text-lg" style={{ color: store.colors.text }}>{category}</h3>
                       </div>
 
                       {/* Grid de produtos da categoria */}
-                      <div className={`grid gap-3 md:gap-4 ${
-                        store.layout_settings?.products_per_row === 2 
-                          ? 'grid-cols-2' 
-                          : store.layout_settings?.products_per_row === 4 
-                          ? 'grid-cols-2 md:grid-cols-4' 
-                          : 'grid-cols-2 md:grid-cols-3'
-                      }`}>
-                        {categoryProducts.map((product: Product, index: number) => {
-                          const quantity = getCartItemQuantity(product.name);
-
-                          return (
-                            <div
-                              key={`product-${product.name}-${index}`}
-                              className="relative rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow"
-                            >
-                              {/* Product Image - Clickable for Modal */}
-                              <div 
-                                className="block cursor-pointer"
-                                onClick={() => handleProductClick(product)}
-                              >
-                                <div className="aspect-square relative group">
-                                  <Image
-                                    src={product.image}
-                                    alt={product.name}
-                                    fill
-                                    className="object-cover transition-transform group-hover:scale-105"
-                                  />
-                                  <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-all" />
-                                  
-                                  {/* Pronta Entrega Tag */}
-                                  {product.readyToShip && (
-                                    <div className="absolute top-2 left-2 z-10">
-                                      <div 
-                                        className="bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-medium shadow-sm border"
-                                        style={{ 
-                                          color: store.colors.primary,
-                                          borderColor: store.colors.primary 
-                                        }}
-                                      >
-                                        ✓ Pronta entrega
-                                      </div>
-                                    </div>
-                                  )}
-                                  
-                                  {/* Hover overlay with "Ver detalhes" text */}
-                                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <div className="bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium" style={{ color: store.colors.primary }}>
-                                      Ver detalhes
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                              
-                              {/* Product Info */}
-                              <div className="p-3 md:p-4 pb-4">
-                                <div 
-                                  className="block cursor-pointer"
-                                  onClick={() => handleProductClick(product)}
-                                >
-                                  <h4 className="font-semibold text-gray-900 mb-1 line-clamp-2">{product.name}</h4>
-                                  <p className="text-lg font-bold" style={{ color: store.colors.primary }}>
-                                    {product.price}
-                                  </p>
-                                </div>
-                                
-                                {/* Add to Cart Button */}
-                                <button
-                                  type="button"
-                                  onClick={() => handleAddToCart(product)}
-                                  className="mt-3 w-full py-2 px-3 rounded-lg font-medium text-white flex items-center justify-center space-x-2 transition-colors"
-                                  style={{ backgroundColor: store.colors.primary }}
-                                >
-                                  <Plus className="w-4 h-4" />
-                                  <span>Adicionar</span>
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        })}
+                      <div className={getGridClasses()}>
+                        {categoryProducts.map((product: Product, index: number) => 
+                          renderProductCard(product, index)
+                        )}
                       </div>
                     </div>
                   );
@@ -495,99 +481,10 @@ export default function StorePageClient({ store }: StorePageClientProps) {
             </div>
           ) : (
             /* Produtos em grid simples */
-            <div className={`grid gap-3 md:gap-4 ${
-              store.layout_settings?.products_per_row === 2 
-                ? 'grid-cols-2' 
-                : store.layout_settings?.products_per_row === 4 
-                ? 'grid-cols-2 md:grid-cols-4' 
-                : 'grid-cols-2 md:grid-cols-3'
-            }`}>
-              {products.filter((p: Product) => p.available !== false).map((product: Product, index: number) => {
-                const quantity = getCartItemQuantity(product.name);
-
-                return (
-                  <div
-                    key={`product-${product.name}-${index}`}
-                    className="relative rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow"
-                  >
-                    {/* Product Image - Clickable for Modal */}
-                    <div 
-                      className="block cursor-pointer"
-                      onClick={() => handleProductClick(product)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          handleProductClick(product);
-                        }
-                      }}
-                      role="button"
-                      tabIndex={0}
-                    >
-                      <div className="aspect-square relative group">
-                        <Image
-                          src={product.image}
-                          alt={product.name}
-                          fill
-                          className="object-cover transition-transform group-hover:scale-105"
-                        />
-                        <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-all" />
-                        
-                        {/* Pronta Entrega Tag */}
-                        {product.readyToShip && (
-                          <div className="absolute top-2 left-2 z-10">
-                            <div 
-                              className="bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-medium shadow-sm border"
-                              style={{ 
-                                color: store.colors.primary,
-                                borderColor: store.colors.primary 
-                              }}
-                            >
-                              ✓ Pronta entrega
-                            </div>
-                          </div>
-                        )}
-                        
-                        {/* Hover overlay with "Ver detalhes" text */}
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <div className="bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium" style={{ color: store.colors.primary }}>
-                            Ver detalhes
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Product Info */}
-                    <div className="p-3 md:p-4 pb-4">
-                      <div 
-                        className="block cursor-pointer"
-                        onClick={() => handleProductClick(product)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            handleProductClick(product);
-                          }
-                        }}
-                        role="button"
-                        tabIndex={0}
-                      >
-                        <h4 className="font-semibold text-gray-900 mb-1 line-clamp-2">{product.name}</h4>
-                        <p className="text-lg font-bold" style={{ color: store.colors.primary }}>
-                          {product.price}
-                        </p>
-                      </div>
-                      
-                      {/* Add to Cart Button */}
-                      <button
-                        type="button"
-                        onClick={() => handleAddToCart(product)}
-                        className="mt-3 w-full py-2 px-3 rounded-lg font-medium text-white flex items-center justify-center space-x-2 transition-colors"
-                        style={{ backgroundColor: store.colors.primary }}
-                      >
-                        <Plus className="w-4 h-4" />
-                        <span>Adicionar</span>
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
+            <div className={getGridClasses()}>
+              {products.filter((p: Product) => p.available !== false).map((product: Product, index: number) => 
+                renderProductCard(product, index)
+              )}
             </div>
           )}
         </div>

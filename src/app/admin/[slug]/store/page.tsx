@@ -18,6 +18,7 @@ import StorePreview from '../../../../components/ui/store-preview';
 import Tabs from '../../../../components/ui/tabs';
 import { useAuth } from '../../../../contexts/AuthContext';
 import type { Store } from '../../../../contexts/StoreContext';
+import type { LayoutSettings } from '../../../../types/layout-settings';
 
 interface StoreData {
   id: string;
@@ -63,6 +64,7 @@ interface StoreData {
   };
   latitude?: number;
   longitude?: number;
+  layout_settings?: LayoutSettings;
 }
 
 export default function StoreSettingsPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -114,7 +116,7 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
       show_banner: false,
       banner_type: 'single' as 'single' | 'carousel',
       banner_images: [],
-      banner_height: 'medium' as 'small' | 'medium' | 'large',
+      banner_height: 'medium' as 'small' | 'medium' | 'large' | 'full',
       banner_rounded: false,
       banner_padding: false,
       
@@ -125,6 +127,7 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
       
       // Layout de produtos
       products_per_row: 3 as 2 | 3 | 4,
+      card_layout: 'grid' as 'grid' | 'horizontal',
       show_product_badges: true,
       show_quick_add: true,
       
@@ -271,9 +274,9 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
           show_banner: false,
           banner_type: 'single' as 'single' | 'carousel',
           banner_images: [],
-          banner_height: 'medium' as 'small' | 'medium' | 'large',
-          banner_rounded: false,
-          banner_padding: false,
+          banner_height: 'medium' as 'small' | 'medium' | 'large' | 'full',
+          banner_rounded: true,
+          banner_padding: true,
           
           // Configurações de exibição
           show_store_description: true,
@@ -282,7 +285,12 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
           
           // Layout de produtos
           products_per_row: 3 as 2 | 3 | 4,
+          card_layout: 'grid' as 'grid' | 'horizontal',
           show_product_badges: true,
+          show_product_description: true,
+          show_product_price: true,
+          show_product_rating: false,
+          show_product_stock: true,
           show_quick_add: true,
           
           // Configurações de carrinho
@@ -1182,6 +1190,100 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
                             <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                           </label>
                         </div>
+
+                        {formData.layout_settings?.show_banner && (
+                          <div className="pl-4 border-l-2 border-gray-200 space-y-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Tipo de Banner
+                              </label>
+                              <select
+                                value={formData.layout_settings?.banner_type || 'single'}
+                                onChange={(e) => updateFormData({
+                                  layout_settings: {
+                                    ...formData.layout_settings,
+                                    banner_type: e.target.value as 'single' | 'carousel'
+                                  }
+                                })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                              >
+                                <option value="single">Banner Único</option>
+                                <option value="carousel">Carrossel de Banners</option>
+                              </select>
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Altura do Banner
+                              </label>
+                              <select
+                                value={formData.layout_settings?.banner_height || 'medium'}
+                                onChange={(e) => updateFormData({
+                                  layout_settings: {
+                                    ...formData.layout_settings,
+                                    banner_height: e.target.value as 'small' | 'medium' | 'large' | 'full'
+                                  }
+                                })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                              >
+                                <option value="small">Pequeno</option>
+                                <option value="medium">Médio</option>
+                                <option value="large">Grande</option>
+                                <option value="full">Tela Cheia</option>
+                              </select>
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Bordas Arredondadas
+                                </label>
+                                <p className="text-xs text-gray-500">
+                                  Aplica bordas arredondadas ao banner
+                                </p>
+                              </div>
+                              <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={formData.layout_settings?.banner_rounded || false}
+                                  onChange={(e) => updateFormData({
+                                    layout_settings: {
+                                      ...formData.layout_settings,
+                                      banner_rounded: e.target.checked
+                                    }
+                                  })}
+                                  className="sr-only peer"
+                                />
+                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                              </label>
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Espaçamento Interno
+                                </label>
+                                <p className="text-xs text-gray-500">
+                                  Adiciona espaçamento interno ao banner
+                                </p>
+                              </div>
+                              <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={formData.layout_settings?.banner_padding || false}
+                                  onChange={(e) => updateFormData({
+                                    layout_settings: {
+                                      ...formData.layout_settings,
+                                      banner_padding: e.target.checked
+                                    }
+                                  })}
+                                  className="sr-only peer"
+                                />
+                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                              </label>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -1207,6 +1309,28 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
                             <option value={3}>3 produtos</option>
                             <option value={4}>4 produtos</option>
                           </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Estilo dos Cards
+                          </label>
+                          <select
+                            value={formData.layout_settings?.card_layout || 'grid'}
+                            onChange={(e) => updateFormData({
+                              layout_settings: {
+                                ...formData.layout_settings,
+                                card_layout: e.target.value as 'grid' | 'horizontal'
+                              }
+                            })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          >
+                            <option value="grid">Grid (imagem em cima)</option>
+                            <option value="horizontal">Horizontal (imagem à esquerda)</option>
+                          </select>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Grid: Cards tradicionais. Horizontal: Imagem pequena à esquerda, info à direita
+                          </p>
                         </div>
 
                         <div className="flex items-center justify-between">

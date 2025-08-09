@@ -18,7 +18,7 @@ interface Product {
     description?: string;
     color?: string;
   };
-  description: string;
+  description?: string;
   readyToShip?: boolean;
   available?: boolean;
 }
