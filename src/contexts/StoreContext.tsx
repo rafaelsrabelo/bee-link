@@ -1,6 +1,7 @@
 'use client';
 
-import React, { createContext, useContext, useState } from 'react';
+import type React from 'react';
+import { createContext, useContext, useState } from 'react';
 import { supabase } from '../lib/supabase';
 
 export interface Store {
@@ -27,6 +28,25 @@ export interface Store {
   layout_type?: 'default' | 'banner';
   banner_image?: string;
   show_products_by_category?: boolean;
+  layout_settings?: {
+    card_layout?: 'grid' | 'horizontal';
+    products_per_row?: number;
+    show_product_badges?: boolean;
+    show_quick_add?: boolean;
+    show_banner?: boolean;
+    banner_type?: string;
+    banner_images?: string[];
+    banner_height?: string;
+    banner_rounded?: boolean;
+    banner_padding?: boolean;
+    show_store_description?: boolean;
+    show_social_links?: boolean;
+    show_contact_info?: boolean;
+    show_floating_cart?: boolean;
+    cart_position?: string;
+    category_display?: string;
+    show_category_icons?: boolean;
+  };
   address?: string;
   latitude?: number;
   longitude?: number;

@@ -83,6 +83,10 @@ export async function PUT(
       return NextResponse.json({ error: 'Não autorizado' }, { status: 403 });
     }
 
+    // Debug: Log dos layout_settings recebidos
+    console.log('Layout Settings recebidos:', layout_settings);
+    console.log('Card Layout:', layout_settings?.card_layout);
+
     // Preparar dados para atualização
     const updateData = {
       name: name.trim(),
@@ -113,6 +117,7 @@ export async function PUT(
         show_social_links: true,
         show_contact_info: true,
         products_per_row: 3,
+        card_layout: 'grid',
         show_product_badges: true,
         show_quick_add: true,
         show_floating_cart: true,

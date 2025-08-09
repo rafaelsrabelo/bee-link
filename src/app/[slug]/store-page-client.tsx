@@ -1,14 +1,9 @@
 "use client";
 
 import { 
-  ArrowLeft, 
-  Bell, 
   ClipboardList, 
-  Menu, 
   Package, 
-  Plus, 
-  ShoppingCart, 
-  X 
+  ShoppingCart
 } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';

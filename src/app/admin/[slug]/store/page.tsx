@@ -1,6 +1,6 @@
 'use client';
 
-import { Instagram, MapPin, MessageCircle, Music, Palette, Save, Settings, Store as StoreIcon, Upload, Youtube } from 'lucide-react';
+import { Check, Instagram, MapPin, MessageCircle, Music, Palette, Printer, Save, Settings, Store as StoreIcon, Upload, Youtube } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { use, useEffect, useState } from 'react';
@@ -77,6 +77,8 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
   const [originalFormData, setOriginalFormData] = useState<typeof formData | null>(null);
   const [activeTab, setActiveTab] = useState('basic');
   const [searchingCep, setSearchingCep] = useState(false);
+  const [availablePrinters, setAvailablePrinters] = useState<string[]>([]);
+  const [loadingPrinters, setLoadingPrinters] = useState(false);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -138,6 +140,15 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
       // Configurações de categoria
       category_display: 'filters' as 'tabs' | 'filters' | 'none',
       show_category_icons: true
+    },
+    print_settings: {
+      default_printer: '',
+      auto_print: false,
+      print_format: 'thermal' as 'thermal' | 'a4',
+      paper_width: 80,
+      auto_cut: true,
+      print_logo: true,
+      print_address: true
     }
   });
 
@@ -191,7 +202,8 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
   const tabs = [
     { id: 'basic', label: 'Informações Básicas', icon: <StoreIcon className="w-4 h-4" /> },
     { id: 'address', label: 'Endereço', icon: <MapPin className="w-4 h-4" /> },
-    { id: 'layout', label: 'Layout da Loja', icon: <Palette className="w-4 h-4" /> }
+    { id: 'layout', label: 'Layout da Loja', icon: <Palette className="w-4 h-4" /> },
+    { id: 'printing', label: 'Configurações de Impressão', icon: <Printer className="w-4 h-4" /> }
   ];
 
   const { user } = useAuth();
@@ -216,6 +228,13 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
       loadStore();
     }
   }, [user]);
+
+  // Carregar impressoras quando acessar a aba de impressão
+  useEffect(() => {
+    if (activeTab === 'printing' && availablePrinters.length === 0) {
+      loadAvailablePrinters();
+    }
+  }, [activeTab, availablePrinters.length]);
 
   const loadStore = async () => {
     try {
@@ -300,6 +319,15 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
           // Configurações de categoria
           category_display: 'filters' as 'tabs' | 'filters' | 'none',
           show_category_icons: true
+        },
+        print_settings: storeData.print_settings || {
+          default_printer: '',
+          auto_print: false,
+          print_format: 'thermal' as 'thermal' | 'a4',
+          paper_width: 80,
+          auto_cut: true,
+          print_logo: true,
+          print_address: true
         }
       };
 
@@ -455,9 +483,49 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
     }
   };
 
+  // Função para descobrir impressoras disponíveis
+  const loadAvailablePrinters = async () => {
+    setLoadingPrinters(true);
+    try {
+      // Lista de impressoras comuns mais utilizadas
+      const commonPrinters = [
+        'Impressora Padrão do Sistema',
+        'Microsoft Print to PDF',
+        'Microsoft XPS Document Writer'
+      ];
+
+      // Tentar usar API do navegador para descobrir impressoras (se disponível)
+      if ('getInstalledRelatedApps' in navigator) {
+        // API experimental - pode não funcionar em todos os navegadores
+        try {
+          const printers = await (navigator as unknown as { getInstalledRelatedApps: () => Promise<Array<{ name: string }>> }).getInstalledRelatedApps();
+          const printerNames = printers
+            .filter((app) => app.name.toLowerCase().includes('print'))
+            .map((app) => app.name);
+          
+          setAvailablePrinters([...commonPrinters, ...printerNames]);
+        } catch {
+          setAvailablePrinters(commonPrinters);
+        }
+      } else {
+        // Fallback: lista de impressoras comuns
+        setAvailablePrinters(commonPrinters);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar impressoras:', error);
+      setAvailablePrinters(['Impressora Padrão do Sistema']);
+    } finally {
+      setLoadingPrinters(false);
+    }
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
+      // Debug: Log dos dados sendo salvos
+      console.log('Salvando formData:', formData);
+      console.log('Layout Settings:', formData.layout_settings);
+      
       const response = await fetch(`/api/stores/${slug}`, {
         method: 'PUT',
         headers: {
@@ -490,6 +558,7 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
     layout_type: formData.layout_type,
     show_products_by_category: formData.show_products_by_category,
     colors: formData.colors,
+    layout_settings: formData.layout_settings,
     // Converter address de objeto para string para compatibilidade com StorePreview
     address: formData.address ? 
       `${formData.address.street}, ${formData.address.number}${formData.address.complement ? ', ' + formData.address.complement : ''} - ${formData.address.neighborhood}, ${formData.address.city}/${formData.address.state} - CEP: ${formData.address.zip_code}` 
@@ -969,6 +1038,116 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
                           </div>
                         </div>
                       )}
+
+                      {/* Estilo dos Cards de Produto */}
+                      <div className="mt-6">
+                        <label className="block text-sm font-medium text-gray-700 mb-4">
+                          Estilo dos Cards de Produto
+                        </label>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          {/* Card Vertical/Grid */}
+                          <button
+                            type="button"
+                            onClick={() => updateFormData({
+                              layout_settings: {
+                                ...formData.layout_settings,
+                                card_layout: 'grid'
+                              }
+                            })}
+                            className={`relative w-full cursor-pointer p-4 border-2 rounded-lg transition-all duration-200 ${
+                              (formData.layout_settings?.card_layout || 'grid') === 'grid'
+                                ? 'border-gray-500 bg-gray-50'
+                                : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                          >
+                            {/* Ícone de Check quando selecionado */}
+                            {(formData.layout_settings?.card_layout || 'grid') === 'grid' && (
+                              <div className="absolute top-2 right-2">
+                                <div className="w-6 h-6 bg-gray-500 rounded-full flex items-center justify-center">
+                                  <Check className="w-4 h-4 text-white" />
+                                </div>
+                              </div>
+                            )}
+                            <div className="space-y-3">
+                              <h3 className="font-medium text-gray-900 text-sm">Vertical</h3>
+                              
+                              {/* Preview Visual do Card Vertical */}
+                              <div className="bg-white border rounded-lg p-3 shadow-sm">
+                                {/* Imagem em cima */}
+                                <div className="bg-gray-200 rounded-md h-16 mb-3 flex items-center justify-center">
+                                  <span className="text-xs text-gray-500">Imagem</span>
+                                </div>
+                                {/* Informações embaixo */}
+                                <div className="space-y-2">
+                                  <div className="bg-gray-400 h-2.5 rounded w-4/5" />
+                                  <div className="bg-gray-300 h-2 rounded w-3/5" />
+                                  <div className="bg-gray-500 h-2.5 rounded w-2/5 mt-2" />
+                                </div>
+                              </div>
+                              
+                              <p className="text-xs text-gray-600">
+                                Imagem em cima, informações embaixo
+                              </p>
+                            </div>
+                          </button>
+
+                          {/* Card Horizontal */}
+                          <button
+                            type="button"
+                            onClick={() => updateFormData({
+                              layout_settings: {
+                                ...formData.layout_settings,
+                                card_layout: 'horizontal'
+                              }
+                            })}
+                            className={`relative w-full cursor-pointer p-4 border-2 rounded-lg transition-all duration-200 ${
+                              formData.layout_settings?.card_layout === 'horizontal'
+                                ? 'border-gray-500 bg-gray-50'
+                                : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                          >
+                            {/* Ícone de Check quando selecionado */}
+                            {formData.layout_settings?.card_layout === 'horizontal' && (
+                              <div className="absolute top-2 right-2">
+                                <div className="w-6 h-6 bg-gray-500 rounded-full flex items-center justify-center">
+                                  <Check className="w-4 h-4 text-white" />
+                                </div>
+                              </div>
+                            )}
+                            <div className="space-y-3">
+                              <h3 className="font-medium text-gray-900 text-sm">Horizontal</h3>
+                              
+                              {/* Preview Visual do Card Horizontal */}
+                              <div className="bg-white border rounded-lg p-3 shadow-sm">
+                                <div className="flex space-x-3">
+                                  {/* Imagem à esquerda */}
+                                  <div className="bg-gray-200 rounded-md w-16 h-16 flex-shrink-0 flex items-center justify-center">
+                                    <span className="text-xs text-gray-500 transform -rotate-90">IMG</span>
+                                  </div>
+                                  {/* Informações à direita */}
+                                  <div className="flex-1 space-y-2 py-1">
+                                    <div className="bg-gray-400 h-2.5 rounded w-full" />
+                                    <div className="bg-gray-300 h-2 rounded w-4/5" />
+                                    <div className="bg-gray-500 h-2.5 rounded w-3/5" />
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <p className="text-xs text-gray-600">
+                                Imagem ao lado, informações à direita
+                              </p>
+                            </div>
+                          </button>
+                        </div>
+                        
+                        <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                          <p className="text-sm text-blue-800">
+                            <strong>Escolha o estilo:</strong> O layout vertical é melhor para mostrar produtos em destaque. 
+                            O horizontal economiza espaço e mostra mais produtos.
+                          </p>
+                        </div>
+                      </div>
                     </div>
 
                     {/* Cores da Loja */}
@@ -1311,27 +1490,7 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
                           </select>
                         </div>
 
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Estilo dos Cards
-                          </label>
-                          <select
-                            value={formData.layout_settings?.card_layout || 'grid'}
-                            onChange={(e) => updateFormData({
-                              layout_settings: {
-                                ...formData.layout_settings,
-                                card_layout: e.target.value as 'grid' | 'horizontal'
-                              }
-                            })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                          >
-                            <option value="grid">Grid (imagem em cima)</option>
-                            <option value="horizontal">Horizontal (imagem à esquerda)</option>
-                          </select>
-                          <p className="text-xs text-gray-500 mt-1">
-                            Grid: Cards tradicionais. Horizontal: Imagem pequena à esquerda, info à direita
-                          </p>
-                        </div>
+
 
                         <div className="flex items-center justify-between">
                           <div>
@@ -1411,6 +1570,129 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
                             </div>
                           </div>
                         )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Tab de Configurações de Impressão */}
+                {activeTab === 'printing' && (
+                  <div className="space-y-8">
+                    {/* Configurações de Impressão */}
+                    <div>
+                      <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <Printer className="w-5 h-5 mr-2 text-blue-600" />
+                        Configurações de Impressão
+                      </h2>
+                      <p className="text-sm text-gray-600 mb-6">
+                        Configure sua impressora padrão para impressão automática de pedidos.
+                      </p>
+
+                      <div className="space-y-6">
+                        {/* Impressora Padrão */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Impressora Padrão
+                          </label>
+                          <div className="flex space-x-3">
+                            <select
+                              value={formData.print_settings.default_printer}
+                              onChange={(e) => updateFormData({
+                                print_settings: {
+                                  ...formData.print_settings,
+                                  default_printer: e.target.value
+                                }
+                              })}
+                              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            >
+                              <option value="">Selecione uma impressora</option>
+                              {availablePrinters.map((printer) => (
+                                <option key={printer} value={printer}>
+                                  {printer}
+                                </option>
+                              ))}
+                            </select>
+                            <button
+                              onClick={loadAvailablePrinters}
+                              disabled={loadingPrinters}
+                              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center space-x-2"
+                            >
+                              <Printer className="w-4 h-4" />
+                              <span>{loadingPrinters ? 'Buscando...' : 'Buscar'}</span>
+                            </button>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Selecione a impressora que será usada automaticamente para imprimir pedidos.
+                          </p>
+                        </div>
+
+                        {/* Teste de Impressão */}
+                        <div className="border-t pt-6">
+                          <h3 className="text-md font-medium text-gray-900 mb-4">Teste de Impressão</h3>
+                          <div className="flex justify-start">
+                            <button
+                              onClick={() => {
+                                // Criar conteúdo de teste
+                                const testContent = `================================
+    ${store?.name?.toUpperCase() || 'TESTE DA LOJA'}
+================================
+
+TESTE DE IMPRESSÃO
+Data: ${new Date().toLocaleDateString('pt-BR')}
+Hora: ${new Date().toLocaleTimeString('pt-BR')}
+
+--- CONFIGURAÇÕES ---
+Impressora: ${formData.print_settings.default_printer || 'Não selecionada'}
+
+================================
+   TESTE REALIZADO COM SUCESSO!
+================================`;
+
+                                // Usar a mesma lógica de impressão
+                                const printFrame = document.createElement('iframe');
+                                printFrame.style.position = 'absolute';
+                                printFrame.style.top = '-1000px';
+                                printFrame.style.left = '-1000px';
+                                printFrame.style.visibility = 'hidden';
+                                document.body.appendChild(printFrame);
+
+                                const htmlContent = `
+                                  <!DOCTYPE html>
+                                  <html>
+                                    <head>
+                                      <title>Teste de Impressão</title>
+                                      <style>
+                                        @page { margin: 5mm; size: 80mm auto; }
+                                        body { font-family: 'Courier New', monospace; font-size: 11px; line-height: 1.1; margin: 0; padding: 0; }
+                                        .print-content { white-space: pre-line; }
+                                      </style>
+                                    </head>
+                                    <body>
+                                      <div class="print-content">${testContent}</div>
+                                      <script>
+                                        window.onload = function() {
+                                          setTimeout(() => window.print(), 500);
+                                        };
+                                      </script>
+                                    </body>
+                                  </html>
+                                `;
+
+                                if (printFrame.contentDocument) {
+                                  printFrame.contentDocument.open();
+                                  printFrame.contentDocument.write(htmlContent);
+                                  printFrame.contentDocument.close();
+                                }
+
+                                toast.success('Teste de impressão enviado!');
+                              }}
+                              className="bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 flex items-center space-x-2 text-sm"
+                            >
+                              <Printer className="w-4 h-4" />
+                              <span>Fazer Teste</span>
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>

@@ -24,6 +24,7 @@ import { toast } from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import { usePendingOrdersStore } from '../../stores/pendingOrdersStore';
 import type { Order } from '../../types/order';
+import BotaoImprimir from './botao-imprimir';
 import CreateOrderModal from './create-order-modal';
 
 interface OrderDetailsPanelProps {
@@ -33,6 +34,7 @@ interface OrderDetailsPanelProps {
   updatingStatus: string | null;
   formatDate: (dateString: string) => string;
   formatPrice: (price: number) => string;
+  printSettings?: PrintSettings | null;
 }
 
 function OrderDetailsPanel({ 
@@ -41,7 +43,8 @@ function OrderDetailsPanel({
   onUpdateStatusWithNote, 
   updatingStatus, 
   formatDate, 
-  formatPrice 
+  formatPrice,
+  printSettings
 }: OrderDetailsPanelProps) {
   const statusInfo = statusConfig[order.status];
   const StatusIcon = statusInfo.icon;
@@ -73,6 +76,17 @@ function OrderDetailsPanel({
             <p className="text-2xl font-bold text-gray-900">
               {formatPrice(order.total)}
             </p>
+            {/* Botão de Impressão */}
+            <div className="mt-3">
+              <BotaoImprimir
+                orderId={order.id}
+                orderNumber={`#${order.id.slice(0, 8).toUpperCase()}`}
+                variant="outline"
+                size="sm"
+                showText={false}
+                printSettings={printSettings}
+              />
+            </div>
           </div>
         </div>
 
@@ -97,6 +111,15 @@ function OrderDetailsPanel({
               <X className="w-4 h-4" />
               <span>{updatingStatus === order.id ? 'Cancelando...' : 'Cancelar'}</span>
             </button>
+            <BotaoImprimir
+              orderId={order.id}
+              orderNumber={`#${order.id.slice(0, 8).toUpperCase()}`}
+              variant="outline"
+              size="md"
+              showText={true}
+              directPrint={true}
+              printSettings={printSettings}
+            />
           </div>
         )}
 
@@ -111,6 +134,15 @@ function OrderDetailsPanel({
               <ChefHat className="w-4 h-4" />
               <span>{updatingStatus === order.id ? 'Preparando...' : 'Preparar'}</span>
             </button>
+            <BotaoImprimir
+              orderId={order.id}
+              orderNumber={`#${order.id.slice(0, 8).toUpperCase()}`}
+              variant="outline"
+              size="md"
+              showText={true}
+              directPrint={true}
+              printSettings={printSettings}
+            />
           </div>
         )}
 
@@ -125,6 +157,15 @@ function OrderDetailsPanel({
               <Truck className="w-4 h-4" />
               <span>{updatingStatus === order.id ? 'Enviando...' : 'Sair p/ Entrega'}</span>
             </button>
+            <BotaoImprimir
+              orderId={order.id}
+              orderNumber={`#${order.id.slice(0, 8).toUpperCase()}`}
+              variant="outline"
+              size="md"
+              showText={true}
+              directPrint={true}
+              printSettings={printSettings}
+            />
           </div>
         )}
 
@@ -139,6 +180,15 @@ function OrderDetailsPanel({
               <Package className="w-4 h-4" />
               <span>{updatingStatus === order.id ? 'Finalizando...' : 'Marcar Entregue'}</span>
             </button>
+            <BotaoImprimir
+              orderId={order.id}
+              orderNumber={`#${order.id.slice(0, 8).toUpperCase()}`}
+              variant="outline"
+              size="md"
+              showText={true}
+              directPrint={true}
+              printSettings={printSettings}
+            />
           </div>
         )}
       </div>
@@ -291,7 +341,7 @@ function OrderDetailsPanel({
 
       {(order.status === 'delivered' || order.status === 'cancelled') && (
         <div className="p-4 border-t bg-gray-50">
-          <div className="text-center">
+          <div className="text-center space-y-3">
             <div className={`inline-flex items-center space-x-2 px-4 py-2 rounded-lg ${
               order.status === 'delivered' 
                 ? 'bg-green-100 text-green-800' 
@@ -301,6 +351,20 @@ function OrderDetailsPanel({
               <span className="font-medium">
                 Pedido {order.status === 'delivered' ? 'entregue com sucesso' : 'foi cancelado'}
               </span>
+            </div>
+            
+            {/* Botão de impressão para pedidos finalizados */}
+            <div className="flex justify-center">
+              <BotaoImprimir
+                orderId={order.id}
+                orderNumber={`#${order.id.slice(0, 8).toUpperCase()}`}
+                variant="primary"
+                size="md"
+                showText={true}
+                className="shadow-sm"
+                directPrint={true}
+                printSettings={printSettings}
+              />
             </div>
           </div>
         </div>
@@ -359,6 +423,16 @@ const statusConfig = {
   }
 };
 
+interface PrintSettings {
+  default_printer?: string;
+  auto_print?: boolean;
+  print_format?: 'thermal' | 'a4';
+  paper_width?: number;
+  auto_cut?: boolean;
+  print_logo?: boolean;
+  print_address?: boolean;
+}
+
 export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardProps) {
   
   const [orders, setOrders] = useState<Order[]>([]);
@@ -370,6 +444,7 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
   const [forceUpdate, setForceUpdate] = useState(0); // Força re-render quando necessário
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [printSettings, setPrintSettings] = useState<PrintSettings | null>(null);
   
   // Store para salvar pedidos em aberto
   const { setPendingCount, incrementCount, decrementCount } = usePendingOrdersStore();
@@ -410,7 +485,23 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
   // Pedidos filtrados
   const filteredOrders = filterOrdersByStatus(todayOrders, statusFilter);
 
-
+  // Carregar configurações de impressão
+  const loadPrintSettings = React.useCallback(async () => {
+    try {
+      const response = await fetch(`/api/stores/${storeSlug}/print-settings`);
+      if (response.ok) {
+        const data = await response.json();
+        setPrintSettings(data.print_settings);
+        console.log('🖨️ Configurações de impressão carregadas:', data.print_settings);
+      } else {
+        console.log('⚠️ Configurações de impressão não encontradas, usando padrão');
+        setPrintSettings(null);
+      }
+    } catch (error) {
+      console.error('❌ Erro ao carregar configurações de impressão:', error);
+      setPrintSettings(null);
+    }
+  }, [storeSlug]);
 
   // Carregar pedidos iniciais (otimizado - apenas de hoje)
   const loadOrders = React.useCallback(async () => {
@@ -456,6 +547,9 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
 
     // Carregar pedidos iniciais
     loadOrders();
+    
+    // Carregar configurações de impressão
+    loadPrintSettings();
 
     let pollingInterval: NodeJS.Timeout;
 
@@ -1120,6 +1214,7 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
                 updatingStatus={updatingStatus}
                 formatDate={formatDate}
                 formatPrice={formatPrice}
+                printSettings={printSettings}
               />
             )}
           </div>

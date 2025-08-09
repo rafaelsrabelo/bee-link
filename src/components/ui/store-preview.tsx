@@ -13,6 +13,58 @@ interface StorePreviewProps {
 }
 
 export default function StorePreview({ store, layoutType, className = "", isLivePreview = false }: StorePreviewProps) {
+  // Função para renderizar cards baseado no layout
+  const renderProductCard = (productName: string, price: string, isHorizontal = false) => {
+    if (isHorizontal) {
+      // Card Horizontal - sem borda, mais limpo
+      return (
+        <div className="bg-white rounded-lg overflow-hidden shadow-sm">
+          <div className="flex space-x-3 p-3">
+            <div className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+              <span className="text-gray-400 text-xs">IMG</span>
+            </div>
+            <div className="flex-1 flex flex-col justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-900 mb-1">{productName}</p>
+                <p className="text-sm font-semibold" style={{ color: store.colors?.primary || '#8B5CF6' }}>{price}</p>
+              </div>
+              <div className="flex justify-end">
+                <button 
+                  className="w-8 h-8 rounded-full text-sm text-white font-bold flex items-center justify-center"
+                  style={{ backgroundColor: store.colors?.primary || '#8B5CF6' }}
+                >
+                  +
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    // Card Vertical (padrão)
+    return (
+      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+        <div className="w-full h-20 bg-gray-100 flex items-center justify-center">
+          <span className="text-gray-400 text-xs">Imagem</span>
+        </div>
+        <div className="p-2">
+          <p className="text-sm font-medium text-gray-900 mb-1">{productName}</p>
+          <p className="text-sm text-gray-600">{price}</p>
+          <button 
+            className="w-full mt-2 py-1 rounded text-xs text-white"
+            style={{ backgroundColor: store.colors?.primary || '#8B5CF6' }}
+          >
+            +
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const cardLayout = store.layout_settings?.card_layout || 'grid';
+  const isHorizontalLayout = cardLayout === 'horizontal';
+
   return (
     <div className={`bg-white rounded-lg shadow-lg overflow-hidden ${className}`}>
       {/* Header do Preview */}
@@ -135,22 +187,8 @@ export default function StorePreview({ store, layoutType, className = "", isLive
               >
                 Categoria 1
               </h3>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-                  <div className="w-full h-20 bg-gray-100 flex items-center justify-center">
-                    <span className="text-gray-400 text-xs">Imagem</span>
-                  </div>
-                  <div className="p-2">
-                    <p className="text-sm font-medium text-gray-900 mb-1">Produto 1</p>
-                    <p className="text-sm text-gray-600">R$ 99,99</p>
-                    <button 
-                      className="w-full mt-2 py-1 rounded text-xs text-white"
-                      style={{ backgroundColor: store.colors?.primary || '#8B5CF6' }}
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
+              <div className={isHorizontalLayout ? 'space-y-2' : 'grid grid-cols-2 gap-3'}>
+                {renderProductCard('Produto 1', 'R$ 99,99', isHorizontalLayout)}
               </div>
             </div>
 
@@ -162,72 +200,16 @@ export default function StorePreview({ store, layoutType, className = "", isLive
               >
                 Categoria 2
               </h3>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-                  <div className="w-full h-20 bg-gray-100 flex items-center justify-center">
-                    <span className="text-gray-400 text-xs">Imagem</span>
-                  </div>
-                  <div className="p-2">
-                    <p className="text-sm font-medium text-gray-900 mb-1">Produto 2</p>
-                    <p className="text-sm text-gray-600">R$ 69,99</p>
-                    <button 
-                      className="w-full mt-2 py-1 rounded text-xs text-white"
-                      style={{ backgroundColor: store.colors?.primary || '#8B5CF6' }}
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
+              <div className={isHorizontalLayout ? 'space-y-2' : 'grid grid-cols-2 gap-3'}>
+                {renderProductCard('Produto 2', 'R$ 69,99', isHorizontalLayout)}
               </div>
             </div>
           </div>
         ) : (
           /* Produtos sem organização por categoria */
-          <div className="grid grid-cols-2 gap-3">
-            {/* Produto 1 */}
-            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-              <div className="w-full h-20 bg-gray-100 flex items-center justify-center">
-                <span className="text-gray-400 text-xs">Imagem</span>
-              </div>
-              <div className="p-2">
-                <p className="text-sm font-medium text-gray-900 mb-1">Produto 1</p>
-                <p className="text-sm text-gray-600">R$ 99,99</p>
-                <div className="flex items-center space-x-1 mt-2">
-                                      {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
-                                      <button 
-                      className="w-6 h-6 rounded text-xs text-white"
-                      style={{ backgroundColor: store.colors?.primary || '#8B5CF6' }}
-                    >
-                      -
-                    </button>
-                  <span className="text-xs">4</span>
-                  {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
-                  <button 
-                    className="w-6 h-6 rounded text-xs text-white"
-                    style={{ backgroundColor: store.colors?.primary || '#8B5CF6' }}
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Produto 2 */}
-            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-              <div className="w-full h-20 bg-gray-100 flex items-center justify-center">
-                <span className="text-gray-400 text-xs">Imagem</span>
-              </div>
-              <div className="p-2">
-                <p className="text-sm font-medium text-gray-900 mb-1">Produto 2</p>
-                <p className="text-sm text-gray-600">R$ 69,99</p>
-                <button 
-                  className="w-full mt-2 py-1 rounded text-xs text-white"
-                  style={{ backgroundColor: store.colors?.primary || '#8B5CF6' }}
-                >
-                  +
-                </button>
-              </div>
-            </div>
+          <div className={isHorizontalLayout ? 'space-y-2' : 'grid grid-cols-2 gap-3'}>
+            {renderProductCard('Produto 1', 'R$ 99,99', isHorizontalLayout)}
+            {renderProductCard('Produto 2', 'R$ 69,99', isHorizontalLayout)}
           </div>
         )}
 

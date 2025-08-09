@@ -33,7 +33,8 @@ export default async function StorePage({ params }: StorePageProps) {
       banner_image: store.banner_image,
       show_products_by_category: store.show_products_by_category,
       colors: store.colors,
-      social_networks: store.social_networks
+      social_networks: store.social_networks,
+      layout_settings: store.layout_settings
     };
 
     return <StorePageClient store={formattedStore} />;
@@ -79,7 +80,7 @@ export async function generateMetadata({ params }: StorePageProps) {
         description: store.description,
       },
     };
-  } catch (error) {
+  } catch {
     return {
       title: 'Loja não encontrada',
       description: 'A loja solicitada não foi encontrada.'
