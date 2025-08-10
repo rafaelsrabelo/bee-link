@@ -141,7 +141,7 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
       </div>
 
       {/* Header */}
-      <div className="flex justify-between items-center px-4 py-4 fixed top-0 left-0 right-0 z-50 backdrop-blur-sm border-b border-white/10" style={{ backgroundColor: `${store.colors.header}95` }}>
+      <div className="flex justify-between items-center px-4 py-4 fixed top-0 left-0 right-0 z-50 backdrop-blur-sm border-b border-white/10" style={{ backgroundColor: `${store.colors.header}` }}>
         <Link
           href={`/${store.slug}?showCatalog=true`}
           className="text-white hover:bg-white/10 p-2 rounded-full transition-all"

@@ -115,9 +115,14 @@ export async function POST(
     const randomSuffix = Math.floor(Math.random() * 1000);
     const simpleId = `${timestamp}${randomSuffix}`;
 
+    // Remover campos undefined para evitar problemas no Supabase
+    const cleanProductData = Object.fromEntries(
+      Object.entries(productData).filter(([_, value]) => value !== undefined)
+    );
+
     // Criar um único produto, não deletar os existentes!
     const newProduct = {
-      ...productData,
+      ...cleanProductData,
       id: simpleId,
       price: processedPrice,
       store_id: store.id
@@ -207,13 +212,20 @@ export async function PUT(
       }
     }
 
+    // Remover campos undefined para evitar problemas no Supabase
+    const cleanUpdateData = Object.fromEntries(
+      Object.entries(updateData).filter(([_, value]) => value !== undefined)
+    );
+
     const updatedProduct = {
-      ...updateData,
+      ...cleanUpdateData,
       price: processedPrice,
       store_id: store.id
     };
 
-    console.log('Atualizando produto:', id, updatedProduct);
+    console.log('Dados recebidos para atualização:', updateData);
+    console.log('Produto processado para atualização:', updatedProduct);
+    console.log('Atualizando produto com ID:', id);
 
     const { data: product, error: updateError } = await supabase
       .from('products')

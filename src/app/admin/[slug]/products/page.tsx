@@ -25,6 +25,12 @@ interface Product {
   image: string;
   category: string;
   category_id?: number;
+  category_data?: {
+    id: number;
+    name: string;
+    description?: string;
+    color?: string;
+  };
   description: string;
   readyToShip?: boolean;
   available?: boolean;
@@ -103,12 +109,26 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
       const response = await fetch(`/api/stores/${slug}/product-categories`);
       if (response.ok) {
         const categories = await response.json();
+        console.log('Categorias carregadas:', categories);
+        console.log('Procurando categoria com ID:', categoryId);
+        
         const category = categories.find((cat: { id: number; name: string }) => cat.id === categoryId);
-        return category?.name || 'Geral';
+        console.log('Categoria encontrada:', category);
+        
+        if (category?.name) {
+          return category.name;
+        }
+        
+        console.warn('Categoria não encontrada, usando fallback');
+        return 'Geral';
       }
-    } catch {
+      
+      console.error('Erro na resposta da API:', response.status, response.statusText);
+      return 'Geral';
+    } catch (error) {
+      console.error('Erro ao buscar categoria:', error);
+      return 'Geral';
     }
-    return 'Geral';
   };
 
   // Função para forçar refresh das categorias
@@ -311,10 +331,15 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
       
       if (newProduct.category_id) {
         // Se tem category_id, buscar o nome real da categoria
-        categoryName = await getCategoryNameById(newProduct.category_id);
-        console.log('Categoria encontrada pelo ID:', categoryName);
-      } else if (newProduct.category && newProduct.category !== 'selected') {
-        // Se não tem category_id mas tem category (e não é 'selected'), usar o valor
+        try {
+          categoryName = await getCategoryNameById(newProduct.category_id);
+          console.log('Categoria encontrada pelo ID:', categoryName);
+        } catch (error) {
+          console.error('Erro ao buscar categoria:', error);
+          categoryName = 'Geral'; // Fallback
+        }
+      } else if (newProduct.category && newProduct.category !== 'selected' && newProduct.category !== 'Geral') {
+        // Se não tem category_id mas tem category (e não é 'selected' nem 'Geral'), usar o valor
         categoryName = newProduct.category;
         console.log('Usando categoria direta:', categoryName);
       }
@@ -327,7 +352,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
         price: newProduct.price || '',
         image: newProduct.image || '',
         category: categoryName,
-        category_id: newProduct.category_id || undefined, // Simplificado: sempre usar category_id se existir
+        category_id: newProduct.category_id || undefined,
         description: newProduct.description || '',
         readyToShip: newProduct.readyToShip || false,
         available: newProduct.available !== false,
@@ -387,14 +412,28 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
       // Buscar nome real da categoria se foi selecionada uma categoria personalizada
       let categoryName = editingProduct.category;
       if (editingProduct.category === 'selected' && editingProduct.category_id) {
-        categoryName = await getCategoryNameById(editingProduct.category_id);
+        try {
+          categoryName = await getCategoryNameById(editingProduct.category_id);
+          console.log('Categoria encontrada para edição:', categoryName);
+        } catch (error) {
+          console.error('Erro ao buscar categoria:', error);
+          categoryName = 'Geral'; // Fallback
+        }
+      } else if (editingProduct.category === 'Geral') {
+        // Se a categoria é 'Geral', manter como está
+        categoryName = 'Geral';
       }
 
+      // Remover campos que não existem na tabela products
+      const { category_data, ...productWithoutCategoryData } = editingProduct;
+      
       const updatedProduct = {
-        ...editingProduct,
+        ...productWithoutCategoryData,
         category: categoryName,
-        category_id: editingProduct.category_id || undefined // Simplificado: sempre usar category_id se existir
+        category_id: editingProduct.category_id || undefined
       };
+
+      console.log('Produto a ser atualizado:', updatedProduct);
 
       // Usar API específica para UPDATE - NÃO deleta todos os produtos!
       const response = await fetch(`/api/stores/${slug}/products`, {
@@ -475,7 +514,9 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
       const product = products.find(p => p.id === id);
       if (!product) return;
 
-      const updatedProduct = { ...product, available: !product.available };
+      // Remover campos que não existem na tabela products
+      const { category_data, ...productWithoutCategoryData } = product;
+      const updatedProduct = { ...productWithoutCategoryData, available: !product.available };
 
       // Usar API específica para UPDATE
       const response = await fetch(`/api/stores/${slug}/products`, {
@@ -894,6 +935,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
                     key={categoriesRefreshKey} // Força re-render quando categorias mudam
                     value={newProduct.category_id}
                     onChange={(categoryId) => {
+                      console.log('Categoria selecionada no formulário:', categoryId);
                       setNewProduct({
                         ...newProduct, 
                         category_id: categoryId,
@@ -1034,6 +1076,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
                       key={categoriesRefreshKey} // Força re-render quando categorias mudam
                       value={editingProduct.category_id}
                       onChange={(categoryId) => {
+                        console.log('Categoria selecionada na edição:', categoryId);
                         setEditingProduct({
                           ...editingProduct, 
                           category_id: categoryId,
