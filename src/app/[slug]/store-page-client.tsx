@@ -665,8 +665,8 @@ export default function StorePageClient({ store }: StorePageClientProps) {
             type="button"
             onClick={() => {
               if (cart.length > 0) {
-                // Navegar para a página do carrinho
-                router.push(`/${store.slug}/cart`);
+                // Navegar para a página de checkout
+                router.push(`/${store.slug}/checkout`);
               } else if (store.social_networks?.whatsapp) {
                 // Mensagem padrão para WhatsApp
                 const message = `Olá! Gostaria de saber mais sobre os produtos da ${store.store_name}`;
@@ -692,7 +692,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
                 <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V6h16v12z"/>
               </svg>
             </div>
-            {loading ? 'Carregando...' : cart.length > 0 ? 'Ver Carrinho' : 'Fale com a gente'}
+            {loading ? 'Carregando...' : cart.length > 0 ? 'Finalizar Pedido' : 'Fale com a gente'}
           </button>
 
           <button

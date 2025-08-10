@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import FloatingCart from '../../../components/store/floating-cart';
-import SizeSelector from '../../../components/ui/size-selector';
+
 import { trackAddToCart, trackPageView, trackProductClick } from '../../../lib/analytics';
 import CartControls from '../../components/cart-controls';
 
@@ -60,7 +60,7 @@ interface ProductPageClientProps {
 
 export default function ProductPageClient({ store, product }: ProductPageClientProps) {
   const [selectedImage, setSelectedImage] = useState(0);
-  const [selectedSize, setSelectedSize] = useState<string>('');
+
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const { cart, setStoreSlug, isLoading, addToCart, removeFromCart } = useCartStore();
 
@@ -111,27 +111,13 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
 
   // Função para adicionar ao carrinho com tracking
   const handleAddToCart = () => {
-    // Verificar se um tamanho foi selecionado
-    if (!selectedSize) {
-      // Mostrar alerta ou toast para selecionar tamanho
-      alert('Por favor, selecione um tamanho antes de adicionar ao carrinho');
-      return;
-    }
-
-    // Adicionar produto com tamanho ao carrinho
-    const productWithSize = {
-      ...product,
-      size: selectedSize,
-      // Criar um ID único para o produto com tamanho
-      uniqueId: `${product.id}-${selectedSize}`
-    };
-    
-    addToCart(productWithSize);
+    // Adicionar produto ao carrinho
+    addToCart(product);
     
     // Track add to cart event
     trackAddToCart({
       product_id: product.id,
-      product_name: `${product.name} - Tamanho ${selectedSize}`,
+      product_name: product.name,
       product_price: Number.parseFloat(product.price.replace('R$ ', '').replace(',', '.')),
       category: product.category,
       is_direct_link: false,
@@ -236,7 +222,10 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
               {product.name}
             </h1>
             <div className="text-3xl font-bold" style={{ color: store.colors.primary }}>
-              {product.price}
+              {typeof product.price === 'string' && product.price.includes('R$') 
+                ? product.price 
+                : `R$ ${Number(product.price).toFixed(2).replace('.', ',')}`
+              }
             </div>
           </div>
 
@@ -260,15 +249,7 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
             </p>
           </div>
 
-          {/* Size Selector */}
-          <div className="mb-6">
-            <SizeSelector
-              sizes={['PP', 'P', 'M', 'G', 'GG', 'XG']}
-              selectedSize={selectedSize}
-              onSizeSelect={setSelectedSize}
-              colors={store.colors}
-            />
-          </div>
+
 
           {/* Store Info */}
           <div className="border-t border-gray-200 pt-4">
@@ -300,7 +281,6 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
           <CartControls 
             product={product} 
             storeColors={store.colors}
-            selectedSize={selectedSize}
             onAddToCart={handleAddToCart}
           />
 {/* 
