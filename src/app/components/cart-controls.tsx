@@ -17,9 +17,11 @@ interface CartControlsProps {
   storeColors: {
     primary: string;
   };
+  selectedSize?: string;
+  onAddToCart?: () => void;
 }
 
-export default function CartControls({ product, storeColors }: CartControlsProps) {
+export default function CartControls({ product, storeColors, selectedSize, onAddToCart }: CartControlsProps) {
   const { addToCart, removeFromCart, getCartItemQuantity, isLoading } = useCartStore();
   const quantity = getCartItemQuantity(product.name);
 
@@ -29,12 +31,28 @@ export default function CartControls({ product, storeColors }: CartControlsProps
   }
 
   const handleAddToCart = () => {
-    addToCart(product);
+    // Se foi passada uma função personalizada, usar ela
+    if (onAddToCart) {
+      onAddToCart();
+      return;
+    }
+
+    // Verificar se um tamanho foi selecionado
+    if (selectedSize) {
+      const productWithSize = {
+        ...product,
+        size: selectedSize,
+        uniqueId: `${product.id}-${selectedSize}`
+      };
+      addToCart(productWithSize);
+    } else {
+      addToCart(product);
+    }
     
     // Track add to cart event
     trackAddToCart({
       product_id: product.id,
-      product_name: product.name,
+      product_name: selectedSize ? `${product.name} - Tamanho ${selectedSize}` : product.name,
       product_price: Number.parseFloat(product.price.replace('R$ ', '').replace(',', '.')),
       category: product.category || '',
       is_direct_link: false,

@@ -289,23 +289,27 @@ export async function DELETE(
       return NextResponse.json({ error: 'ID do produto é obrigatório' }, { status: 400 });
     }
 
-    console.log('Deletando produto:', productId);
+    console.log('🗑️ Deletando produto:', productId, 'da loja:', store.id);
 
-    const { error: deleteError } = await supabase
+    const { data: deletedData, error: deleteError } = await supabase
       .from('products')
       .delete()
       .eq('id', productId)
-      .eq('store_id', store.id);
+      .eq('store_id', store.id)
+      .select();
+
+    console.log('📊 Resultado do delete:', { deletedData, deleteError });
 
     if (deleteError) {
-      console.error('Erro ao deletar produto:', deleteError);
+      console.error('❌ Erro ao deletar produto:', deleteError);
       return NextResponse.json({ 
         error: 'Erro ao deletar produto', 
         details: deleteError.message 
       }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true });
+    console.log('✅ Produto deletado com sucesso:', deletedData);
+    return NextResponse.json({ success: true, deletedData });
   } catch (error) {
     console.error('Erro no servidor:', error);
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });

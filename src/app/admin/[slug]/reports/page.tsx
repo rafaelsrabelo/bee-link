@@ -63,7 +63,7 @@ export default function ReportsPage({ params }: { params: Promise<{ slug: string
 
   // Paginação
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
+  const [itemsPerPage] = useState(20); // Aumentado para 20 itens por página
   const [paginatedOrders, setPaginatedOrders] = useState<Order[]>([]);
 
   useEffect(() => {
@@ -361,7 +361,7 @@ export default function ReportsPage({ params }: { params: Promise<{ slug: string
           icon={BarChart3}
         />
 
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-hidden mt-24">
           <div className="h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col">
             
             {/* Status da Conexão */}
@@ -638,64 +638,90 @@ export default function ReportsPage({ params }: { params: Promise<{ slug: string
                       </table>
                     </div>
 
-                    {/* Paginação - Altura fixa */}
-                    {filteredOrders.length > itemsPerPage && (
-                      <div className="border-t border-gray-200 p-6 flex-shrink-0">
-                        <div className="flex items-center justify-between">
-                          <div className="text-sm text-gray-500">
-                            Mostrando {((currentPage - 1) * itemsPerPage) + 1} até {Math.min(currentPage * itemsPerPage, filteredOrders.length)} de {filteredOrders.length} pedidos
-                          </div>
-                          
+                    {/* Paginação Melhorada */}
+                    <div className="border-t border-gray-200 p-6 flex-shrink-0">
+                      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div className="text-sm text-gray-600">
+                          <span className="font-medium">
+                            {filteredOrders.length > 0 
+                              ? `Mostrando ${((currentPage - 1) * itemsPerPage) + 1} até ${Math.min(currentPage * itemsPerPage, filteredOrders.length)} de ${filteredOrders.length} pedidos`
+                              : 'Nenhum pedido encontrado'
+                            }
+                          </span>
+                          {filteredOrders.length > itemsPerPage && (
+                            <span className="text-gray-500 ml-2">
+                              (Página {currentPage} de {Math.ceil(filteredOrders.length / itemsPerPage)})
+                            </span>
+                          )}
+                        </div>
+                        
+                        {filteredOrders.length > itemsPerPage && (
                           <div className="flex items-center space-x-2">
                             <button
                               type="button"
                               onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                               disabled={currentPage === 1}
-                              className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
-                              Anterior
+                              ← Anterior
                             </button>
                             
                             <div className="flex items-center space-x-1">
-                              {Array.from({ length: Math.ceil(filteredOrders.length / itemsPerPage) }, (_, i) => i + 1)
-                                .filter(page => 
-                                  page === 1 || 
-                                  page === Math.ceil(filteredOrders.length / itemsPerPage) || 
-                                  Math.abs(page - currentPage) <= 2
-                                )
-                                .map((page, index, array) => (
-                                  <div key={page} className="flex items-center">
-                                    {index > 0 && array[index - 1] !== page - 1 && (
-                                      <span className="px-2 text-gray-400">...</span>
+                              {(() => {
+                                const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+                                const pages = [];
+                                
+                                // Sempre mostrar primeira página
+                                if (currentPage > 3) {
+                                  pages.push(1);
+                                  if (currentPage > 4) pages.push('...');
+                                }
+                                
+                                // Páginas ao redor da atual
+                                for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
+                                  pages.push(i);
+                                }
+                                
+                                // Sempre mostrar última página
+                                if (currentPage < totalPages - 2) {
+                                  if (currentPage < totalPages - 3) pages.push('...');
+                                  pages.push(totalPages);
+                                }
+                                
+                                return pages.map((page, index) => (
+                                  <div key={`page-${page}-${index}`}>
+                                    {page === '...' ? (
+                                      <span className="px-3 py-2 text-gray-400">...</span>
+                                    ) : (
+                                      <button
+                                        type="button"
+                                        onClick={() => setCurrentPage(page as number)}
+                                        className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                                          currentPage === page
+                                            ? 'bg-blue-600 text-white shadow-sm'
+                                            : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 hover:border-gray-400'
+                                        }`}
+                                      >
+                                        {page}
+                                      </button>
                                     )}
-                                    <button
-                                      type="button"
-                                      onClick={() => setCurrentPage(page)}
-                                      className={`px-3 py-2 text-sm font-medium rounded-lg ${
-                                        currentPage === page
-                                          ? 'bg-blue-600 text-white'
-                                          : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-                                      }`}
-                                    >
-                                      {page}
-                                    </button>
                                   </div>
-                                ))
-                              }
+                                ));
+                              })()}
                             </div>
                             
                             <button
                               type="button"
                               onClick={() => setCurrentPage(Math.min(Math.ceil(filteredOrders.length / itemsPerPage), currentPage + 1))}
                               disabled={currentPage === Math.ceil(filteredOrders.length / itemsPerPage)}
-                              className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
-                              Próximo
+                              Próximo →
                             </button>
                           </div>
-                        </div>
+                        )}
                       </div>
-                    )}
+                    </div>
                   </div>
                 )}
               </div>

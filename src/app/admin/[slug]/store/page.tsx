@@ -588,7 +588,7 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
         )}
 
         {/* Content */}
-        <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="max-w-7xl mx-auto px-4 py-8 mt-24">
           <div className={`grid gap-8 ${activeTab === 'layout' ? 'lg:grid-cols-2' : 'lg:grid-cols-1'}`}>
             {/* Coluna Esquerda - Formulário */}
             <div className="bg-white rounded-xl shadow-sm border">

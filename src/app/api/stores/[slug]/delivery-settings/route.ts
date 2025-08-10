@@ -6,6 +6,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   try {
     const { slug } = await params;
     
+    console.log('🔄 GET /api/stores/[slug]/delivery-settings - Slug:', slug);
+    
     const supabase = createRouteHandlerClient({ cookies });
     
     // Para GET, não exigir autenticação para permitir acesso do checkout
@@ -19,12 +21,17 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       .single();
 
     if (storeError || !store) {
+      console.error('❌ Loja não encontrada:', storeError);
       return NextResponse.json({ error: 'Loja não encontrada' }, { status: 404 });
     }
 
+    console.log('✅ Loja encontrada:', store.id);
+
+    // Para GET, permitir acesso público (checkout) ou admin (se for dono da loja)
     // Se há usuário logado, verificar se é o dono da loja (para admin)
     if (user && store.user_id !== user.id) {
-      return NextResponse.json({ error: 'Sem permissão' }, { status: 403 });
+      console.log('⚠️ Usuário logado não é dono da loja, mas permitindo acesso público para checkout');
+      // Não retornar erro aqui, permitir acesso público para checkout
     }
 
     // Buscar configurações de entrega
@@ -34,13 +41,18 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       .eq('store_id', store.id)
       .single();
 
+    console.log('🔍 Configurações de entrega encontradas:', deliverySettings);
+    console.log('🔍 Erro na busca:', deliveryError);
+
     if (deliveryError && deliveryError.code !== 'PGRST116') {
-      console.error('Erro ao buscar configurações de entrega:', deliveryError);
+      console.error('❌ Erro ao buscar configurações de entrega:', deliveryError);
       return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
     }
 
     // Se não existem configurações, criar com valores padrão
     if (!deliverySettings) {
+      console.log('⚠️ Configurações não encontradas, criando padrão...');
+      
       const { data: newSettings, error: insertError } = await supabase
         .from('delivery_settings')
         .insert({
@@ -57,9 +69,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         .single();
 
       if (insertError) {
-        console.error('Erro ao criar configurações de entrega:', insertError);
+        console.error('❌ Erro ao criar configurações de entrega:', insertError);
         return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
       }
+
+      console.log('✅ Configurações padrão criadas:', newSettings);
 
       // Adicionar campos de tempo separados na resposta
       const responseData = {
@@ -78,6 +92,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       estimated_delivery_time_to: deliverySettings.estimated_delivery_time_to || "01:00"
     };
 
+    console.log('✅ Retornando configurações de entrega:', responseData);
     return NextResponse.json(responseData);
   } catch (error) {
     console.error('Erro interno:', error);

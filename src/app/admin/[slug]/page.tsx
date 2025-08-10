@@ -134,7 +134,7 @@ export default function AdminDashboardPage({ params }: { params: Promise<{ slug:
           icon={BarChart3}
         />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-24">
           {/* Analytics Section */}
           <div className="mt-8 bg-white rounded-xl shadow-lg p-8">
             <div className="flex items-center justify-between mb-6">

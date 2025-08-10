@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import FloatingCart from '../../../components/store/floating-cart';
 import { trackAddToCart, trackPageView, trackProductClick } from '../../../lib/analytics';
 import CartControls from '../../components/cart-controls';
+import SizeSelector from '../../../components/ui/size-selector';
 
 import { useCartStore } from '../../stores/cartStore';
 
@@ -59,6 +60,7 @@ interface ProductPageClientProps {
 
 export default function ProductPageClient({ store, product }: ProductPageClientProps) {
   const [selectedImage, setSelectedImage] = useState(0);
+  const [selectedSize, setSelectedSize] = useState<string>('');
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const { cart, setStoreSlug, isLoading, addToCart, removeFromCart } = useCartStore();
 
@@ -109,12 +111,27 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
 
   // Função para adicionar ao carrinho com tracking
   const handleAddToCart = () => {
-    addToCart(product);
+    // Verificar se um tamanho foi selecionado
+    if (!selectedSize) {
+      // Mostrar alerta ou toast para selecionar tamanho
+      alert('Por favor, selecione um tamanho antes de adicionar ao carrinho');
+      return;
+    }
+
+    // Adicionar produto com tamanho ao carrinho
+    const productWithSize = {
+      ...product,
+      size: selectedSize,
+      // Criar um ID único para o produto com tamanho
+      uniqueId: `${product.id}-${selectedSize}`
+    };
+    
+    addToCart(productWithSize);
     
     // Track add to cart event
     trackAddToCart({
       product_id: product.id,
-      product_name: product.name,
+      product_name: `${product.name} - Tamanho ${selectedSize}`,
       product_price: Number.parseFloat(product.price.replace('R$ ', '').replace(',', '.')),
       category: product.category,
       is_direct_link: false,
@@ -243,6 +260,16 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
             </p>
           </div>
 
+          {/* Size Selector */}
+          <div className="mb-6">
+            <SizeSelector
+              sizes={['PP', 'P', 'M', 'G', 'GG', 'XG']}
+              selectedSize={selectedSize}
+              onSizeSelect={setSelectedSize}
+              colors={store.colors}
+            />
+          </div>
+
           {/* Store Info */}
           <div className="border-t border-gray-200 pt-4">
             <div className="flex items-center gap-3 mb-3">
@@ -270,7 +297,12 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
         {/* Action Buttons */}
         <div className="space-y-4">
           {/* Cart Controls */}
-          <CartControls product={product} storeColors={store.colors} />
+          <CartControls 
+            product={product} 
+            storeColors={store.colors}
+            selectedSize={selectedSize}
+            onAddToCart={handleAddToCart}
+          />
 {/* 
           <button
             type="button"

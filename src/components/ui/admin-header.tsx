@@ -79,7 +79,7 @@ export default function AdminHeader({ store: propStore, currentPage, title, icon
   }
 
   return (
-    <div className="shadow-lg" style={{
+    <div className="fixed top-0 left-0 right-0 z-50 shadow-lg" style={{
       backgroundColor: store.colors.primary
     }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">

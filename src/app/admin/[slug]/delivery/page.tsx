@@ -108,6 +108,8 @@ export default function DeliveryManagementPage({ params }: { params: Promise<{ s
         estimated_delivery_time_to: settings.estimated_delivery_time_to,
       };
 
+      console.log('🔄 Salvando configurações de entrega:', dataToSend);
+
       const response = await fetch(`/api/stores/${slug}/delivery-settings`, {
         method: 'PUT',
         headers: {
@@ -116,12 +118,22 @@ export default function DeliveryManagementPage({ params }: { params: Promise<{ s
         body: JSON.stringify(dataToSend),
       });
 
+      console.log('📡 Resposta da API:', response.status, response.statusText);
+
       if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Configurações salvas com sucesso:', result);
         toast.success('Configurações salvas com sucesso!');
+        
+        // Recarregar configurações para garantir sincronização
+        await loadDeliverySettings();
       } else {
+        const errorData = await response.json();
+        console.error('❌ Erro ao salvar configurações:', errorData);
         toast.error('Erro ao salvar configurações');
       }
     } catch (error) {
+      console.error('❌ Erro completo ao salvar configurações:', error);
       toast.error('Erro ao salvar configurações');
     } finally {
       setSaving(false);
@@ -192,7 +204,7 @@ export default function DeliveryManagementPage({ params }: { params: Promise<{ s
           icon={Truck}
         />
         
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-24">
           {/* Header */}
           <div className="mb-8">
             <div className="flex items-center space-x-3 mb-2">

@@ -163,7 +163,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
     if (user && slug) {
       loadStoreAndProducts();
     }
-  }, [user, slug]);
+  }, [slug]); // Removido user da dependência para evitar recarregamentos desnecessários
 
   const loadStoreAndProducts = async () => {
     if (!slug) return;
@@ -487,25 +487,34 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
     if (!deleteModal.productId) return;
 
     try {
+      console.log('🔄 Iniciando delete do produto:', deleteModal.productId);
+      
       // Usar API específica para DELETE - NÃO deleta todos os produtos!
       const response = await fetch(`/api/stores/${slug}/products?id=${deleteModal.productId}`, {
         method: 'DELETE'
       });
 
+      console.log('📡 Resposta da API delete:', response.status, response.statusText);
+
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('❌ Erro na API delete:', errorData);
         throw new Error(errorData.error || 'Erro ao deletar produto');
       }
 
+      const result = await response.json();
+      console.log('✅ Resultado do delete:', result);
+
       // Remover apenas localmente - não recarregar todos
       const updatedProducts = products.filter(p => p.id !== deleteModal.productId);
+      console.log('📝 Produtos após remoção local:', updatedProducts.length);
       setProducts(updatedProducts);
 
       setDeleteModal({ isOpen: false, productId: null, productName: '' });
       toast.success('Produto deletado com sucesso!');
     } catch (error) {
+      console.error('❌ Erro completo ao deletar produto:', error);
       toast.error('Erro ao deletar produto');
-      console.error('Erro ao deletar produto:', error);
     }
   };
 
@@ -614,7 +623,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
           icon={Package}
         />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-24">
 
           {/* Section Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
