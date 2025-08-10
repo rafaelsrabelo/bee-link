@@ -2,8 +2,8 @@
 
 import CouponCard from '@/components/store/coupon-card';
 import PriceWithDiscount from '@/components/ui/price-with-discount';
-import { CreditCard, MapPin, ShoppingBag, User } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { AlertCircle, CreditCard, MapPin, ShoppingBag, User } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { useCartStore } from '../../../stores/cartStore';
 
@@ -65,6 +65,9 @@ export default function SummaryStep({
   } | null>(null);
   const [deliveryFee, setDeliveryFee] = useState<number>(0);
   const [deliveryDistance, setDeliveryDistance] = useState<number>(0);
+  const [deliveryError, setDeliveryError] = useState<string | null>(null);
+  const [deliveryPossible, setDeliveryPossible] = useState<boolean>(true);
+  const [deliveryCalculated, setDeliveryCalculated] = useState<boolean>(false);
   const { clearCart } = useCartStore();
 
   // Calcular total
@@ -85,15 +88,20 @@ export default function SummaryStep({
   const total = totalWithDiscount + deliveryFee;
 
   // Função para calcular taxa de entrega
-  const calculateDeliveryFee = async () => {
+  const calculateDeliveryFee = useCallback(async () => {
     if (deliveryData.type !== 'delivery' || !store?.slug) {
       setDeliveryFee(0);
       setDeliveryDistance(0);
+      setDeliveryError(null);
+      setDeliveryPossible(true);
+      setDeliveryCalculated(true);
       setIsCalculatingDelivery(false);
       return;
     }
 
     setIsCalculatingDelivery(true);
+    setDeliveryError(null);
+    setDeliveryCalculated(false);
     
     try {
       // Montar endereço completo do cliente
@@ -107,6 +115,7 @@ export default function SummaryStep({
         body: JSON.stringify({
           customer_address: customerAddress,
           order_total: totalWithDiscount,
+          subtotal: subtotal, // Enviar subtotal original para cálculo correto do frete grátis
         }),
       });
 
@@ -114,26 +123,38 @@ export default function SummaryStep({
         const data = await response.json();
         setDeliveryFee(data.delivery_fee || 0);
         setDeliveryDistance(data.distance_km || 0);
+        setDeliveryPossible(data.delivery_possible || false);
+        setDeliveryCalculated(true);
+        
+        // Se a entrega não for possível, mostrar erro
+        if (!data.delivery_possible) {
+          setDeliveryError(data.reason || 'Entrega não disponível para este endereço');
+        }
       } else {
         const data = await response.json();
         console.error('Erro ao calcular taxa de entrega:', data.error);
-        toast.error(data.error || 'Erro ao calcular taxa de entrega');
+        setDeliveryError(data.error || 'Erro ao calcular taxa de entrega');
         setDeliveryFee(0);
         setDeliveryDistance(0);
+        setDeliveryPossible(false);
+        setDeliveryCalculated(true);
       }
     } catch (error) {
       console.error('Erro ao calcular taxa de entrega:', error);
+      setDeliveryError('Erro ao conectar com o servidor. Tente novamente.');
       setDeliveryFee(0);
       setDeliveryDistance(0);
+      setDeliveryPossible(false);
+      setDeliveryCalculated(true);
     } finally {
       setIsCalculatingDelivery(false);
     }
-  };
+  }, [deliveryData, store?.slug, totalWithDiscount, subtotal]);
 
   // Calcular taxa de entrega quando o componente montar ou quando mudar o tipo de entrega
   useEffect(() => {
     calculateDeliveryFee();
-  }, [deliveryData.type, subtotal, store?.slug]);
+  }, [calculateDeliveryFee]);
 
   // Função para lidar com cupom aplicado
   const handleCouponApplied = (couponData: {
@@ -167,8 +188,35 @@ export default function SummaryStep({
     debit_card: 'Cartão de Débito'
   };
 
+  // Verificar se pode finalizar o pedido
+  const canFinalizeOrder = () => {
+    // Se for retirada, sempre pode finalizar
+    if (deliveryData.type === 'pickup') {
+      return true;
+    }
+    
+    // Se for entrega, verificar se foi calculada e é possível
+    if (deliveryData.type === 'delivery') {
+      return deliveryCalculated && deliveryPossible && !deliveryError;
+    }
+    
+    return false;
+  };
+
+  // Função para tentar recalcular entrega
+  const retryDeliveryCalculation = () => {
+    if (deliveryData.type === 'delivery') {
+      calculateDeliveryFee();
+    }
+  };
   
   const handleFinalize = async () => {
+    // Validação adicional antes de finalizar
+    if (deliveryData.type === 'delivery' && (!deliveryCalculated || !deliveryPossible)) {
+      toast.error('Não é possível finalizar o pedido. Verifique as informações de entrega.');
+      return;
+    }
+
     if (!store) {
       toast.error('Dados da loja não encontrados');
       return;
@@ -472,6 +520,31 @@ Pedido feito pelo site 🐝 Bee Link`;
         </div>
       </div>
 
+      {/* Alerta de erro de entrega */}
+      {deliveryData.type === 'delivery' && deliveryError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+          <div className="flex items-start space-x-3">
+            <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <h4 className="text-sm font-medium text-red-800 mb-1">
+                Problema com a entrega
+              </h4>
+              <p className="text-sm text-red-700 mb-3">
+                {deliveryError}
+              </p>
+              <button
+                type="button"
+                onClick={retryDeliveryCalculation}
+                disabled={isCalculatingDelivery}
+                className="text-sm text-red-600 hover:text-red-800 font-medium underline"
+              >
+                {isCalculatingDelivery ? 'Tentando novamente...' : 'Tentar novamente'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Botões */}
       <div className="flex space-x-4">
         <button
@@ -485,8 +558,8 @@ Pedido feito pelo site 🐝 Bee Link`;
         <button
           type="button"
           onClick={handleFinalize}
-          disabled={isSubmitting}
-          className="flex-1 text-white py-3 px-4 rounded-lg font-medium hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center"
+          disabled={isSubmitting || !canFinalizeOrder()}
+          className="flex-1 text-white py-3 px-4 rounded-lg font-medium hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
           style={{ backgroundColor: store?.colors?.primary || '#16a34a' }}
         >
           {isSubmitting ? (
@@ -499,6 +572,20 @@ Pedido feito pelo site 🐝 Bee Link`;
           )}
         </button>
       </div>
+
+      {/* Mensagem explicativa quando botão está desabilitado */}
+      {deliveryData.type === 'delivery' && !canFinalizeOrder() && (
+        <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+          <p className="text-sm text-amber-700 text-center">
+            {!deliveryCalculated 
+              ? 'Aguardando cálculo da distância...' 
+              : !deliveryPossible 
+                ? 'Endereço fora da área de entrega' 
+                : 'Verifique as informações de entrega'
+            }
+          </p>
+        </div>
+      )}
     </div>
   );
 }

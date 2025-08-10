@@ -1,7 +1,7 @@
+import { calculateDistance, geocodeAddress } from '@/lib/distance';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { type NextRequest, NextResponse } from 'next/server';
-import { calculateDistance, geocodeAddress } from '@/lib/distance';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   try {
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     // Validar dados de entrada
-    const { customer_address, order_total } = body;
+    const { customer_address, order_total, subtotal } = body;
 
     if (typeof order_total !== 'number' || order_total < 0) {
       return NextResponse.json({ error: 'Valor do pedido deve ser um número positivo' }, { status: 400 });
@@ -84,8 +84,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     let deliveryFee = 0;
     
     if (deliverySettings.delivery_enabled && calculatedDistance <= deliverySettings.delivery_radius_km) {
+      // IMPORTANTE: Frete grátis deve ser baseado no subtotal original (antes do desconto)
+      // Usar subtotal se fornecido, senão usar order_total como fallback
+      const valueForFreeDelivery = subtotal || order_total;
+      
       // Se pedido atinge o valor mínimo para entrega gratuita (só se o threshold > 0)
-      if (deliverySettings.free_delivery_threshold > 0 && order_total >= deliverySettings.free_delivery_threshold) {
+      if (deliverySettings.free_delivery_threshold > 0 && valueForFreeDelivery >= deliverySettings.free_delivery_threshold) {
         deliveryFee = 0;
       } else {
         // Calcular taxa baseada na distância
