@@ -39,7 +39,7 @@ export async function GET(
 
     // Processar produtos para garantir compatibilidade
     const processedProducts = (products || []).map((product: { 
-      id: string; 
+      id: string | number; 
       name: string; 
       description?: string; 
       price: number; 
@@ -110,15 +110,18 @@ export async function POST(
       }
     }
 
+    // Gerar um ID simples baseado no timestamp
+    const timestamp = Date.now();
+    const randomSuffix = Math.floor(Math.random() * 1000);
+    const simpleId = `${timestamp}${randomSuffix}`;
+
     // Criar um único produto, não deletar os existentes!
     const newProduct = {
       ...productData,
+      id: simpleId,
       price: processedPrice,
       store_id: store.id
     };
-
-    // Remover o campo id se estiver presente - deixar o Supabase gerar
-    delete newProduct.id;
 
     console.log('Dados do produto a ser inserido:', newProduct);
 

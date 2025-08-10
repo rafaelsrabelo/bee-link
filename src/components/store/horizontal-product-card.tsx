@@ -1,6 +1,7 @@
 import { Plus, Star } from 'lucide-react';
 import Image from 'next/image';
 import { formatPrice } from '../../lib/utils';
+import ProductNavigation from './product-navigation';
 
 interface Product {
   id: string;
@@ -39,6 +40,7 @@ interface HorizontalProductCardProps {
   layoutSettings?: LayoutSettings;
   onProductClick: (product: Product) => void;
   onAddToCart: (product: Product) => void;
+  storeSlug: string;
 }
 
 export default function HorizontalProductCard({
@@ -46,7 +48,8 @@ export default function HorizontalProductCard({
   storeColors,
   layoutSettings,
   onProductClick,
-  onAddToCart
+  onAddToCart,
+  storeSlug
 }: HorizontalProductCardProps) {
   const settings = {
     show_product_badges: layoutSettings?.show_product_badges !== false,
@@ -61,16 +64,12 @@ export default function HorizontalProductCard({
     <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 group border border-gray-100 overflow-hidden">
       <div className="flex">
         {/* Imagem do Produto - Esquerda */}
-        <div 
-          className="relative w-24 h-24 flex-shrink-0 cursor-pointer"
-          onClick={() => onProductClick(product)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              onProductClick(product);
-            }
-          }}
-          role="button"
-          tabIndex={0}
+        <ProductNavigation 
+          storeSlug={storeSlug}
+          productId={product.id}
+          className="relative w-24 h-24 flex-shrink-0"
+          onProductClick={onProductClick}
+          product={product}
         >
           <Image 
             src={product.image} 
@@ -89,27 +88,23 @@ export default function HorizontalProductCard({
                 className="bg-white px-1.5 py-0.5 rounded text-xs font-medium shadow-sm border"
                 style={{ 
                   color: storeColors.primary,
-                  borderColor: storeColors.primary + '30'
+                  borderColor: `${storeColors.primary}30`
                 }}
               >
                 ✓
               </div>
             </div>
           )}
-        </div>
+        </ProductNavigation>
 
         {/* Informações do Produto - Direita */}
         <div className="flex-1 p-3 flex flex-col justify-center">
-          <div 
+          <ProductNavigation 
+            storeSlug={storeSlug}
+            productId={product.id}
             className="cursor-pointer flex-1"
-            onClick={() => onProductClick(product)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                onProductClick(product);
-              }
-            }}
-            role="button"
-            tabIndex={0}
+            onProductClick={onProductClick}
+            product={product}
           >
             {/* Nome do produto */}
             <h4 className="font-semibold text-gray-900 text-sm leading-tight line-clamp-1 mb-1">
@@ -162,7 +157,7 @@ export default function HorizontalProductCard({
                 </button>
               )}
             </div>
-          </div>
+          </ProductNavigation>
         </div>
       </div>
     </div>

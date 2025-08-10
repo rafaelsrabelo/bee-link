@@ -1,6 +1,7 @@
 import { Plus, Star } from 'lucide-react';
 import Image from 'next/image';
 import { formatPrice } from '../../lib/utils';
+import ProductNavigation from './product-navigation';
 
 interface Product {
   id: string;
@@ -39,6 +40,7 @@ interface EnhancedProductCardProps {
   onProductClick: (product: Product) => void;
   onAddToCart: (product: Product) => void;
   getCartItemQuantity?: (productName: string) => number;
+  storeSlug: string;
 }
 
 export default function EnhancedProductCard({
@@ -47,7 +49,8 @@ export default function EnhancedProductCard({
   layoutSettings,
   onProductClick,
   onAddToCart,
-  getCartItemQuantity
+  getCartItemQuantity,
+  storeSlug
 }: EnhancedProductCardProps) {
   const settings = {
     show_product_badges: layoutSettings?.show_product_badges !== false,
@@ -63,16 +66,12 @@ export default function EnhancedProductCard({
   return (
     <div className="relative rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-all duration-200 group border border-gray-100">
       {/* Product Image - Clickable for Modal */}
-      <div 
-        className="block cursor-pointer"
-        onClick={() => onProductClick(product)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            onProductClick(product);
-          }
-        }}
-        role="button"
-        tabIndex={0}
+      <ProductNavigation 
+        storeSlug={storeSlug}
+        productId={product.id}
+        className="block"
+        onProductClick={onProductClick}
+        product={product}
       >
         <div className="aspect-square relative overflow-hidden">
           <Image
@@ -90,7 +89,7 @@ export default function EnhancedProductCard({
                 className="bg-white px-2 py-1 rounded text-xs font-medium shadow-sm border"
                 style={{ 
                   color: storeColors.primary,
-                  borderColor: storeColors.primary + '30' // 19% de opacidade
+                  borderColor: `${storeColors.primary}30` // 19% de opacidade
                 }}
               >
                 ✓ Pronta entrega
@@ -104,27 +103,23 @@ export default function EnhancedProductCard({
               className="bg-white px-3 py-1.5 rounded text-sm font-medium shadow-md border"
               style={{ 
                 color: storeColors.primary,
-                borderColor: storeColors.primary + '40' // 25% de opacidade
+                borderColor: `${storeColors.primary}40` // 25% de opacidade
               }}
             >
               Ver detalhes
             </div>
           </div>
         </div>
-      </div>
+      </ProductNavigation>
       
       {/* Product Info */}
       <div className="p-4 space-y-3">
-        <div 
+        <ProductNavigation 
+          storeSlug={storeSlug}
+          productId={product.id}
           className="cursor-pointer"
-          onClick={() => onProductClick(product)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              onProductClick(product);
-            }
-          }}
-          role="button"
-          tabIndex={0}
+          onProductClick={onProductClick}
+          product={product}
         >
           <h4 className="font-semibold text-gray-900 mb-2 line-clamp-2 text-base leading-tight">
             {product.name}
@@ -143,7 +138,7 @@ export default function EnhancedProductCard({
               <span className="text-xs text-gray-400">(12 avaliações)</span>
             </div>
           )}
-        </div>
+        </ProductNavigation>
         
         <div className="flex items-center justify-between">
           {settings.show_product_price && (

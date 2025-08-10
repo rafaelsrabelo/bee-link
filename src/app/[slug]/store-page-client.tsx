@@ -249,7 +249,8 @@ export default function StorePageClient({ store }: StorePageClientProps) {
   const handleProductClick = (product: Product) => {
     // No mobile, navegar para página separada
     if (window.innerWidth < 768) {
-      window.location.href = `/${store.slug}/${product.id}`;
+      // Usar router.push para navegação mais suave
+      router.push(`/${store.slug}/${product.id}`);
       return;
     }
     
@@ -289,6 +290,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
           layoutSettings={store.layout_settings}
           onProductClick={handleProductClick}
           onAddToCart={handleAddToCart}
+          storeSlug={store.slug}
         />
       );
     }
@@ -302,6 +304,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
         onProductClick={handleProductClick}
         onAddToCart={handleAddToCart}
         getCartItemQuantity={getCartItemQuantity}
+        storeSlug={store.slug}
       />
     );
   };
