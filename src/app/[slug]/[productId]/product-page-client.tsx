@@ -5,9 +5,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import FloatingCart from '../../../components/store/floating-cart';
+import SizeSelector from '../../../components/ui/size-selector';
 import { trackAddToCart, trackPageView, trackProductClick } from '../../../lib/analytics';
 import CartControls from '../../components/cart-controls';
-import SizeSelector from '../../../components/ui/size-selector';
 
 import { useCartStore } from '../../stores/cartStore';
 
