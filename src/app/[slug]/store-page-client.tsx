@@ -156,9 +156,6 @@ export default function StorePageClient({ store }: StorePageClientProps) {
                         document.referrer.includes('telegram') ||
                         document.referrer.includes('email');
     
-    console.log('🔍 Analytics: Referrer:', document.referrer);
-    console.log('🔍 Analytics: Is direct link:', isDirectLink);
-    
     trackPageView({
       page_title: `${store.store_name} - Loja`,
       page_url: window.location.href,

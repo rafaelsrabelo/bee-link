@@ -522,10 +522,6 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Debug: Log dos dados sendo salvos
-      console.log('Salvando formData:', formData);
-      console.log('Layout Settings:', formData.layout_settings);
-      
       const response = await fetch(`/api/stores/${slug}`, {
         method: 'PUT',
         headers: {

@@ -108,8 +108,6 @@ export default function DeliveryManagementPage({ params }: { params: Promise<{ s
         estimated_delivery_time_to: settings.estimated_delivery_time_to,
       };
 
-      console.log('🔄 Salvando configurações de entrega:', dataToSend);
-
       const response = await fetch(`/api/stores/${slug}/delivery-settings`, {
         method: 'PUT',
         headers: {
@@ -118,11 +116,8 @@ export default function DeliveryManagementPage({ params }: { params: Promise<{ s
         body: JSON.stringify(dataToSend),
       });
 
-      console.log('📡 Resposta da API:', response.status, response.statusText);
-
       if (response.ok) {
         const result = await response.json();
-        console.log('✅ Configurações salvas com sucesso:', result);
         toast.success('Configurações salvas com sucesso!');
         
         // Recarregar configurações para garantir sincronização

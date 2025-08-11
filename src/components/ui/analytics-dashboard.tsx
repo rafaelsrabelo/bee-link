@@ -58,12 +58,9 @@ export default function AnalyticsDashboard({ storeSlug }: AnalyticsDashboardProp
       
       if (response.ok) {
         const data = await response.json();
-        console.log('📊 Analytics data received:', data);
-        console.log('🛒 Top cart products:', data.top_cart_products);
         setAnalytics(data);
       }
-    } catch (error) {
-      console.error('Erro ao carregar analytics:', error);
+    } catch {
     } finally {
       setLoading(false);
     }
@@ -290,7 +287,6 @@ export default function AnalyticsDashboard({ storeSlug }: AnalyticsDashboardProp
           </div>
           <div className="space-y-3">
             {analytics.top_cart_products.slice(0, 5).map((product, index) => {
-              console.log('🛒 Product data:', product);
               return (
                 <div key={product.product_id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center space-x-3">

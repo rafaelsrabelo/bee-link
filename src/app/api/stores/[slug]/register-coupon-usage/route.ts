@@ -28,14 +28,6 @@ export async function POST(
       return NextResponse.json({ error: 'Loja não encontrada' }, { status: 404 });
     }
 
-    // Debug: Log dos parâmetros
-    console.log('🔍 Debug - Registrando uso do cupom:', {
-      coupon_code: coupon_code.toUpperCase(),
-      store_slug: slug,
-      user_ip: request.headers.get('x-forwarded-for') || 'unknown',
-      user_agent: request.headers.get('user-agent') || 'unknown'
-    });
-
     // Registrar uso do cupom diretamente na tabela
     const { data: coupon, error: couponError } = await supabase
       .from('coupons')
@@ -74,9 +66,6 @@ export async function POST(
       console.error('Erro ao atualizar contador:', updateError);
       // Não falhar se apenas a atualização do contador der erro
     }
-
-    // Debug: Log do resultado
-    console.log('🔍 Debug - Uso do cupom registrado com sucesso');
 
     return NextResponse.json({ 
       success: true, 

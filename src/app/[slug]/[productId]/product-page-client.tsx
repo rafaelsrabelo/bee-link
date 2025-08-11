@@ -81,9 +81,6 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
                         document.referrer.includes('telegram') ||
                         document.referrer.includes('email');
     
-    console.log('🔍 Analytics: Referrer:', document.referrer);
-    console.log('🔍 Analytics: Is direct link:', isDirectLink);
-    
     // Track page view
     trackPageView({
       page_title: `${product.name} - ${store.store_name}`,

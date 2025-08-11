@@ -104,10 +104,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
       };
     });
 
-    console.log('Categorias retornadas pela API:', categories);
     return NextResponse.json(categories);
-  } catch (error) {
-    console.error('Erro ao buscar categorias:', error);
+  } catch {
     return NextResponse.json([]);
   }
 }

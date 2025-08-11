@@ -58,8 +58,6 @@ export async function POST(request: NextRequest) {
   try {
     const { orderId } = await request.json();
     
-    console.log('🖨️ API Impressão - OrderID recebido:', orderId);
-
     if (!orderId) {
       return NextResponse.json(
         { error: 'ID do pedido é obrigatório' },
@@ -73,8 +71,6 @@ export async function POST(request: NextRequest) {
       .select('*')
       .eq('id', orderId)
       .single();
-
-    console.log('🔍 Pedido encontrado:', { orderData, orderError });
 
     if (orderError || !orderData) {
       console.error('❌ Erro ao buscar pedido:', orderError);
@@ -90,8 +86,6 @@ export async function POST(request: NextRequest) {
       .select('id, name, slug, logo, address, colors, social_networks')
       .eq('id', orderData.store_id)
       .single();
-
-    console.log('🏪 Loja encontrada:', { storeData, storeError });
 
     if (storeError || !storeData) {
       console.error('❌ Erro ao buscar loja:', storeError);

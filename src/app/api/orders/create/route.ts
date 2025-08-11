@@ -65,19 +65,14 @@ Para aceitar o pedido, acesse o painel administrativo.`;
 async function sendWhatsAppMessage(phone: string, message: string) {
   try {
     return true;
-  } catch (error) {
-    console.error('Erro ao enviar mensagem WhatsApp:', error);
+  } catch {
     return false;
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('🔄 POST /api/orders/create - Iniciando criação de pedido');
-    
     const body: CreateOrderRequest = await request.json();
-    console.log('📦 Dados recebidos:', JSON.stringify(body, null, 2));
-    
     const { 
       storeSlug, 
       customer_name, 
@@ -101,16 +96,11 @@ export async function POST(request: NextRequest) {
       subtotal
     } = body;
 
-    // 1. Buscar a loja pelo slug
-    console.log('🔍 Buscando loja com slug:', storeSlug);
-    
     const { data: store, error: storeError } = await supabase
       .from('stores')
       .select('id, name, social_networks')
       .eq('slug', storeSlug)
       .single();
-
-    console.log('🏪 Resultado da busca da loja:', { store, storeError });
 
     if (storeError || !store) {
       console.error('❌ Loja não encontrada:', { storeSlug, storeError });
@@ -120,9 +110,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 2. Criar ou buscar o cliente
-    console.log('👤 Processando cliente:', { customer_name, customer_phone });
-    
     let customerId: string;
     
     // Primeiro, tentar buscar cliente existente pelo telefone
@@ -133,14 +120,9 @@ export async function POST(request: NextRequest) {
       .eq('store_id', store.id)
       .single();
 
-    console.log('🔍 Busca de cliente existente:', { existingCustomer, existingCustomerError });
-
     if (existingCustomer) {
       customerId = existingCustomer.id;
-      console.log('✅ Cliente existente encontrado:', customerId);
     } else {
-      console.log('🆕 Criando novo cliente...');
-      
       // Criar novo cliente
       const { data: newCustomer, error: customerError } = await supabase
         .from('customers')
@@ -153,10 +135,7 @@ export async function POST(request: NextRequest) {
         .select('id')
         .single();
 
-      console.log('👤 Resultado da criação do cliente:', { newCustomer, customerError });
-
       if (customerError) {
-        console.error('❌ Erro ao criar cliente:', customerError);
         return NextResponse.json(
           { error: 'Erro ao criar cliente', details: customerError.message },
           { status: 500 }
@@ -164,7 +143,6 @@ export async function POST(request: NextRequest) {
       }
 
       customerId = newCustomer.id;
-      console.log('✅ Novo cliente criado:', customerId);
     }
 
     // Objeto básico sempre funciona
@@ -200,19 +178,13 @@ export async function POST(request: NextRequest) {
       orderInsert.created_at = new Date(`${order_date}T00:00:00.000Z`).toISOString();
     }
 
-    console.log('📦 Dados do pedido para inserção:', JSON.stringify(orderInsert, null, 2));
-    
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert([orderInsert])
       .select()
       .single();
 
-    console.log('🛒 Resultado da criação do pedido:', { order, orderError });
-
     if (orderError) {
-      console.error('❌ Erro ao criar pedido:', orderError);
-      
       // Se o erro for de coluna não existe, dar uma mensagem mais clara
       if (orderError.message?.includes('column') && orderError.message?.includes('does not exist')) {
         return NextResponse.json(
@@ -243,7 +215,6 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Erro na criação do pedido:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

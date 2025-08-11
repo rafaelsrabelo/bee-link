@@ -128,8 +128,6 @@ export async function POST(
       store_id: store.id
     };
 
-    console.log('Dados do produto a ser inserido:', newProduct);
-
     const { data: product, error: insertError } = await supabase
       .from('products')
       .insert([newProduct])
@@ -137,13 +135,6 @@ export async function POST(
       .single();
 
     if (insertError) {
-      console.error('Erro detalhado ao inserir produto:', {
-        error: insertError,
-        productData: newProduct,
-        originalData: productData
-      });
-      
-      // Retornar erro mais específico baseado no tipo de erro
       if (insertError.code === '23505') {
         return NextResponse.json({ error: 'Produto com este nome já existe na loja' }, { status: 409 });
       } else if (insertError.code === '23503') {
@@ -158,7 +149,6 @@ export async function POST(
 
     return NextResponse.json(product);
   } catch (error) {
-    console.error('Erro no servidor:', error);
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 }
@@ -223,10 +213,6 @@ export async function PUT(
       store_id: store.id
     };
 
-    console.log('Dados recebidos para atualização:', updateData);
-    console.log('Produto processado para atualização:', updatedProduct);
-    console.log('Atualizando produto com ID:', id);
-
     const { data: product, error: updateError } = await supabase
       .from('products')
       .update(updatedProduct)
@@ -236,7 +222,6 @@ export async function PUT(
       .single();
 
     if (updateError) {
-      console.error('Erro ao atualizar produto:', updateError);
       return NextResponse.json({ 
         error: 'Erro ao atualizar produto', 
         details: updateError.message 
@@ -245,7 +230,6 @@ export async function PUT(
 
     return NextResponse.json(product);
   } catch (error) {
-    console.error('Erro no servidor:', error);
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 }
@@ -289,16 +273,12 @@ export async function DELETE(
       return NextResponse.json({ error: 'ID do produto é obrigatório' }, { status: 400 });
     }
 
-    console.log('🗑️ Deletando produto:', productId, 'da loja:', store.id);
-
     const { data: deletedData, error: deleteError } = await supabase
       .from('products')
       .delete()
       .eq('id', productId)
       .eq('store_id', store.id)
       .select();
-
-    console.log('📊 Resultado do delete:', { deletedData, deleteError });
 
     if (deleteError) {
       console.error('❌ Erro ao deletar produto:', deleteError);
@@ -308,7 +288,6 @@ export async function DELETE(
       }, { status: 500 });
     }
 
-    console.log('✅ Produto deletado com sucesso:', deletedData);
     return NextResponse.json({ success: true, deletedData });
   } catch (error) {
     console.error('Erro no servidor:', error);

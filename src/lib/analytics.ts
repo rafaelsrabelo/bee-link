@@ -73,8 +73,6 @@ class Analytics {
   // Rastrear clique em produto
   async trackProductClick(event: ProductClickEvent) {
     try {
-      console.log('🔍 Analytics: Tracking product click:', event);
-      
       // GA4 Tracking
       if (this.config.enableGA4 && typeof gtag !== 'undefined') {
         gtag('event', 'product_click', {
@@ -94,7 +92,6 @@ class Analytics {
 
       // Local Tracking (apenas dados essenciais)
       if (this.config.enableLocalTracking) {
-        console.log('📊 Analytics: Sending to local API...');
         await this.sendToLocalAPI({
           type: 'product_click',
           product_id: event.product_id,
@@ -110,18 +107,15 @@ class Analytics {
           page_url: typeof window !== 'undefined' ? window.location.href : '',
           page_title: typeof window !== 'undefined' ? document.title : ''
         });
-        console.log('✅ Analytics: Successfully sent to local API');
       }
     } catch (error) {
-      console.error('❌ Erro ao rastrear clique em produto:', error);
+      // Erro silencioso para produção
     }
   }
 
   // Rastrear adição ao carrinho
   async trackAddToCart(event: ProductClickEvent) {
     try {
-      console.log('🛒 Analytics: Tracking add to cart:', event);
-      
       // GA4 Tracking
       if (this.config.enableGA4 && typeof gtag !== 'undefined') {
         gtag('event', 'add_to_cart', {
@@ -136,7 +130,6 @@ class Analytics {
 
       // Local Tracking
       if (this.config.enableLocalTracking) {
-        console.log('📊 Analytics: Sending add to cart to local API...');
         await this.sendToLocalAPI({
           type: 'cart_add',
           product_id: event.product_id,
@@ -147,10 +140,9 @@ class Analytics {
           page_url: typeof window !== 'undefined' ? window.location.href : '',
           page_title: typeof window !== 'undefined' ? document.title : ''
         });
-        console.log('✅ Analytics: Successfully sent add to cart to local API');
       }
     } catch (error) {
-      console.error('❌ Erro ao rastrear adição ao carrinho:', error);
+      // Erro silencioso para produção
     }
   }
 
@@ -178,7 +170,7 @@ class Analytics {
         });
       }
     } catch (error) {
-      console.error('Erro ao rastrear visualização de página:', error);
+      // Erro silencioso para produção
     }
   }
 
@@ -201,9 +193,6 @@ class Analytics {
       // Extrair store_slug da URL atual
       const storeSlug = typeof window !== 'undefined' ? window.location.pathname.split('/')[1] : '';
       
-      console.log('🌐 Analytics: Extracted store slug:', storeSlug);
-      console.log('📤 Analytics: Sending data:', data);
-      
       // Enviar apenas os campos que existem na tabela analytics_events
       const payload = {
         event_type: data.type,
@@ -214,8 +203,6 @@ class Analytics {
         referrer: data.referrer || ''
       };
       
-      console.log('📦 Analytics: Payload:', payload);
-      
       const response = await fetch('/api/analytics/track', {
         method: 'POST',
         headers: {
@@ -224,18 +211,14 @@ class Analytics {
         body: JSON.stringify(payload),
       });
 
-      console.log('📡 Analytics: Response status:', response.status);
-
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ Analytics: API Error:', errorText);
         throw new Error(`Falha ao enviar dados de analytics: ${response.status} - ${errorText}`);
       }
       
       const result = await response.json();
-      console.log('✅ Analytics: API Success:', result);
     } catch (error) {
-      console.error('❌ Erro ao enviar dados para API local:', error);
+      // Erro silencioso para produção
     }
   }
 

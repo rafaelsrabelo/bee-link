@@ -19,14 +19,6 @@ export async function POST(request: NextRequest) {
     // Aceitar tanto 'file' quanto 'image' para compatibilidade
     const file = (formData.get('file') || formData.get('image')) as File;
     
-    console.log('Upload debug:', {
-      hasFile: !!file,
-      fileName: file?.name,
-      fileSize: file?.size,
-      fileType: file?.type,
-      formDataKeys: Array.from(formData.keys())
-    });
-    
     if (!file) {
       return NextResponse.json(
         { error: 'Nenhuma imagem foi enviada. Selecione uma imagem e tente novamente.' },

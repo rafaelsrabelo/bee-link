@@ -55,27 +55,19 @@ export default function DeliveryStep({
       if (!store?.slug) return;
 
       try {
-        console.log('🔄 Buscando configurações de entrega para:', store.slug);
-        
         const response = await fetch(`/api/stores/${store.slug}/delivery-settings`);
-        console.log('📡 Resposta da API de entrega:', response.status, response.statusText);
         
         if (response.ok) {
           const settings = await response.json();
-          console.log('✅ Configurações de entrega carregadas:', settings);
           setDeliverySettings(settings);
-
           // Se entrega está desabilitada, forçar retirada
           if (!settings.delivery_enabled && deliveryData.type === 'delivery') {
-            console.log('⚠️ Entrega desabilitada, forçando retirada');
             setDeliveryData({ ...deliveryData, type: 'pickup' });
           }
         } else {
           const errorData = await response.json();
-          console.error('❌ Erro na API de entrega:', errorData);
         }
-      } catch (error) {
-        console.error('❌ Erro ao buscar configurações de entrega:', error);
+      } catch {
       } finally {
         setLoadingSettings(false);
       }

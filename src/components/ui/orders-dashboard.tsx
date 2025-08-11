@@ -492,13 +492,10 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
       if (response.ok) {
         const data = await response.json();
         setPrintSettings(data.print_settings);
-        console.log('🖨️ Configurações de impressão carregadas:', data.print_settings);
       } else {
-        console.log('⚠️ Configurações de impressão não encontradas, usando padrão');
         setPrintSettings(null);
       }
     } catch (error) {
-      console.error('❌ Erro ao carregar configurações de impressão:', error);
       setPrintSettings(null);
     }
   }, [storeSlug]);
@@ -846,10 +843,7 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
           <button
             type="button"
             onClick={() => {
-              console.log('🔘 Botão Adicionar Pedido clicado');
-              console.log('📊 Estado atual showCreateModal:', showCreateModal);
               setShowCreateModal(true);
-              console.log('✅ showCreateModal definido como true');
             }}
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
           >
@@ -870,12 +864,7 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
           
           {/* Botão de ação principal */}
           <button
-            onClick={() => {
-              console.log('🔘 Botão Criar Primeiro Pedido clicado');
-              console.log('📊 Estado atual showCreateModal:', showCreateModal);
-              setShowCreateModal(true);
-              console.log('✅ showCreateModal definido como true');
-            }}
+            onClick={() => setShowCreateModal(true)}
             className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 mx-auto transition-colors shadow-lg hover:shadow-xl"
             type="button"
           >
@@ -1233,29 +1222,17 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
 
       {/* Modal de Criar Pedido */}
       {showCreateModal && (
-        <div>
-          {console.log('🎭 Renderizando modal de criação de pedido')}
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl shadow-xl p-8 max-w-md w-full mx-4">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                Modal de Teste
-              </h2>
-              <p className="text-gray-600 mb-4">
-                O modal está funcionando! StoreSlug: {storeSlug}, StoreId: {storeId}
-              </p>
-              <button
-                type="button"
-                onClick={() => {
-                  console.log('❌ Fechando modal de teste');
-                  setShowCreateModal(false);
-                }}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
-              >
-                Fechar Modal
-              </button>
-            </div>
-          </div>
-        </div>
+        <CreateOrderModal
+          storeSlug={storeSlug}
+          storeId={storeId}
+          onClose={() => setShowCreateModal(false)}
+          onOrderCreated={(newOrder) => {
+            setOrders(prev => [newOrder, ...prev]);
+            setShowCreateModal(false);
+            setSelectedOrder(newOrder);
+            toast.success('Pedido criado com sucesso!');
+          }}
+        />
       )}
     </div>
   );

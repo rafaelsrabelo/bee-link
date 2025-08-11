@@ -31,8 +31,6 @@ const orderSources = [
 ];
 
 export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderCreated }: CreateOrderModalProps) {
-  console.log('🎭 CreateOrderModal renderizado com props:', { storeSlug, storeId });
-  
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState('');

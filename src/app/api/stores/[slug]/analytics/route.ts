@@ -82,8 +82,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     // Calcular produtos mais adicionados ao carrinho
     const cartEvents = analyticsData?.filter(e => e.event_type === 'cart_add' && e.product_id) || [];
-    console.log('🔍 Cart events found:', cartEvents.length);
-    
     const cartProducts = cartEvents.reduce((acc, e) => {
       const key = e.product_id;
       if (!acc[key]) {
@@ -101,8 +99,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         rank: index + 1
       }));
       
-    console.log('🛒 Top cart products:', topCartProducts);
-
     // Calcular estatísticas diárias
     const dailyStats = analyticsData
       ?.reduce((acc, e) => {

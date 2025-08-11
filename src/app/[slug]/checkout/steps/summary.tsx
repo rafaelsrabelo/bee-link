@@ -72,14 +72,10 @@ export default function SummaryStep({
 
   // Calcular total
   const subtotal = cart.reduce((sum, item) => {
-    // Debug: verificar preços
-    console.log('Item no carrinho:', item.name, 'Preço:', item.price, 'Tipo:', typeof item.price);
-    
     // Garantir que price seja uma string antes de usar replace
     const priceString = typeof item.price === 'string' ? item.price : String(item.price);
     const price = Number.parseFloat(priceString.replace('R$', '').replace(',', '.').trim());
     
-    console.log('Preço calculado:', price);
     return sum + (price * item.quantity);
   }, 0);
 
@@ -292,10 +288,7 @@ export default function SummaryStep({
               order_id: result.orderId // Associar ao pedido criado
             }),
           });
-          console.log('Uso do cupom registrado com sucesso');
-        } catch (error) {
-          console.error('Erro ao registrar uso do cupom:', error);
-          // Não falhar se apenas o registro do cupom der erro
+        } catch{
         }
       }
       

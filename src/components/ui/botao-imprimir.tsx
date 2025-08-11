@@ -162,9 +162,6 @@ export default function BotaoImprimir({
             window.onload = function() {
               // Configurar impressão automática avançada
               ${shouldAutoPrint && defaultPrinter ? `
-                console.log('🖨️ Configuração de impressão automática ativa');
-                console.log('📱 Impressora configurada: ${defaultPrinter}');
-                
                 // Tentar configurar impressora específica usando APIs mais modernas
                 if (typeof window.print === 'function') {
                   // Configurar opções de impressão se disponível
@@ -181,9 +178,6 @@ export default function BotaoImprimir({
                   // Tentar usar API moderna se disponível
                   if (window.electronAPI) {
                     window.electronAPI.print(printOptions);
-                  } else if (window.chrome && window.chrome.runtime) {
-                    // Para extensões Chrome
-                    console.log('🖨️ Tentando impressão via Chrome API');
                   }
                 }
               ` : ''}
@@ -231,10 +225,6 @@ export default function BotaoImprimir({
       printFrame.contentDocument.close();
     }
 
-    // Log para debug
-    if (shouldAutoPrint && defaultPrinter) {
-      console.log('🖨️ Impressão automática ativada:', defaultPrinter);
-    }
   };
 
   const printContent = (content: string, orderNum?: string) => {

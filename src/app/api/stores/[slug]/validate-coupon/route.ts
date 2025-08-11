@@ -28,13 +28,6 @@ export async function POST(
       return NextResponse.json({ error: 'Loja não encontrada' }, { status: 404 });
     }
 
-    // Debug: Log dos parâmetros
-    console.log('🔍 Debug - Parâmetros da validação:', {
-      coupon_code: coupon_code.toUpperCase(),
-      store_id: store.id,
-      order_value: order_value
-    });
-
     // Validar cupom usando a função SQL
     const { data: validation, error: validationError } = await supabase
       .rpc('validate_coupon', {
@@ -43,19 +36,12 @@ export async function POST(
         p_order_value: order_value
       });
 
-    // Debug: Log do resultado
-    console.log('🔍 Debug - Resultado da validação:', {
-      validation,
-      validationError
-    });
-
     if (validationError) {
       console.error('Erro ao validar cupom:', validationError);
       return NextResponse.json({ error: 'Erro ao validar cupom' }, { status: 500 });
     }
 
     if (!validation || validation.length === 0) {
-      console.log('🔍 Debug - Cupom não encontrado ou resultado vazio');
       return NextResponse.json({ 
         is_valid: false, 
         message: 'Cupom não encontrado' 

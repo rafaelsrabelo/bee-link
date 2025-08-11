@@ -18,16 +18,12 @@ export async function GET(
 ) {
   try {
     const { slug } = await params;
-    console.log('🔍 Buscando configurações de impressão para loja:', slug);
-
     // Primeiro verificar se a loja existe de forma simples
     const { data: simpleStore, error: simpleError } = await supabase
       .from('stores')
       .select('id, name, slug')
       .eq('slug', slug)
       .single();
-
-    console.log('🔍 Teste simples da loja:', { simpleStore, simpleError });
 
     if (simpleError || !simpleStore) {
       console.error('❌ Loja não encontrada no teste simples');
@@ -43,8 +39,6 @@ export async function GET(
       .select('id, print_settings')
       .eq('slug', slug)
       .single();
-
-    console.log('📊 Resultado da busca completa:', { store, storeError });
 
     if (storeError || !store) {
       return NextResponse.json(
@@ -85,8 +79,6 @@ export async function PUT(
     const { slug } = await params;
     const { print_settings } = await request.json();
 
-    console.log('💾 Salvando configurações de impressão:', { slug, print_settings });
-
     // Validar dados
     if (!print_settings) {
       return NextResponse.json(
@@ -123,15 +115,12 @@ export async function PUT(
       );
     }
 
-    console.log('✅ Configurações de impressão salvas com sucesso');
-
     return NextResponse.json({
       success: true,
       message: 'Configurações de impressão salvas com sucesso'
     });
 
   } catch (error) {
-    console.error('Erro ao salvar configurações de impressão:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

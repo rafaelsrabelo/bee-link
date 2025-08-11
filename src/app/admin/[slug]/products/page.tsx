@@ -109,24 +109,17 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
       const response = await fetch(`/api/stores/${slug}/product-categories`);
       if (response.ok) {
         const categories = await response.json();
-        console.log('Categorias carregadas:', categories);
-        console.log('Procurando categoria com ID:', categoryId);
-        
         const category = categories.find((cat: { id: number; name: string }) => cat.id === categoryId);
-        console.log('Categoria encontrada:', category);
         
         if (category?.name) {
           return category.name;
         }
         
-        console.warn('Categoria não encontrada, usando fallback');
         return 'Geral';
       }
       
-      console.error('Erro na resposta da API:', response.status, response.statusText);
       return 'Geral';
     } catch (error) {
-      console.error('Erro ao buscar categoria:', error);
       return 'Geral';
     }
   };
@@ -324,28 +317,18 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
       // Buscar nome real da categoria
       let categoryName = 'Geral'; // Default
       
-      console.log('Debug categoria:', {
-        category: newProduct.category,
-        category_id: newProduct.category_id
-      });
-      
       if (newProduct.category_id) {
         // Se tem category_id, buscar o nome real da categoria
         try {
           categoryName = await getCategoryNameById(newProduct.category_id);
-          console.log('Categoria encontrada pelo ID:', categoryName);
-        } catch (error) {
-          console.error('Erro ao buscar categoria:', error);
-          categoryName = 'Geral'; // Fallback
+        } catch {
+          categoryName = 'Geral';
         }
       } else if (newProduct.category && newProduct.category !== 'selected' && newProduct.category !== 'Geral') {
         // Se não tem category_id mas tem category (e não é 'selected' nem 'Geral'), usar o valor
         categoryName = newProduct.category;
-        console.log('Usando categoria direta:', categoryName);
       }
       
-      console.log('Categoria final:', categoryName);
-
       const product: Product = {
         id: Date.now().toString(),
         name: newProduct.name || '',
@@ -414,9 +397,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
       if (editingProduct.category === 'selected' && editingProduct.category_id) {
         try {
           categoryName = await getCategoryNameById(editingProduct.category_id);
-          console.log('Categoria encontrada para edição:', categoryName);
-        } catch (error) {
-          console.error('Erro ao buscar categoria:', error);
+        } catch {
           categoryName = 'Geral'; // Fallback
         }
       } else if (editingProduct.category === 'Geral') {
@@ -432,8 +413,6 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
         category: categoryName,
         category_id: editingProduct.category_id || undefined
       };
-
-      console.log('Produto a ser atualizado:', updatedProduct);
 
       // Usar API específica para UPDATE - NÃO deleta todos os produtos!
       const response = await fetch(`/api/stores/${slug}/products`, {
@@ -487,14 +466,10 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
     if (!deleteModal.productId) return;
 
     try {
-      console.log('🔄 Iniciando delete do produto:', deleteModal.productId);
-      
       // Usar API específica para DELETE - NÃO deleta todos os produtos!
       const response = await fetch(`/api/stores/${slug}/products?id=${deleteModal.productId}`, {
         method: 'DELETE'
       });
-
-      console.log('📡 Resposta da API delete:', response.status, response.statusText);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -503,11 +478,8 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
       }
 
       const result = await response.json();
-      console.log('✅ Resultado do delete:', result);
-
       // Remover apenas localmente - não recarregar todos
       const updatedProducts = products.filter(p => p.id !== deleteModal.productId);
-      console.log('📝 Produtos após remoção local:', updatedProducts.length);
       setProducts(updatedProducts);
 
       setDeleteModal({ isOpen: false, productId: null, productName: '' });
@@ -944,7 +916,6 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
                     key={categoriesRefreshKey} // Força re-render quando categorias mudam
                     value={newProduct.category_id}
                     onChange={(categoryId) => {
-                      console.log('Categoria selecionada no formulário:', categoryId);
                       setNewProduct({
                         ...newProduct, 
                         category_id: categoryId,
@@ -1085,7 +1056,6 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
                       key={categoriesRefreshKey} // Força re-render quando categorias mudam
                       value={editingProduct.category_id}
                       onChange={(categoryId) => {
-                        console.log('Categoria selecionada na edição:', categoryId);
                         setEditingProduct({
                           ...editingProduct, 
                           category_id: categoryId,

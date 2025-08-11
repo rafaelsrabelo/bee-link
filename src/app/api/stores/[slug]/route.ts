@@ -83,10 +83,6 @@ export async function PUT(
       return NextResponse.json({ error: 'Não autorizado' }, { status: 403 });
     }
 
-    // Debug: Log dos layout_settings recebidos
-    console.log('Layout Settings recebidos:', layout_settings);
-    console.log('Card Layout:', layout_settings?.card_layout);
-
     // Preparar dados para atualização
     const updateData = {
       name: name.trim(),
