@@ -626,8 +626,8 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
                 }
                 
                 // Se têm o mesmo tamanho, verificar se são iguais
-                const prevIds = prev.map(o => o.id).sort();
-                const newIds = newOrders.map(o => o.id).sort();
+                const prevIds = prev.map((o: Order) => o.id).sort();
+                const newIds = newOrders.map((o: Order) => o.id).sort();
                 
                 // Se os IDs são diferentes, atualizar
                 if (JSON.stringify(prevIds) !== JSON.stringify(newIds)) {
