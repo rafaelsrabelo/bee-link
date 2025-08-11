@@ -37,6 +37,8 @@ export default async function StorePage({ params }: StorePageProps) {
       layout_settings: store.layout_settings
     };
 
+
+
     return <StorePageClient store={formattedStore} />;
   } catch {
     notFound();

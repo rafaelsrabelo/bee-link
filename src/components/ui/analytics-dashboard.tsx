@@ -47,7 +47,7 @@ export default function AnalyticsDashboard({ storeSlug }: AnalyticsDashboardProp
 
   useEffect(() => {
     loadAnalytics();
-  }, [storeSlug, filters]);
+  }, [storeSlug, filters.period]); // Só recarregar quando mudar o período
 
   const loadAnalytics = async () => {
     try {

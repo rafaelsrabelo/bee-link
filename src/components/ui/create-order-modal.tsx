@@ -138,12 +138,18 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
     setLoading(true);
 
     try {
+      // Garantir que os preços sejam números
+      const processedItems = orderItems.map(item => ({
+        ...item,
+        price: typeof item.price === 'string' ? parseFloat(item.price) : item.price
+      }));
+
       const orderData = {
         storeSlug,
         customer_name: formData.customer_name,
         customer_phone: formData.customer_phone,
         customer_address: formData.customer_address,
-        items: orderItems,
+        items: processedItems,
         total: getTotal(),
         source: formData.source,
         isManualOrder: true, // Flag para identificar que é do admin
@@ -183,9 +189,16 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
           updated_at: new Date().toISOString()
         };
 
-        toast.success('Pedido criado com sucesso!');
-        onOrderCreated(newOrder);
-        onClose(); // Fechar o modal após sucesso
+        toast.success('Pedido criado com sucesso!', {
+          duration: 2000,
+          icon: '✅'
+        });
+        
+        // Fechar o modal após um pequeno delay para o usuário ver o toast
+        setTimeout(() => {
+          onOrderCreated(newOrder);
+          onClose();
+        }, 500);
       } else {
         const errorData = await response.json();
         toast.error(errorData.error || 'Erro ao criar pedido');
@@ -209,13 +222,23 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
           <button
             type="button"
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            disabled={loading}
+            className="text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <X className="w-6 h-6" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-1 min-h-0">
+        <form onSubmit={handleSubmit} className="flex flex-1 min-h-0 relative">
+          {loading && (
+            <div className="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center z-10">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-lg font-medium text-gray-700">Criando pedido...</p>
+                <p className="text-sm text-gray-500">Aguarde um momento</p>
+              </div>
+            </div>
+          )}
           {/* Coluna da Esquerda - Formulário */}
           <div className="w-1/2 p-6 border-r overflow-y-auto">
             <div className="space-y-4">
@@ -234,9 +257,10 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
                       type="text"
                       value={formData.customer_name}
                       onChange={(e) => setFormData(prev => ({ ...prev, customer_name: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                       placeholder="Nome do cliente"
                       required
+                      disabled={loading}
                     />
                   </div>
 
@@ -248,9 +272,10 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
                       type="tel"
                       value={formData.customer_phone}
                       onChange={(e) => setFormData(prev => ({ ...prev, customer_phone: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                       placeholder="(11) 99999-9999"
                       required
+                      disabled={loading}
                     />
                   </div>
 
@@ -262,8 +287,9 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
                       type="text"
                       value={formData.customer_address}
                       onChange={(e) => setFormData(prev => ({ ...prev, customer_address: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                       placeholder="Endereço de entrega (opcional)"
+                      disabled={loading}
                     />
                   </div>
 
@@ -275,8 +301,9 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
                       type="date"
                       value={formData.order_date}
                       onChange={(e) => setFormData(prev => ({ ...prev, order_date: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                       required
+                      disabled={loading}
                     />
                   </div>
                 </div>
@@ -294,11 +321,12 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
                       key={source.value}
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, source: source.value }))}
+                      disabled={loading}
                       className={`p-2 text-sm rounded-lg border transition-colors ${
                         formData.source === source.value
                           ? 'bg-blue-50 border-blue-200 text-blue-700'
                           : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
-                      }`}
+                      } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                       {source.label}
                     </button>
@@ -314,9 +342,10 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
                 <textarea
                   value={formData.notes}
                   onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   rows={3}
                   placeholder="Observações adicionais..."
+                  disabled={loading}
                 />
               </div>
             </div>
@@ -336,8 +365,9 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   placeholder="Buscar produtos..."
+                  disabled={loading}
                 />
               </div>
             </div>
@@ -375,7 +405,8 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
                               <button
                                 type="button"
                                 onClick={() => updateQuantity(product.id, -1)}
-                                className="w-8 h-8 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg flex items-center justify-center"
+                                disabled={loading}
+                                className="w-8 h-8 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 <Minus className="w-4 h-4" />
                               </button>
@@ -383,7 +414,8 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
                               <button
                                 type="button"
                                 onClick={() => updateQuantity(product.id, 1)}
-                                className="w-8 h-8 bg-green-100 hover:bg-green-200 text-green-600 rounded-lg flex items-center justify-center"
+                                disabled={loading}
+                                className="w-8 h-8 bg-green-100 hover:bg-green-200 text-green-600 rounded-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 <Plus className="w-4 h-4" />
                               </button>
@@ -392,7 +424,8 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
                             <button
                               type="button"
                               onClick={() => addProduct(product)}
-                              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg flex items-center gap-1"
+                              disabled={loading}
+                              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               <Plus className="w-4 h-4" />
                               Adicionar
@@ -433,21 +466,24 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
                           <button
                             type="button"
                             onClick={() => updateQuantity(item.id, -1)}
-                            className="w-6 h-6 bg-gray-200 hover:bg-gray-300 rounded text-gray-600"
+                            disabled={loading}
+                            className="w-6 h-6 bg-gray-200 hover:bg-gray-300 rounded text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <Minus className="w-3 h-3 mx-auto" />
                           </button>
                           <button
                             type="button"
                             onClick={() => updateQuantity(item.id, 1)}
-                            className="w-6 h-6 bg-gray-200 hover:bg-gray-300 rounded text-gray-600"
+                            disabled={loading}
+                            className="w-6 h-6 bg-gray-200 hover:bg-gray-300 rounded text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <Plus className="w-3 h-3 mx-auto" />
                           </button>
                           <button
                             type="button"
                             onClick={() => removeProduct(item.id)}
-                            className="w-6 h-6 bg-red-100 hover:bg-red-200 rounded text-red-600"
+                            disabled={loading}
+                            className="w-6 h-6 bg-red-100 hover:bg-red-200 rounded text-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <X className="w-3 h-3 mx-auto" />
                           </button>
@@ -483,9 +519,18 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
               type="submit"
               onClick={handleSubmit}
               disabled={loading || orderItems.length === 0}
-              className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-lg shadow-lg"
+              className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-lg shadow-lg flex items-center gap-2"
             >
-              {loading ? '🔄 Criando Pedido...' : `🛍️ Criar Pedido - ${formatPrice(getTotal())}`}
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  <span>Processando...</span>
+                </>
+              ) : (
+                <>
+                  <span>🛍️ Criar Pedido - {formatPrice(getTotal())}</span>
+                </>
+              )}
             </button>
           </div>
         </div>

@@ -72,7 +72,9 @@ async function sendWhatsAppMessage(phone: string, message: string) {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('📝 Iniciando criação de pedido...');
     const body: CreateOrderRequest = await request.json();
+    console.log('📝 Dados recebidos:', JSON.stringify(body, null, 2));
     const { 
       storeSlug, 
       customer_name, 
@@ -145,6 +147,12 @@ export async function POST(request: NextRequest) {
       customerId = newCustomer.id;
     }
 
+    // Converter items para garantir que price seja number
+    const processedItems = items.map(item => ({
+      ...item,
+      price: typeof item.price === 'string' ? parseFloat(item.price) : item.price
+    }));
+
     // Objeto básico sempre funciona
     const orderInsert: Record<string, unknown> = {
       store_id: store.id,
@@ -152,8 +160,8 @@ export async function POST(request: NextRequest) {
       customer_name,
       customer_phone,
       customer_address,
-      items,
-      total,
+      items: processedItems,
+      total: typeof total === 'string' ? parseFloat(total) : total,
       source,
       notes,
       status: isManualOrder ? 'delivered' : 'pending'
@@ -178,6 +186,8 @@ export async function POST(request: NextRequest) {
       orderInsert.created_at = new Date(`${order_date}T00:00:00.000Z`).toISOString();
     }
 
+    console.log('📝 Tentando inserir pedido:', JSON.stringify(orderInsert, null, 2));
+    
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert([orderInsert])
@@ -185,6 +195,8 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (orderError) {
+      console.error('❌ Erro ao criar pedido:', orderError);
+      
       // Se o erro for de coluna não existe, dar uma mensagem mais clara
       if (orderError.message?.includes('column') && orderError.message?.includes('does not exist')) {
         return NextResponse.json(

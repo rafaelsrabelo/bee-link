@@ -23,6 +23,7 @@ import React, { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import { usePendingOrdersStore } from '../../stores/pendingOrdersStore';
+import { usePrintSettingsStore } from '../../stores/printSettingsStore';
 import type { Order } from '../../types/order';
 import BotaoImprimir from './botao-imprimir';
 import CreateOrderModal from './create-order-modal';
@@ -444,10 +445,13 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
   const [forceUpdate, setForceUpdate] = useState(0); // Força re-render quando necessário
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [printSettings, setPrintSettings] = useState<PrintSettings | null>(null);
   
   // Store para salvar pedidos em aberto
   const { setPendingCount, incrementCount, decrementCount } = usePendingOrdersStore();
+  
+  // Store para configurações de impressão
+  const { getPrintSettings, loadPrintSettings } = usePrintSettingsStore();
+  const printSettings = getPrintSettings(storeSlug);
   
 
   
@@ -485,20 +489,7 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
   // Pedidos filtrados
   const filteredOrders = filterOrdersByStatus(todayOrders, statusFilter);
 
-  // Carregar configurações de impressão
-  const loadPrintSettings = React.useCallback(async () => {
-    try {
-      const response = await fetch(`/api/stores/${storeSlug}/print-settings`);
-      if (response.ok) {
-        const data = await response.json();
-        setPrintSettings(data.print_settings);
-      } else {
-        setPrintSettings(null);
-      }
-    } catch (error) {
-      setPrintSettings(null);
-    }
-  }, [storeSlug]);
+
 
   // Carregar pedidos iniciais (otimizado - apenas de hoje)
   const loadOrders = React.useCallback(async () => {
@@ -545,8 +536,8 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
     // Carregar pedidos iniciais
     loadOrders();
     
-    // Carregar configurações de impressão
-    loadPrintSettings();
+    // Carregar configurações de impressão (apenas uma vez)
+    loadPrintSettings(storeSlug);
 
     let pollingInterval: NodeJS.Timeout;
 
@@ -556,6 +547,9 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
       
       pollingInterval = setInterval(async () => {
         try {
+          // Só fazer polling se não estiver carregando
+          if (loading) return;
+          
           const response = await fetch(`/api/stores/${storeSlug}/orders?onlyToday=true&limit=50`);
           if (response.ok) {
             const data = await response.json();
@@ -565,30 +559,90 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
             const currentIds = new Set(orders.map(o => o.id));
             const newOrdersToAdd = newOrders.filter((o: Order) => !currentIds.has(o.id));
             
+            // Se não há novos pedidos, não fazer nada
+            if (newOrdersToAdd.length === 0) {
+              return;
+            }
+            
             if (newOrdersToAdd.length > 0 && !isInitialLoad) {
-              // Tocar som várias vezes (mantendo os sons)
+              // Filtrar apenas pedidos REAIS vindos da plataforma (não manuais)
+              const realOrdersFromPlatform = newOrdersToAdd.filter((o: Order) => {
+                // Pedidos manuais (criados pelo admin) são identificados por:
+                // 1. Status 'delivered' (pedidos manuais são criados como entregues)
+                // 2. Notes contendo "Origem:" (indicando que foi criado pelo admin)
+                // 3. Source sendo qualquer um dos tipos manuais
+                const manualSources = ['presencial', 'telefone', 'whatsapp', 'instagram', 'ifood', 'indicacao', 'outros'];
+                const isManualOrder = o.status === 'delivered' || 
+                                     o.notes?.includes('Origem:') ||
+                                     manualSources.includes(o.source || '');
+                
+                // Pedidos REAIS da plataforma têm:
+                // - Status 'pending' (aguardando aprovação)
+                // - Source 'link' (vindos do link da loja)
+                // - Não têm "Origem:" nas notes
+                // - Não são pedidos manuais criados pelo admin
+                const isRealOrderFromPlatform = o.status === 'pending' && 
+                                               o.source === 'link' && 
+                                               !o.notes?.includes('Origem:') &&
+                                               !manualSources.includes(o.source || '');
+                
+                // Só tocar som para pedidos REAIS da plataforma
+                return isRealOrderFromPlatform;
+              });
+              
+              if (realOrdersFromPlatform.length > 0) {
+                // Tocar som APENAS para pedidos REAIS vindos da plataforma
+                console.log('🔔 NOVO PEDIDO REAL DETECTADO! Tocando som...');
               playNotificationSound();
               setTimeout(() => playNotificationSound(), 1000);
               setTimeout(() => playNotificationSound(), 2000);
               
-              // Incrementar contador no store
+                // Incrementar contador no store apenas para pedidos reais
               incrementCount();
+              } else if (newOrdersToAdd.length > 0) {
+                // Se há novos pedidos mas não são da plataforma, apenas log
+                console.log('📝 Pedidos manuais detectados - sem som');
+              }
               
               // Atualizar lista (evitar duplicatas)
               setOrders(prev => {
                 const existingIds = new Set(prev.map((o: Order) => o.id));
                 const uniqueNewOrders = newOrdersToAdd.filter((o: Order) => !existingIds.has(o.id));
+                
+                // Se não há pedidos únicos para adicionar, retornar a lista atual
+                if (uniqueNewOrders.length === 0) {
+                  return prev;
+                }
+                
+                // Adicionar novos pedidos únicos no início da lista
                 return [...uniqueNewOrders, ...prev];
               });
             } else {
-              // Apenas atualizar se não há novos pedidos
-              setOrders(newOrders);
+              // Só atualizar se a lista realmente mudou
+              setOrders(prev => {
+                // Comparação simples: se os arrays têm tamanhos diferentes, atualizar
+                if (prev.length !== newOrders.length) {
+                  return newOrders;
+                }
+                
+                // Se têm o mesmo tamanho, verificar se são iguais
+                const prevIds = prev.map(o => o.id).sort();
+                const newIds = newOrders.map(o => o.id).sort();
+                
+                // Se os IDs são diferentes, atualizar
+                if (JSON.stringify(prevIds) !== JSON.stringify(newIds)) {
+                  return newOrders;
+                }
+                
+                // Se são iguais, manter a lista atual
+                return prev;
+              });
             }
           }
         } catch (error) {
           // Erro no polling
         }
-      }, 2000); // Polling a cada 2 segundos (mais rápido)
+      }, 20000); // Polling a cada 20 segundos (mais otimizado)
     };
 
     // Iniciar polling imediatamente
@@ -599,7 +653,7 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
         clearInterval(pollingInterval);
       }
     };
-  }, [storeSlug, storeId, loadOrders, incrementCount, orders, isInitialLoad]);
+  }, [storeSlug, storeId, loadOrders, incrementCount, orders, isInitialLoad, loadPrintSettings]);
 
   // Função para marcar notificação como lida
   const markNotificationAsRead = async (orderId: string) => {
@@ -778,7 +832,6 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
         
 
       } else {
-        console.error('❌ Erro na resposta da API:', response.status, response.statusText);
         
         let errorData: { error?: string } = {};
         try {
@@ -834,49 +887,51 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
 
   if (orders.length === 0) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        {/* Header com botão de adicionar */}
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-xl font-semibold text-gray-900">
-            Pedidos de Hoje
-          </h2>
-          <button
-            type="button"
-            onClick={() => {
-              setShowCreateModal(true);
-            }}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Adicionar Pedido
-          </button>
-        </div>
-        
-        {/* Estado vazio */}
-        <div className="text-center py-12">
-          <Bell className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            Nenhum pedido ainda
-          </h3>
-          <p className="text-gray-600 mb-6">
-            Quando chegarem pedidos, eles aparecerão aqui em tempo real!
-          </p>
+      <>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          {/* Header com botão de adicionar */}
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-xl font-semibold text-gray-900">
+              Pedidos de Hoje
+            </h2>
+            <button
+              type="button"
+              onClick={() => setShowCreateModal(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Adicionar Pedido
+            </button>
+          </div>
           
-          {/* Botão de ação principal */}
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 mx-auto transition-colors shadow-lg hover:shadow-xl"
-            type="button"
-          >
-            <Plus className="w-5 h-5" />
-            Criar Primeiro Pedido
-          </button>
-          
-          <p className="text-sm text-gray-500 mt-4">
-            Registre vendas do balcão ou pedidos por telefone
-          </p>
+          {/* Estado vazio */}
+          <div className="text-center py-12">
+            <Bell className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              Nenhum pedido ainda
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Quando chegarem pedidos, eles aparecerão aqui em tempo real!
+            </p>
+            
+            {/* Botão de ação principal */}
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 mx-auto transition-colors shadow-lg hover:shadow-xl"
+              type="button"
+            >
+              <Plus className="w-5 h-5" />
+              Criar Primeiro Pedido
+            </button>
+            
+            <p className="text-sm text-gray-500 mt-4">
+              Registre vendas do balcão ou pedidos por telefone
+            </p>
+          </div>
         </div>
-      </div>
+
+
+      </>
     );
   }
 
@@ -1226,12 +1281,24 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
           storeSlug={storeSlug}
           storeId={storeId}
           onClose={() => setShowCreateModal(false)}
-          onOrderCreated={(newOrder) => {
-            setOrders(prev => [newOrder, ...prev]);
-            setShowCreateModal(false);
-            setSelectedOrder(newOrder);
-            toast.success('Pedido criado com sucesso!');
-          }}
+                      onOrderCreated={(newOrder) => {
+              // Adicionar o pedido à lista sem disparar notificações
+              // Usar Set para garantir IDs únicos
+              setOrders(prev => {
+                const existingIds = new Set(prev.map(o => o.id));
+                if (existingIds.has(newOrder.id)) {
+                  // Se já existe, não adicionar novamente
+                  return prev;
+                }
+                return [newOrder, ...prev];
+              });
+              setShowCreateModal(false);
+              setSelectedOrder(newOrder);
+              
+              // IMPORTANTE: Pedidos manuais (criados pelo admin) NÃO disparam som
+              // O som só toca para pedidos REAIS vindos da plataforma (status 'pending', source 'link')
+              // Isso evita o problema de som tocando quando o admin cria pedidos
+            }}
         />
       )}
     </div>
