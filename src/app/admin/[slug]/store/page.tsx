@@ -445,42 +445,39 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
     }
   };
 
-  const handleGeocodeAddress = async () => {
-    if (!formData.address?.street || !formData.address?.city || !formData.address?.state) {
-      toast.error('Preencha pelo menos rua, cidade e estado');
-      return;
+  const calculateCoordinates = async (address: {
+    street: string;
+    number?: string;
+    complement?: string;
+    neighborhood?: string;
+    city: string;
+    state: string;
+    zip_code?: string;
+  }) => {
+    if (!address?.street || !address?.city || !address?.state) {
+      return null;
     }
 
     try {
-      const address = `${formData.address.street}, ${formData.address.number || ''}, ${formData.address.neighborhood || ''}, ${formData.address.city}, ${formData.address.state}, ${formData.address.zip_code || ''}`;
+      const addressString = `${address.street}, ${address.number || ''}, ${address.neighborhood || ''}, ${address.city}, ${address.state}, ${address.zip_code || ''}`;
       
-      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`);
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressString)}&limit=1`);
       
       if (response.ok) {
         const data = await response.json();
         
         if (data && data.length > 0) {
-          const coords = {
+          return {
             lat: Number.parseFloat(data[0].lat),
             lng: Number.parseFloat(data[0].lon)
           };
-          
-          updateFormData({
-            latitude: coords.lat,
-            longitude: coords.lng
-          });
-          
-          toast.success(`Coordenadas calculadas: ${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}`);
-        } else {
-          toast.error('Não foi possível encontrar as coordenadas para este endereço');
         }
-      } else {
-        toast.error('Erro ao calcular coordenadas');
       }
     } catch (error) {
       console.error('Erro ao geocodificar endereço:', error);
-      toast.error('Erro ao calcular coordenadas');
     }
+    
+    return null;
   };
 
   // Função para descobrir impressoras disponíveis
@@ -522,12 +519,24 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
   const handleSave = async () => {
     setSaving(true);
     try {
+      // Calcular coordenadas automaticamente se o endereço foi preenchido
+      const dataToSave = { ...formData };
+      
+      if (formData.address?.street && formData.address?.city && formData.address?.state) {
+        const coords = await calculateCoordinates(formData.address);
+        if (coords) {
+          dataToSave.latitude = coords.lat;
+          dataToSave.longitude = coords.lng;
+          toast.success('Coordenadas calculadas automaticamente!');
+        }
+      }
+
       const response = await fetch(`/api/stores/${slug}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(dataToSave),
       });
 
       if (response.ok) {
@@ -601,22 +610,22 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
                   </div>
                   <button
                     onClick={handleSave}
-                    disabled={saving || !hasUnsavedChanges}
+                    disabled={saving}
                     className={`px-6 py-2 text-white rounded-lg transition-all duration-200 flex items-center space-x-2 ${
-                      hasUnsavedChanges 
-                        ? 'opacity-100 shadow-md hover:shadow-lg' 
-                        : 'opacity-50 cursor-not-allowed'
+                      saving 
+                        ? 'opacity-50 cursor-not-allowed' 
+                        : 'opacity-100 shadow-md hover:shadow-lg'
                     }`}
                     style={{ 
                       backgroundColor: formData.colors.primary,
                     }}
                     onMouseEnter={(e) => {
-                      if (!saving && hasUnsavedChanges) {
+                      if (!saving) {
                         e.currentTarget.style.backgroundColor = formData.colors.primary;
                       }
                     }}
                     onMouseLeave={(e) => {
-                      if (!saving && hasUnsavedChanges) {
+                      if (!saving) {
                         e.currentTarget.style.backgroundColor = formData.colors.primary;
                       }
                     }}
@@ -988,16 +997,8 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
                       
                       {/* Botão para geocodificar endereço */}
                       <div className="mt-4">
-                        <button
-                          type="button"
-                          onClick={handleGeocodeAddress}
-                          disabled={!formData.address?.street || !formData.address?.city || !formData.address?.state}
-                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-                        >
-                          📍 Calcular Coordenadas do Endereço
-                        </button>
-                        <p className="text-xs text-gray-500 mt-2">
-                          Clique para calcular as coordenadas da loja (necessário para cálculo de frete). Preencha o endereço completo primeiro.
+                        <p className="text-xs text-gray-500">
+                          💡 As coordenadas serão calculadas automaticamente quando você salvar o formulário (necessário para cálculo de frete).
                         </p>
                       </div>
                     </div>
