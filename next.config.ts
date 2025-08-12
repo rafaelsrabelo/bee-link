@@ -26,6 +26,14 @@ const nextConfig: NextConfig = {
   experimental: {
     typedRoutes: true,
   },
+  // Otimizações para evitar reloads desnecessários
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
+  },
+  // Configurações de cache
+  generateEtags: false,
+  poweredByHeader: false,
+  compress: true,
 };
 
 export default nextConfig;

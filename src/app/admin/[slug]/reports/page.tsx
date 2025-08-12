@@ -15,6 +15,7 @@ import ProtectedRoute from '../../../../components/auth/ProtectedRoute';
 import AdminHeader from '../../../../components/ui/admin-header';
 import LottieLoader from '../../../../components/ui/lottie-loader';
 import { useAuth } from '../../../../contexts/AuthContext';
+import { useStoreCache } from '../../../../hooks/useStoreCache';
 import { supabase } from '../../../../lib/supabase';
 import type { Order } from '../../../../types/order';
 
@@ -43,7 +44,6 @@ const statusOptions = [
 ];
 
 export default function ReportsPage({ params }: { params: Promise<{ slug: string }> }) {
-  const [store, setStore] = useState<Store | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
@@ -51,6 +51,9 @@ export default function ReportsPage({ params }: { params: Promise<{ slug: string
   const { user } = useAuth();
   const router = useRouter();
   const { slug } = use(params);
+  
+  // Usar cache para a loja
+  const { store, loading: storeLoading, error: storeError } = useStoreCache(slug, user?.id);
 
   // Filtros
   const [filters, setFilters] = useState({
@@ -67,16 +70,10 @@ export default function ReportsPage({ params }: { params: Promise<{ slug: string
   const [paginatedOrders, setPaginatedOrders] = useState<Order[]>([]);
 
   useEffect(() => {
-    if (user) {
-      loadStore();
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (store) {
+    if (store && !storeLoading) {
       loadOrders();
     }
-  }, [store]);
+  }, [store, storeLoading]);
 
   useEffect(() => {
     let filtered = [...orders];
@@ -246,21 +243,7 @@ export default function ReportsPage({ params }: { params: Promise<{ slug: string
     };
   }, [store?.id, store?.slug]);
 
-  const loadStore = async () => {
-    if (!slug) return;
-    try {
-      const response = await fetch(`/api/stores/${slug}`);
-      if (!response.ok) {
-        toast.error('Loja não encontrada');
-        router.push('/create-store');
-        return;
-      }
-      const storeData = await response.json();
-      setStore(storeData);
-    } catch (_error) {
-      toast.error('Erro ao carregar dados da loja');
-    }
-  };
+
 
   const loadOrders = async () => {
     if (!store) return;
@@ -318,7 +301,7 @@ export default function ReportsPage({ params }: { params: Promise<{ slug: string
 
   const stats = getStatistics();
 
-  if (loading || !user) {
+  if (storeLoading || !user) {
     return (
       <ProtectedRoute>
         <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-violet-50">
