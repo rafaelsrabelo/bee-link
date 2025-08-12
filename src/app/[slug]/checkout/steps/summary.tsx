@@ -520,10 +520,13 @@ Pedido feito pelo site 🐝 Bee Link`;
             <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
             <div className="flex-1">
               <h4 className="text-sm font-medium text-red-800 mb-1">
-                Problema com a entrega
+                {deliveryDistance > 0 ? 'Endereço fora da área de entrega' : 'Problema com a entrega'}
               </h4>
               <p className="text-sm text-red-700 mb-3">
-                {deliveryError}
+                {deliveryDistance > 0 
+                  ? `${deliveryError} (Distância: ${deliveryDistance.toFixed(1)}km)`
+                  : deliveryError
+                }
               </p>
               <button
                 type="button"

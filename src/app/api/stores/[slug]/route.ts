@@ -57,7 +57,9 @@ export async function PUT(
       layout_type, 
       banner_image, 
       show_products_by_category,
-      layout_settings
+      layout_settings,
+      latitude,
+      longitude
     } = body;
     // Validações
     if (!name?.trim()) {
@@ -100,6 +102,8 @@ export async function PUT(
         background: "#F0F9FF"
       },
       address: address || null,
+      latitude: latitude || null,
+      longitude: longitude || null,
       social_networks: social_networks || {},
       layout_settings: layout_settings || {
         // Configurações padrão

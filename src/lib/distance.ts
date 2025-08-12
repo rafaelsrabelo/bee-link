@@ -20,8 +20,12 @@ export function calculateDistance(
     Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
     Math.sin(dLon/2) * Math.sin(dLon/2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  const distance = R * c; // Distância em quilômetros
-  return Math.round(distance * 10) / 10; // Arredonda para 1 casa decimal
+  const distance = R * c; // Distância em linha reta em quilômetros
+  
+  // Aplicar fator de correção para rotas reais (aproximadamente 1.3x para rotas urbanas)
+  const realDistance = distance * 1.3;
+  
+  return Math.round(realDistance * 10) / 10; // Arredonda para 1 casa decimal
 }
 
 /**

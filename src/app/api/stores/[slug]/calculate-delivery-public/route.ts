@@ -40,16 +40,25 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       }, { status: 400 });
     }
 
-    // Montar endereço da loja
-    const storeAddress = `${store.address.street}, ${store.address.number || ''}, ${store.address.neighborhood || ''}, ${store.address.city}, ${store.address.state}, ${store.address.zip_code || ''}`;
-
-    // Geocodificar endereço da loja
-    const storeCoords = await geocodeAddress(storeAddress);
+    // Tentar usar coordenadas salvas da loja primeiro
+    let storeCoords = null;
     
-    if (!storeCoords) {
-      return NextResponse.json({ 
-        error: 'Não foi possível calcular as coordenadas da loja. Verifique se o endereço está correto.' 
-      }, { status: 400 });
+    if (store.latitude && store.longitude) {
+      storeCoords = {
+        lat: store.latitude,
+        lng: store.longitude
+      };
+    } else {
+      // Se não tem coordenadas salvas, calcular a partir do endereço
+      const storeAddress = `${store.address.street}, ${store.address.number || ''}, ${store.address.neighborhood || ''}, ${store.address.city}, ${store.address.state}, ${store.address.zip_code || ''}`;
+      
+      storeCoords = await geocodeAddress(storeAddress);
+      
+      if (!storeCoords) {
+        return NextResponse.json({ 
+          error: 'Não foi possível calcular as coordenadas da loja. Verifique se o endereço está correto.' 
+        }, { status: 400 });
+      }
     }
 
     // Geocodificar endereço do cliente

@@ -22,7 +22,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'Loja não encontrada' }, { status: 404 });
     }
 
-
     // Buscar configurações de entrega
     const { data: deliverySettings, error: deliveryError } = await supabase
       .from('delivery_settings')
@@ -37,7 +36,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     // Se não existem configurações, criar com valores padrão
     if (!deliverySettings) {
-      
       const { data: newSettings, error: insertError } = await supabase
         .from('delivery_settings')
         .insert({
@@ -47,32 +45,38 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           price_per_km: 2.50,
           minimum_delivery_fee: 5.00,
           free_delivery_threshold: 50.00,
-          estimated_delivery_time_from: "00:30",
-          estimated_delivery_time_to: "01:00"
+          estimated_delivery_time_hours: 1
         })
         .select()
         .single();
 
       if (insertError) {
-        console.error('❌ Erro ao criar configurações de entrega:', insertError);
         return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
       }
 
-      // Adicionar campos de tempo separados na resposta
+      // Converter estimated_delivery_time_hours para campos separados na resposta
+      const hours = newSettings.estimated_delivery_time_hours || 1;
+      const fromMinutes = Math.floor(hours * 30); // 30% do tempo total
+      const toMinutes = Math.floor(hours * 60); // 100% do tempo total
+      
       const responseData = {
         ...newSettings,
-        estimated_delivery_time_from: "00:30",
-        estimated_delivery_time_to: "01:00"
+        estimated_delivery_time_from: `${Math.floor(fromMinutes / 60).toString().padStart(2, '0')}:${(fromMinutes % 60).toString().padStart(2, '0')}`,
+        estimated_delivery_time_to: `${Math.floor(toMinutes / 60).toString().padStart(2, '0')}:${(toMinutes % 60).toString().padStart(2, '0')}`
       };
 
       return NextResponse.json(responseData);
     }
 
     // Converter estimated_delivery_time_hours para os campos separados se necessário
+    const hours = deliverySettings.estimated_delivery_time_hours || 1;
+    const fromMinutes = Math.floor(hours * 30); // 30% do tempo total
+    const toMinutes = Math.floor(hours * 60); // 100% do tempo total
+    
     const responseData = {
       ...deliverySettings,
-      estimated_delivery_time_from: deliverySettings.estimated_delivery_time_from || "00:30",
-      estimated_delivery_time_to: deliverySettings.estimated_delivery_time_to || "01:00"
+      estimated_delivery_time_from: `${Math.floor(fromMinutes / 60).toString().padStart(2, '0')}:${(fromMinutes % 60).toString().padStart(2, '0')}`,
+      estimated_delivery_time_to: `${Math.floor(toMinutes / 60).toString().padStart(2, '0')}:${(toMinutes % 60).toString().padStart(2, '0')}`
     };
 
     return NextResponse.json(responseData);
@@ -122,6 +126,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       estimated_delivery_time_hours // Campo antigo para compatibilidade
     } = body;
 
+
+
     if (typeof delivery_enabled !== 'boolean') {
       return NextResponse.json({ error: 'Campo delivery_enabled é obrigatório' }, { status: 400 });
     }
@@ -167,15 +173,27 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     };
 
     // Converter campos de tempo para o formato do banco
-    // Converter HH:MM para horas (ex: "00:30" -> 0.5, "01:00" -> 1.0)
-    const fromHours = Number.parseInt(timeFrom.split(':')[0]) + 
-                     Number.parseInt(timeFrom.split(':')[1]) / 60;
-    const toHours = Number.parseInt(timeTo.split(':')[0]) + 
-                   Number.parseInt(timeTo.split(':')[1]) / 60;
+    try {
+      const fromParts = timeFrom.split(':');
+      const toParts = timeTo.split(':');
+      
+      if (fromParts.length !== 2 || toParts.length !== 2) {
+        throw new Error('Formato de tempo inválido');
+      }
+      
+      const fromHours = Number.parseInt(fromParts[0]) + Number.parseInt(fromParts[1]) / 60;
+      const toHours = Number.parseInt(toParts[0]) + Number.parseInt(toParts[1]) / 60;
+      
+      // Usar a média dos dois valores (convertendo para inteiro)
+      const estimatedHours = Math.round((fromHours + toHours) / 2);
+      
+      // Adicionar o campo apenas se a conversão foi bem-sucedida
+      updateData.estimated_delivery_time_hours = estimatedHours;
+    } catch (error) {
+      // Usar valor padrão se houver erro
+      updateData.estimated_delivery_time_hours = 1;
+    }
     
-    // Usar a média dos dois valores (convertendo para inteiro)
-    updateData.estimated_delivery_time_hours = Math.round((fromHours + toHours) / 2);
-
     // Atualizar configurações
     const { data: updatedSettings, error: updateError } = await supabase
       .from('delivery_settings')
@@ -186,7 +204,6 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       .single();
 
     if (updateError) {
-      console.error('Erro ao atualizar configurações de entrega:', updateError);
       return NextResponse.json({ 
         error: 'Erro interno do servidor',
         details: updateError.message,

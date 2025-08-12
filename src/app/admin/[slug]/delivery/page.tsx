@@ -35,7 +35,17 @@ interface Store {
 
 export default function DeliveryManagementPage({ params }: { params: Promise<{ slug: string }> }) {
   const [store, setStore] = useState<Store | null>(null);
-  const [settings, setSettings] = useState<DeliverySettings | null>(null);
+  const [settings, setSettings] = useState<DeliverySettings | null>({
+    id: '',
+    store_id: '',
+    delivery_enabled: false,
+    delivery_radius_km: 5.0,
+    price_per_km: 2.50,
+    minimum_delivery_fee: 5.00,
+    free_delivery_threshold: 50.00,
+    estimated_delivery_time_from: "00:30",
+    estimated_delivery_time_to: "01:00"
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testDistance, setTestDistance] = useState(2);
@@ -75,6 +85,7 @@ export default function DeliveryManagementPage({ params }: { params: Promise<{ s
       const response = await fetch(`/api/stores/${slug}/delivery-settings`);
       if (response.ok) {
         const data = await response.json();
+        
         // Garantir que os campos de tempo tenham valores padrão
         const settingsWithDefaults = {
           ...data,
@@ -227,6 +238,7 @@ export default function DeliveryManagementPage({ params }: { params: Promise<{ s
                     <p className="text-xs text-gray-500">Habilita o sistema de entregas para sua loja</p>
                   </div>
                   <button
+                    type="button"
                     onClick={() => updateSetting('delivery_enabled', !settings?.delivery_enabled)}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                       settings?.delivery_enabled ? 'bg-blue-600' : 'bg-gray-200'
@@ -239,6 +251,8 @@ export default function DeliveryManagementPage({ params }: { params: Promise<{ s
                     />
                   </button>
                 </div>
+                
+
 
                 {/* Raio de Entrega */}
                 <div>
@@ -359,6 +373,8 @@ export default function DeliveryManagementPage({ params }: { params: Promise<{ s
                   )}
                   {saving ? 'Salvando...' : 'Salvar Configurações'}
                 </button>
+
+
               </div>
             </div>
 
