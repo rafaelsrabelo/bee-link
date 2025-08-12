@@ -504,7 +504,10 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
       const statusPriority = {
         'pending': 1,    // Em aberto (maior prioridade)
         'accepted': 2,   // Em preparo
-        'preparing': 3   // Saiu para entrega
+        'preparing': 3,  // Saiu para entrega
+        'delivering': 4, // Entregando
+        'delivered': 5,  // Entregue
+        'cancelled': 6   // Cancelado
       };
       
       const aPriority = statusPriority[a.status] || 4;
@@ -1319,7 +1322,7 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
                                   #{order.id.slice(0, 8).toUpperCase()}
                                 </span>
                                 {order.notes && (
-                                  <MessageCircle className="w-4 h-4 text-amber-600" title="Pedido com observações" />
+                                  <MessageCircle className="w-4 h-4 text-amber-600" />
                                 )}
                               </div>
                             </td>
