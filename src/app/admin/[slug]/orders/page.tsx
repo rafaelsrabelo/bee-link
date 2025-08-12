@@ -1,64 +1,28 @@
 'use client';
 
-import { Bell, ShoppingBag } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { use, useEffect, useState } from 'react';
-import { toast } from 'react-hot-toast';
+import { Bell } from 'lucide-react';
+import { use } from 'react';
 import loadingAnimation from '../../../../../public/animations/loading-dots-blue.json';
 import ProtectedRoute from '../../../../components/auth/ProtectedRoute';
 import AdminHeader from '../../../../components/ui/admin-header';
 import LottieLoader from '../../../../components/ui/lottie-loader';
 import OrdersDashboard from '../../../../components/ui/orders-dashboard';
 import { useAuth } from '../../../../contexts/AuthContext';
+import { useStoreCache } from '../../../../hooks/useStoreCache';
 
-interface Store {
-  id: string;
-  name: string;
-  slug: string;
-  logo: string;
-  colors: {
-    background: string;
-    primary: string;
-    text: string;
-    header: string;
-  };
-  user_id: string;
-}
+
 
 export default function OrdersPage({ params }: { params: Promise<{ slug: string }> }) {
-  const [store, setStore] = useState<Store | null>(null);
-  const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const router = useRouter();
   const { slug } = use(params);
+  
+  // Usar cache para a loja
+  const { store, loading: storeLoading, error: storeError } = useStoreCache(slug, user?.id);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
-  useEffect(() => {
-    if (user) {
-      loadStore();
-    }
-  }, [user, slug]);
 
-  const loadStore = async () => {
-    if (!slug) return;
-    setLoading(true);
-    try {
-      const response = await fetch(`/api/stores/${slug}`);
-      if (!response.ok) {
-        toast.error('Loja não encontrada');
-        router.push('/create-store');
-        return;
-      }
-      const storeData = await response.json();
-      setStore(storeData);
-    } catch (error) {
-      toast.error('Erro ao carregar dados da loja');
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  if (loading || !user) {
+  if (storeLoading || !user) {
     return (
       <ProtectedRoute>
         <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-violet-50">
@@ -74,7 +38,7 @@ export default function OrdersPage({ params }: { params: Promise<{ slug: string 
     );
   }
 
-  if (!store) {
+  if (!store || storeError) {
     return (
       <ProtectedRoute>
         <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-violet-50">
