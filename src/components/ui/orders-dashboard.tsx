@@ -441,10 +441,20 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
   const [loading, setLoading] = useState(true);
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  
+  // Debug: Log quando o estado do modal muda
+  useEffect(() => {
+    console.log('🔄 Estado do modal mudou:', showCreateModal);
+  }, [showCreateModal]);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'polling' | 'error'>('connecting');
   const [forceUpdate, setForceUpdate] = useState(0); // Força re-render quando necessário
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  
+  // Estados para paginação e filtros
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  const [searchTerm, setSearchTerm] = useState('');
   
   // Store para salvar pedidos em aberto
   const { setPendingCount, incrementCount, decrementCount } = usePendingOrdersStore();
@@ -464,17 +474,58 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
     return today.toDateString() === orderDate.toDateString();
   };
 
-  // Calcular estatísticas do dia
-  const todayOrders = orders.filter(order => isToday(order.created_at));
+  // Filtrar pedidos ativos (que devem persistir entre dias)
+  const activeOrders = orders.filter(order => 
+    ['pending', 'accepted', 'preparing'].includes(order.status)
+  );
   
+  // Filtrar pedidos finalizados (que podem sair ao final do dia)
+  const completedOrders = orders.filter(order => 
+    ['delivered', 'cancelled'].includes(order.status)
+  );
+  
+  // Para pedidos finalizados, mostrar apenas os de hoje
+  const todayCompletedOrders = completedOrders.filter(order => isToday(order.created_at));
+  
+  // Combinar pedidos ativos + finalizados de hoje
+  const allOrdersToShow = [...activeOrders, ...todayCompletedOrders];
+  
+  // Ordenar: ativos primeiro (por prioridade de status), depois finalizados por data
+  const sortedOrders = allOrdersToShow.sort((a, b) => {
+    // Primeiro, separar ativos de finalizados
+    const aIsActive = ['pending', 'accepted', 'preparing'].includes(a.status);
+    const bIsActive = ['pending', 'accepted', 'preparing'].includes(b.status);
+    
+    if (aIsActive && !bIsActive) return -1; // Ativos primeiro
+    if (!aIsActive && bIsActive) return 1;  // Finalizados depois
+    
+    if (aIsActive && bIsActive) {
+      // Se ambos são ativos, ordenar por prioridade de status
+      const statusPriority = {
+        'pending': 1,    // Em aberto (maior prioridade)
+        'accepted': 2,   // Em preparo
+        'preparing': 3   // Saiu para entrega
+      };
+      
+      const aPriority = statusPriority[a.status] || 4;
+      const bPriority = statusPriority[b.status] || 4;
+      
+      if (aPriority !== bPriority) {
+        return aPriority - bPriority;
+      }
+    }
+    
+    // Se mesmo status ou ambos finalizados, ordenar por data (mais recente primeiro)
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
 
-  
+  // Calcular estatísticas baseadas nos pedidos filtrados (não em todos os pedidos)
   const stats = {
-    total: todayOrders.length,
-    pending: todayOrders.filter(order => ['pending', 'accepted', 'preparing'].includes(order.status)).length,
-    delivered: todayOrders.filter(order => order.status === 'delivered').length,
-    cancelled: todayOrders.filter(order => order.status === 'cancelled').length,
-    revenue: todayOrders
+    total: sortedOrders.length,
+    pending: sortedOrders.filter(order => ['pending', 'accepted', 'preparing'].includes(order.status)).length,
+    delivered: sortedOrders.filter(order => order.status === 'delivered').length,
+    cancelled: sortedOrders.filter(order => order.status === 'cancelled').length,
+    revenue: sortedOrders
       .filter(order => order.status === 'delivered')
       .reduce((sum, order) => sum + order.total, 0)
   };
@@ -486,18 +537,44 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
     return orders.filter(order => order.status === status);
   };
 
-  // Pedidos filtrados
-  const filteredOrders = filterOrdersByStatus(todayOrders, statusFilter);
+  // Função para filtrar por busca
+  const filterOrdersBySearch = (orders: Order[], search: string) => {
+    if (!search.trim()) return orders;
+    
+    const searchLower = search.toLowerCase();
+    return orders.filter(order => 
+      order.customer_name.toLowerCase().includes(searchLower) ||
+      order.id.toLowerCase().includes(searchLower) ||
+      order.customer_phone?.includes(search) ||
+      order.items.some(item => item.name.toLowerCase().includes(searchLower))
+    );
+  };
+
+  // Aplicar todos os filtros
+  const filteredOrders = filterOrdersBySearch(
+    filterOrdersByStatus(sortedOrders, statusFilter),
+    searchTerm
+  );
+
+  // Paginação
+  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedOrders = filteredOrders.slice(startIndex, endIndex);
+
+  // Resetar página quando filtros mudarem
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, searchTerm]);
 
 
 
-  // Carregar pedidos iniciais (otimizado - apenas de hoje)
+  // Carregar pedidos iniciais (todos os pedidos em aberto)
   const loadOrders = React.useCallback(async () => {
     try {
-  
       
-      // Carregar apenas pedidos de hoje para melhor performance
-      const response = await fetch(`/api/stores/${storeSlug}/orders?onlyToday=true&limit=50`);
+      // Carregar todos os pedidos em aberto (não apenas de hoje) para e-commerce
+      const response = await fetch(`/api/stores/${storeSlug}/orders?limit=100`);
       
       if (response.ok) {
         const data = await response.json();
@@ -550,7 +627,7 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
           // Só fazer polling se não estiver carregando
           if (loading) return;
           
-          const response = await fetch(`/api/stores/${storeSlug}/orders?onlyToday=true&limit=50`);
+          const response = await fetch(`/api/stores/${storeSlug}/orders?limit=100`);
           if (response.ok) {
             const data = await response.json();
             const newOrders = data.orders || [];
@@ -892,11 +969,14 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
           {/* Header com botão de adicionar */}
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-xl font-semibold text-gray-900">
-              Pedidos de Hoje
+              Gerenciar Pedidos
             </h2>
             <button
               type="button"
-              onClick={() => setShowCreateModal(true)}
+              onClick={() => {
+                console.log('🔄 Clicou no botão Adicionar Pedido');
+                setShowCreateModal(true);
+              }}
               className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
             >
               <Plus className="w-4 h-4" />
@@ -908,15 +988,18 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
           <div className="text-center py-12">
             <Bell className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Nenhum pedido ainda
+              Nenhum pedido encontrado
             </h3>
             <p className="text-gray-600 mb-6">
-              Quando chegarem pedidos, eles aparecerão aqui em tempo real!
+              Crie seu primeiro pedido ou aguarde pedidos chegarem em tempo real!
             </p>
             
             {/* Botão de ação principal */}
             <button
-              onClick={() => setShowCreateModal(true)}
+              onClick={() => {
+                console.log('🔄 Clicou no botão Criar Primeiro Pedido');
+                setShowCreateModal(true);
+              }}
               className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 mx-auto transition-colors shadow-lg hover:shadow-xl"
               type="button"
             >
@@ -1073,12 +1156,12 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
       </div>
 
       {/* Layout Horizontal - Lista + Detalhes */}
-      <div className="grid grid-cols-12 gap-6" style={{ height: 'calc(100vh - 400px)' }}>
+      <div className="grid grid-cols-12 gap-6">
         {/* Lista de Pedidos - Lado Esquerdo */}
         <div className="col-span-12 lg:col-span-5 xl:col-span-4">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 h-full flex flex-col">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
             {/* Header da Lista */}
-            <div className="p-6 border-b flex-shrink-0">
+            <div className="p-6 border-b">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">Lista de Pedidos</h3>
                 <span className="text-sm text-gray-500">
@@ -1086,59 +1169,87 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
                 </span>
               </div>
 
-              {/* Filtros */}
-              <div className="flex space-x-2 overflow-x-auto pb-2">
-                <button
-                  onClick={() => setStatusFilter('all')}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                    statusFilter === 'all' 
-                      ? 'bg-blue-600 text-white' 
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                  type="button"
-                >
-                  Todos ({todayOrders.length})
-                </button>
-                <button
-                  onClick={() => setStatusFilter('pending')}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                    statusFilter === 'pending' 
-                      ? 'bg-orange-600 text-white' 
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                  type="button"
-                >
-                  Em Aberto ({stats.pending})
-                </button>
-                <button
-                  onClick={() => setStatusFilter('delivered')}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                    statusFilter === 'delivered' 
-                      ? 'bg-green-600 text-white' 
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                  type="button"
-                >
-                  Entregues ({stats.delivered})
-                </button>
-                <button
-                  onClick={() => setStatusFilter('cancelled')}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                    statusFilter === 'cancelled' 
-                      ? 'bg-red-600 text-white' 
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                  type="button"
-                >
-                  Cancelados ({stats.cancelled})
-                </button>
+              {/* Filtros Avançados */}
+              <div className="space-y-4">
+                {/* Busca */}
+                <div>
+                  <input
+                    type="text"
+                    placeholder="Buscar por cliente, ID ou produto..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                {/* Filtro de Data */}
+                <div>
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="all">Todos os Status</option>
+                    <option value="pending">Em Aberto</option>
+                    <option value="delivered">Entregues</option>
+                    <option value="cancelled">Cancelados</option>
+                  </select>
+                </div>
+
+                {/* Filtros de Status */}
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setStatusFilter('all')}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      statusFilter === 'all' 
+                        ? 'bg-blue-600 text-white' 
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                    type="button"
+                  >
+                    Todos ({sortedOrders.length})
+                  </button>
+                  <button
+                    onClick={() => setStatusFilter('pending')}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      statusFilter === 'pending' 
+                        ? 'bg-orange-600 text-white' 
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                    type="button"
+                  >
+                    Em Aberto ({stats.pending})
+                  </button>
+                  <button
+                    onClick={() => setStatusFilter('delivered')}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      statusFilter === 'delivered' 
+                        ? 'bg-green-600 text-white' 
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                    type="button"
+                  >
+                    Entregues ({stats.delivered})
+                  </button>
+                  <button
+                    onClick={() => setStatusFilter('cancelled')}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      statusFilter === 'cancelled' 
+                        ? 'bg-red-600 text-white' 
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                    type="button"
+                  >
+                    Cancelados ({stats.cancelled})
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* Lista Scrollável de Pedidos - Altura fixa com scroll independente */}
-            <div className="overflow-hidden" style={{ height: 'calc(6 * 120px + 1rem)' }}>
+            {/* Tabela de Pedidos */}
+            <div className="overflow-x-auto">
               {loading ? (
-                <div className="flex justify-center items-center h-full">
+                <div className="flex justify-center items-center py-12">
                   <div className="text-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-3" />
                     <p className="text-gray-600">Carregando...</p>
@@ -1150,7 +1261,7 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
                   <h3 className="font-semibold text-gray-900 mb-2">Nenhum pedido encontrado</h3>
                   <p className="text-gray-600 text-sm mb-4">
                     {statusFilter === 'all' 
-                      ? 'Nenhum pedido hoje ainda' 
+                      ? 'Nenhum pedido encontrado' 
                       : `Nenhum pedido ${statusFilter === 'pending' ? 'em aberto' : statusFilter === 'delivered' ? 'entregue' : 'cancelado'}`
                     }
                   </p>
@@ -1165,81 +1276,107 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
                   )}
                 </div>
               ) : (
-                <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                  <div className="space-y-1 p-2">
-                    {filteredOrders.map((order) => {
-                      const statusInfo = statusConfig[order.status];
-                      const StatusIcon = statusInfo.icon;
+                <>
+                  {/* Tabela */}
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Pedido
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Cliente
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Total
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Data
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {paginatedOrders.map((order) => {
+                        const statusInfo = statusConfig[order.status];
+                        const StatusIcon = statusInfo.icon;
 
-                      return (
-                        <div
-                          key={order.id}
-                          onClick={() => setSelectedOrder(order)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              setSelectedOrder(order);
-                            }
-                          }}
-                          role="button"
-                          tabIndex={0}
-                          className={`p-4 rounded-lg cursor-pointer transition-all duration-200 ${
-                            selectedOrder?.id === order.id
-                              ? 'bg-blue-50 border-2 border-blue-200'
-                              : order.status === 'pending'
-                              ? 'bg-gradient-to-r from-orange-50 to-yellow-50 border-2 border-orange-200 shadow-md hover:shadow-lg'
-                              : 'bg-gray-50 border border-gray-200 hover:bg-gray-100 hover:border-gray-300'
-                          }`}
-                        >
-                          <div className="flex justify-between items-start mb-2">
-                            <div>
+                        return (
+                          <tr
+                            key={order.id}
+                            onClick={() => setSelectedOrder(order)}
+                            className={`cursor-pointer transition-colors ${
+                              selectedOrder?.id === order.id
+                                ? 'bg-blue-50'
+                                : 'hover:bg-gray-50'
+                            }`}
+                          >
+                            <td className="px-4 py-3 whitespace-nowrap">
                               <div className="flex items-center space-x-2">
-                                <h4 className="font-semibold text-gray-900">
+                                <span className="text-sm font-medium text-gray-900">
                                   #{order.id.slice(0, 8).toUpperCase()}
-                                </h4>
+                                </span>
                                 {order.notes && (
-                                  <div className="flex items-center space-x-1 text-amber-600" title="Pedido com observações">
-                                    <MessageCircle className="w-3 h-3" />
-                                    <span className="text-xs font-medium">Obs</span>
-                                  </div>
+                                  <MessageCircle className="w-4 h-4 text-amber-600" title="Pedido com observações" />
                                 )}
                               </div>
-                              <p className="text-sm text-gray-600">{order.customer_name}</p>
-                              <p className="text-xs text-gray-500">
-                                {formatDate(order.created_at)}
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <div className={`flex items-center space-x-1 mb-1 ${statusInfo.color}`}>
-                                <StatusIcon className="w-3 h-3" />
-                                <span className="text-xs font-medium">{statusInfo.label}</span>
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">{order.customer_name}</div>
+                              <div className="text-sm text-gray-500">{order.customer_phone}</div>
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <div className={`flex items-center space-x-1 ${statusInfo.color}`}>
+                                <StatusIcon className="w-4 h-4" />
+                                <span className="text-sm font-medium">{statusInfo.label}</span>
                               </div>
-                              <p className="text-sm font-bold text-gray-900">
-                                {formatPrice(order.total)}
-                              </p>
-                            </div>
-                          </div>
-                          
-                          <div className="text-xs text-gray-600">
-                            {order.items.length} {order.items.length === 1 ? 'item' : 'itens'}
-                          </div>
-                          
-                          {order.status === 'pending' && (
-                            <div className="mt-2 flex items-center space-x-1">
-                              <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
-                              <span className="text-orange-700 text-xs font-semibold">AGUARDANDO APROVAÇÃO</span>
-                            </div>
-                          )}
-                          
-                          {selectedOrder?.id === order.id && (
-                            <div className="mt-2">
-                              <span className="text-blue-600 text-xs font-medium">Selecionado</span>
-                            </div>
-                          )}
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm font-bold text-gray-900">
+                              {formatPrice(order.total)}
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                              {formatDate(order.created_at)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+
+                  {/* Paginação */}
+                  {totalPages > 1 && (
+                    <div className="px-6 py-4 border-t bg-gray-50">
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm text-gray-700">
+                          Mostrando {startIndex + 1} até {Math.min(endIndex, filteredOrders.length)} de {filteredOrders.length} pedidos
                         </div>
-                      );
-                    })}
-                  </div>
-                </div>
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                            disabled={currentPage === 1}
+                            className="px-3 py-1 text-sm border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                            type="button"
+                          >
+                            Anterior
+                          </button>
+                          <span className="px-3 py-1 text-sm text-gray-700">
+                            Página {currentPage} de {totalPages}
+                          </span>
+                          <button
+                            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                            disabled={currentPage === totalPages}
+                            className="px-3 py-1 text-sm border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                            type="button"
+                          >
+                            Próxima
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -1277,29 +1414,33 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
 
       {/* Modal de Criar Pedido */}
       {showCreateModal && (
-        <CreateOrderModal
-          storeSlug={storeSlug}
-          storeId={storeId}
-          onClose={() => setShowCreateModal(false)}
-                      onOrderCreated={(newOrder) => {
-              // Adicionar o pedido à lista sem disparar notificações
-              // Usar Set para garantir IDs únicos
-              setOrders(prev => {
-                const existingIds = new Set(prev.map(o => o.id));
-                if (existingIds.has(newOrder.id)) {
-                  // Se já existe, não adicionar novamente
-                  return prev;
-                }
-                return [newOrder, ...prev];
-              });
-              setShowCreateModal(false);
-              setSelectedOrder(newOrder);
-              
-              // IMPORTANTE: Pedidos manuais (criados pelo admin) NÃO disparam som
-              // O som só toca para pedidos REAIS vindos da plataforma (status 'pending', source 'link')
-              // Isso evita o problema de som tocando quando o admin cria pedidos
-            }}
-        />
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <CreateOrderModal
+              storeSlug={storeSlug}
+              storeId={storeId}
+              onClose={() => setShowCreateModal(false)}
+              onOrderCreated={(newOrder) => {
+                // Adicionar o pedido à lista sem disparar notificações
+                // Usar Set para garantir IDs únicos
+                setOrders(prev => {
+                  const existingIds = new Set(prev.map(o => o.id));
+                  if (existingIds.has(newOrder.id)) {
+                    // Se já existe, não adicionar novamente
+                    return prev;
+                  }
+                  return [newOrder, ...prev];
+                });
+                setShowCreateModal(false);
+                setSelectedOrder(newOrder);
+                
+                // IMPORTANTE: Pedidos manuais (criados pelo admin) NÃO disparam som
+                // O som só toca para pedidos REAIS vindos da plataforma (status 'pending', source 'link')
+                // Isso evita o problema de som tocando quando o admin cria pedidos
+              }}
+            />
+          </div>
+        </div>
       )}
     </div>
   );

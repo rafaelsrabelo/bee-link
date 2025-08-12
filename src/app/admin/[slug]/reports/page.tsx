@@ -63,7 +63,7 @@ export default function ReportsPage({ params }: { params: Promise<{ slug: string
 
   // Paginação
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(20); // Aumentado para 20 itens por página
+  const [itemsPerPage, setItemsPerPage] = useState(10); // Começar com 10 itens por página
   const [paginatedOrders, setPaginatedOrders] = useState<Order[]>([]);
 
   useEffect(() => {
@@ -353,7 +353,7 @@ export default function ReportsPage({ params }: { params: Promise<{ slug: string
 
   return (
     <ProtectedRoute>
-      <div className="h-screen bg-gradient-to-br from-purple-50 via-white to-violet-50 flex flex-col">
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-violet-50 flex flex-col">
         <AdminHeader
           store={store}
           currentPage="reports"
@@ -361,8 +361,8 @@ export default function ReportsPage({ params }: { params: Promise<{ slug: string
           icon={BarChart3}
         />
 
-        <div className="flex-1 overflow-hidden mt-24">
-          <div className="h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col">
+        <div className="flex-1 mt-24">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             
             {/* Status da Conexão */}
             <div className="mb-4 flex items-center justify-between">
@@ -507,7 +507,7 @@ export default function ReportsPage({ params }: { params: Promise<{ slug: string
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Completados</p>
-                    <p className="text-2xl font-bold text-green-600">{stats.completedOrders}</p>
+                    <p className="text-2xl font-bold text-gray-900">{stats.completedOrders}</p>
                   </div>
                   <div className="bg-green-100 p-3 rounded-lg">
                     <TrendingUp className="w-6 h-6 text-green-600" />
@@ -519,7 +519,7 @@ export default function ReportsPage({ params }: { params: Promise<{ slug: string
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Receita Total</p>
-                    <p className="text-2xl font-bold text-purple-600">{formatPrice(stats.totalRevenue)}</p>
+                    <p className="text-2xl font-bold text-gray-900">{formatPrice(stats.totalRevenue)}</p>
                   </div>
                   <div className="bg-purple-100 p-3 rounded-lg">
                     <DollarSign className="w-6 h-6 text-purple-600" />
@@ -531,7 +531,7 @@ export default function ReportsPage({ params }: { params: Promise<{ slug: string
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Ticket Médio</p>
-                    <p className="text-2xl font-bold text-orange-600">{formatPrice(stats.averageOrderValue)}</p>
+                    <p className="text-2xl font-bold text-gray-900">{formatPrice(stats.averageOrderValue)}</p>
                   </div>
                   <div className="bg-orange-100 p-3 rounded-lg">
                     <BarChart3 className="w-6 h-6 text-orange-600" />
@@ -543,58 +543,58 @@ export default function ReportsPage({ params }: { params: Promise<{ slug: string
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Taxa de Conversão</p>
-                    <p className="text-2xl font-bold text-indigo-600">{stats.conversionRate.toFixed(1)}%</p>
+                    <p className="text-2xl font-bold text-gray-900">{stats.conversionRate}%</p>
                   </div>
-                  <div className="bg-indigo-100 p-3 rounded-lg">
-                    <TrendingUp className="w-6 h-6 text-indigo-600" />
+                  <div className="bg-blue-100 p-3 rounded-lg">
+                    <TrendingUp className="w-6 h-6 text-blue-600" />
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Lista de Pedidos - Container com scroll independente */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col flex-1 min-h-0">
-              <div className="p-6 border-b border-gray-200 flex-shrink-0">
+            {/* Lista de Pedidos - Tabela normal */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+              <div className="p-6 border-b border-gray-200">
                 <h2 className="text-lg font-semibold text-gray-900">
                   Lista de Pedidos
                 </h2>
               </div>
 
-              <div className="flex-1 overflow-hidden">
+              <div className="overflow-x-auto">
                 {loading ? (
-                  <div className="flex items-center justify-center h-full">
+                  <div className="flex items-center justify-center py-12">
                     <div className="text-center">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto" />
                       <p className="text-gray-500 mt-2">Carregando pedidos...</p>
                     </div>
                   </div>
                 ) : filteredOrders.length === 0 ? (
-                  <div className="flex items-center justify-center h-full">
+                  <div className="flex items-center justify-center py-12">
                     <div className="text-center">
                       <Package className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                       <p className="text-gray-500">Nenhum pedido encontrado para os filtros selecionados</p>
                     </div>
                   </div>
                 ) : (
-                  <div className="h-full flex flex-col">
-                    {/* Tabela com scroll */}
-                    <div className="flex-1 overflow-auto">
+                  <>
+                    {/* Tabela normal */}
+                    <div className="overflow-x-auto">
                       <table className="w-full">
-                        <thead className="bg-gray-50 sticky top-0 z-10">
+                        <thead className="bg-gray-50">
                           <tr>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                               Pedido
                             </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                               Cliente
                             </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                               Data
                             </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                               Status
                             </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                               Total
                             </th>
                           </tr>
@@ -639,20 +639,39 @@ export default function ReportsPage({ params }: { params: Promise<{ slug: string
                     </div>
 
                     {/* Paginação Melhorada */}
-                    <div className="border-t border-gray-200 p-6 flex-shrink-0">
+                    <div className="border-t border-gray-200 p-6">
                       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <div className="text-sm text-gray-600">
-                          <span className="font-medium">
-                            {filteredOrders.length > 0 
-                              ? `Mostrando ${((currentPage - 1) * itemsPerPage) + 1} até ${Math.min(currentPage * itemsPerPage, filteredOrders.length)} de ${filteredOrders.length} pedidos`
-                              : 'Nenhum pedido encontrado'
-                            }
-                          </span>
-                          {filteredOrders.length > itemsPerPage && (
-                            <span className="text-gray-500 ml-2">
-                              (Página {currentPage} de {Math.ceil(filteredOrders.length / itemsPerPage)})
+                        <div className="flex items-center gap-4">
+                          <div className="text-sm text-gray-600">
+                            <span className="font-medium">
+                              {filteredOrders.length > 0 
+                                ? `Mostrando ${((currentPage - 1) * itemsPerPage) + 1} até ${Math.min(currentPage * itemsPerPage, filteredOrders.length)} de ${filteredOrders.length} pedidos`
+                                : 'Nenhum pedido encontrado'
+                              }
                             </span>
-                          )}
+                            {filteredOrders.length > itemsPerPage && (
+                              <span className="text-gray-500 ml-2">
+                                (Página {currentPage} de {Math.ceil(filteredOrders.length / itemsPerPage)})
+                              </span>
+                            )}
+                          </div>
+                          
+                          {/* Seletor de itens por página */}
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-gray-600">Itens por página:</span>
+                            <select
+                              value={itemsPerPage}
+                              onChange={(e) => {
+                                setItemsPerPage(Number(e.target.value));
+                                setCurrentPage(1); // Resetar para primeira página
+                              }}
+                              className="px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            >
+                              <option value={5}>5</option>
+                              <option value={10}>10</option>
+                              <option value={15}>15</option>
+                            </select>
+                          </div>
                         </div>
                         
                         {filteredOrders.length > itemsPerPage && (
@@ -722,7 +741,7 @@ export default function ReportsPage({ params }: { params: Promise<{ slug: string
                         )}
                       </div>
                     </div>
-                  </div>
+                  </>
                 )}
               </div>
             </div>

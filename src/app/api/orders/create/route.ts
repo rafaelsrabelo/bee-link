@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
     // Converter items para garantir que price seja number
     const processedItems = items.map(item => ({
       ...item,
-      price: typeof item.price === 'string' ? parseFloat(item.price) : item.price
+      price: typeof item.price === 'string' ? Number.parseFloat(item.price) : item.price
     }));
 
     // Objeto básico sempre funciona
@@ -161,7 +161,7 @@ export async function POST(request: NextRequest) {
       customer_phone,
       customer_address,
       items: processedItems,
-      total: typeof total === 'string' ? parseFloat(total) : total,
+      total: typeof total === 'string' ? Number.parseFloat(total) : total,
       source,
       notes,
       status: isManualOrder ? 'delivered' : 'pending'
@@ -172,9 +172,17 @@ export async function POST(request: NextRequest) {
     
     // Incluir informações novas nas notes temporariamente até migração do banco
     let notesWithExtras = notes || '';
-    if (delivery_type) notesWithExtras += `\nTipo entrega: ${delivery_type}`;
-    if (payment_method) notesWithExtras += `\nPagamento: ${payment_method}`;
-    if (delivery_fee && delivery_fee > 0) notesWithExtras += `\nTaxa entrega: R$ ${delivery_fee.toFixed(2)}`;
+    if (delivery_type) notesWithExtras += `\nTipo de entrega: ${delivery_type === 'delivery' ? 'Entrega' : 'Retirada'}`;
+    if (payment_method) {
+      const paymentMethodNames: {[key: string]: string} = {
+        'money': 'Dinheiro',
+        'pix': 'PIX',
+        'credit_card': 'Cartão de Crédito',
+        'debit_card': 'Cartão de Débito'
+      };
+      notesWithExtras += `\nForma de pagamento: ${paymentMethodNames[payment_method] || payment_method}`;
+    }
+    if (delivery_fee && delivery_fee > 0) notesWithExtras += `\nTaxa de entrega: R$ ${delivery_fee.toFixed(2)}`;
     if (coupon_code) notesWithExtras += `\nCupom: ${coupon_code} (-R$ ${coupon_discount?.toFixed(2) || '0'})`;
     if (subtotal) notesWithExtras += `\nSubtotal: R$ ${subtotal.toFixed(2)}`;
     notesWithExtras += `\nTotal Final: R$ ${total.toFixed(2)}`;
