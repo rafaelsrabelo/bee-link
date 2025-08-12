@@ -1,6 +1,6 @@
 'use client';
 
-import { Bell } from 'lucide-react';
+import { Bell, ShoppingBag } from 'lucide-react';
 import { use } from 'react';
 import loadingAnimation from '../../../../../public/animations/loading-dots-blue.json';
 import ProtectedRoute from '../../../../components/auth/ProtectedRoute';
@@ -14,7 +14,6 @@ import { useStoreCache } from '../../../../hooks/useStoreCache';
 
 export default function OrdersPage({ params }: { params: Promise<{ slug: string }> }) {
   const { user } = useAuth();
-  const router = useRouter();
   const { slug } = use(params);
   
   // Usar cache para a loja
