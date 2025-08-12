@@ -35,28 +35,49 @@ export function calculateDistance(
  */
 export async function geocodeAddress(address: string): Promise<{lat: number, lng: number} | null> {
   try {
-    // Para produção, você precisaria de uma API key do Google
-    // Por enquanto, vamos usar uma API gratuita
+    console.log('🔍 Geocodificando:', address);
+    
+    // Criar um controller para timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos timeout
+    
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`,
+      {
+        signal: controller.signal,
+        headers: {
+          'User-Agent': 'BeeLink/1.0'
+        }
+      }
     );
     
+    clearTimeout(timeoutId);
+    
     if (!response.ok) {
+      console.error('❌ Erro na resposta da API:', response.status, response.statusText);
       return null;
     }
     
     const data = await response.json();
+    console.log('📡 Resposta da API:', data);
     
     if (data && data.length > 0) {
-      return {
+      const coords = {
         lat: Number.parseFloat(data[0].lat),
         lng: Number.parseFloat(data[0].lon)
       };
+      console.log('✅ Coordenadas encontradas:', coords);
+      return coords;
     }
     
+    console.log('❌ Nenhuma coordenada encontrada para:', address);
     return null;
   } catch (error) {
-    console.error('Erro ao geocodificar endereço:', error);
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.error('⏰ Timeout ao geocodificar endereço:', address);
+    } else {
+      console.error('❌ Erro ao geocodificar endereço:', address, error);
+    }
     return null;
   }
 }
