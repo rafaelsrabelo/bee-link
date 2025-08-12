@@ -253,7 +253,7 @@ export default function AdminDashboardPage({ params }: { params: Promise<{ slug:
                       <div>
                         <p className="text-sm font-medium text-gray-600">Taxa de Conversão</p>
                         <p className="text-2xl font-bold text-gray-900">
-                          {analytics.total_views > 0 ? ((analytics.total_cart_clicks / analytics.total_views) * 100).toFixed(1) : 0}%
+                          {analytics.total_views > 0 ? Number(((analytics.total_cart_clicks / analytics.total_views) * 100).toFixed(2)) : 0}%
                         </p>
                         <p className="text-xs text-gray-500 mt-1">
                           {analytics.total_cart_clicks} de {analytics.total_views} visualizações

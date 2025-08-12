@@ -295,7 +295,7 @@ export default function ReportsPage({ params }: { params: Promise<{ slug: string
       completedOrders,
       totalRevenue,
       averageOrderValue,
-      conversionRate: totalOrders > 0 ? (completedOrders / totalOrders) * 100 : 0
+      conversionRate: totalOrders > 0 ? Number(((completedOrders / totalOrders) * 100).toFixed(2)) : 0
     };
   };
 
