@@ -2,10 +2,10 @@
 
 import { 
   ClipboardList, 
-  Package, 
-  ShoppingCart,
+  MessageCircle,
   Music,
-  MessageCircle
+  Package, 
+  ShoppingCart
 } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
