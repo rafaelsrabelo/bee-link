@@ -536,23 +536,7 @@ export default function StorePageClient({ store }: StorePageClientProps) {
     <div className="min-h-screen relative overflow-hidden" style={{ 
       backgroundColor: store.colors.background
     }}>
-      {/* Decorative Elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        {/* Desktop only decorative elements */}
-        <div className="hidden md:block absolute top-20 left-4 w-24 h-24 bg-white/20 rounded-full" />
-        <div className="hidden md:block absolute top-32 right-8 w-16 h-16 bg-white/15 rounded-full" />
-        <div className="hidden md:block absolute top-48 left-12 w-32 h-32 bg-white/10 rounded-full" />
-        <div className="hidden md:block absolute bottom-40 left-8 w-28 h-28 bg-white/15 rounded-full" />
-        <div className="hidden md:block absolute bottom-60 right-12 w-36 h-36 bg-white/10 rounded-full" />
 
-        {/* Mobile friendly decorative elements */}
-        <div className="md:hidden absolute top-16 right-6 w-16 h-16 bg-white/15 rounded-full" />
-        <div className="md:hidden absolute bottom-20 left-6 w-20 h-20 bg-white/10 rounded-full" />
-
-        {/* Marble texture elements - desktop only */}
-        <div className="hidden md:block absolute top-40 right-0 w-40 h-40 bg-white/30 rounded-full transform translate-x-20" />
-        <div className="hidden md:block absolute bottom-20 left-0 w-48 h-48 bg-white/25 rounded-full transform -translate-x-24" />
-      </div>
 
       {/* Header */}
       <div className="flex justify-between items-center px-4 pb-8 relative z-10">
@@ -681,7 +665,8 @@ export default function StorePageClient({ store }: StorePageClientProps) {
             <div className="w-8 h-8 rounded-full mr-3 flex items-center justify-center" style={{ 
               backgroundColor: store.colors.primary
             }}>
-              <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24" aria-label="Pedido">
+                <title>Pedido</title>
                 <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V6h16v12z"/>
               </svg>
             </div>
