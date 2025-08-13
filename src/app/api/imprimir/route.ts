@@ -161,7 +161,18 @@ function generatePrintContent(order: OrderData): string {
     const itemTotal = item.price * item.quantity;
     subtotal += itemTotal;
     
-    content += `${item.quantity}x ${item.name}\n`;
+    let itemText = `${item.quantity}x ${item.name}`;
+    
+    // Adicionar cor e tamanho se especificados
+    const attributes = [];
+    if (item.selectedColor) attributes.push(`Cor: ${item.selectedColor}`);
+    if (item.selectedSize) attributes.push(`Tamanho: ${item.selectedSize}`);
+    
+    if (attributes.length > 0) {
+      itemText += ` (${attributes.join(', ')})`;
+    }
+    
+    content += `${itemText}\n`;
     content += `    R$ ${item.price.toFixed(2)} cada\n`;
     content += `    Total: R$ ${itemTotal.toFixed(2)}\n`;
     content += '\n';

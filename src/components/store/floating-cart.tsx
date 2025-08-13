@@ -9,6 +9,8 @@ interface CartItem {
   price: string;
   quantity: number;
   image?: string;
+  selectedColor?: string | null;
+  selectedSize?: string | null;
 }
 
 interface FloatingCartProps {
@@ -23,8 +25,8 @@ interface FloatingCartProps {
   };
   onOpenCart?: () => void;
   onCheckout?: () => void;
-  onAddItem?: (itemName: string) => void;
-  onRemoveItem?: (itemName: string) => void;
+  onAddItem?: (itemName: string, selectedColor?: string | null, selectedSize?: string | null) => void;
+  onRemoveItem?: (itemName: string, selectedColor?: string | null, selectedSize?: string | null) => void;
   isCheckingOut?: boolean;
 }
 
@@ -113,7 +115,7 @@ export default function FloatingCart({
             {/* Lista de itens */}
             <div className="max-h-48 overflow-y-auto p-4 space-y-3">
               {items.map((item) => (
-                <div key={`${item.id}-${item.name}`} className="flex items-center space-x-3">
+                <div key={`${item.id}-${item.name}-${item.selectedColor || 'no-color'}-${item.selectedSize || 'no-size'}`} className="flex items-center space-x-3">
                   {item.image && (
                     <img 
                       src={item.image} 
@@ -125,6 +127,13 @@ export default function FloatingCart({
                     <p className="text-sm font-medium text-gray-900 truncate">
                       {item.name}
                     </p>
+                    {(item.selectedColor || item.selectedSize) && (
+                      <p className="text-xs text-gray-400">
+                        {item.selectedColor && `Cor: ${item.selectedColor}`}
+                        {item.selectedColor && item.selectedSize && ' • '}
+                        {item.selectedSize && `Tamanho: ${item.selectedSize}`}
+                      </p>
+                    )}
                     <p className="text-sm text-gray-500">
                       R$ {item.price}
                     </p>
@@ -134,7 +143,7 @@ export default function FloatingCart({
                   <div className="flex items-center space-x-2">
                     <button
                       type="button"
-                      onClick={() => onRemoveItem?.(item.name)}
+                      onClick={() => onRemoveItem?.(item.name, item.selectedColor, item.selectedSize)}
                       className="w-8 h-8 rounded-full flex items-center justify-center hover:opacity-80 transition-all"
                       style={{ backgroundColor: 'transparent', border: `1px solid ${storeColors.primary}` }}
                       title={item.quantity === 1 ? "Remover item" : "Diminuir quantidade"}
@@ -148,7 +157,7 @@ export default function FloatingCart({
                     
                     <button
                       type="button"
-                      onClick={() => onAddItem?.(item.name)}
+                      onClick={() => onAddItem?.(item.name, item.selectedColor, item.selectedSize)}
                       className="w-8 h-8 rounded-full flex items-center justify-center text-white hover:opacity-90 transition-all"
                       style={{ backgroundColor: storeColors.primary }}
                       title="Adicionar mais"

@@ -24,13 +24,75 @@ export default async function ProductPage({ params }: ProductPageProps) {
       notFound();
     }
 
-    // Buscar o produto pelo ID
+    // Buscar o produto pelo ID com todos os dados
     const { data: product, error: productError } = await supabase
       .from('products')
-      .select('*')
+      .select(`
+        *,
+        category:product_categories(id, name, description, color)
+      `)
       .eq('id', productId)
       .eq('store_id', store.id)
       .single();
+
+    // Se o produto foi encontrado, buscar cores e tamanhos específicos da loja
+    let colors: Array<{
+      id: string;
+      name: string;
+      hex_code: string;
+      attribute_type: string;
+      store_id: string | null;
+      is_default: boolean;
+      sort_order: number;
+    }> = [];
+    let sizes: Array<{
+      id: string;
+      name: string;
+      attribute_type: string;
+      store_id: string | null;
+      is_default: boolean;
+      sort_order: number;
+    }> = [];
+    
+    if (product) {
+      // Buscar cores da loja
+      const { data: storeColors } = await supabase
+        .from('store_attributes')
+        .select('*')
+        .eq('attribute_type', 'color')
+        .or(`store_id.eq.${store.id},store_id.is.null`)
+        .order('sort_order', { ascending: true });
+      
+      // Buscar tamanhos da loja
+      const { data: storeSizes } = await supabase
+        .from('store_attributes')
+        .select('*')
+        .eq('attribute_type', 'size')
+        .or(`store_id.eq.${store.id},store_id.is.null`)
+        .order('sort_order', { ascending: true });
+        
+      colors = storeColors || [];
+      sizes = storeSizes || [];
+      
+      // Adicionar cores e tamanhos ao produto
+      product.colors = colors;
+      product.sizes = sizes;
+      
+      // Garantir que o produto tenha pelo menos uma imagem estruturada
+      if (!product.images || !Array.isArray(product.images) || product.images.length === 0) {
+        if (product.image) {
+          product.images = [{
+            id: '1',
+            url: product.image,
+            is_primary: true
+          }];
+        } else {
+          product.images = [];
+        }
+      }
+      
+
+    }
 
     if (productError || !product) {
       notFound();

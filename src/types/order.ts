@@ -4,6 +4,8 @@ export interface OrderItem {
   price: number;
   quantity: number;
   image?: string;
+  selectedColor?: string | null;
+  selectedSize?: string | null;
 }
 
 export interface Order {

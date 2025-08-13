@@ -19,6 +19,17 @@ interface Product {
   description?: string;
   readyToShip?: boolean;
   available?: boolean;
+  colors_enabled?: boolean;
+  sizes_enabled?: boolean;
+  colors?: Array<{
+    id: string;
+    name: string;
+    hex_code: string;
+  }>;
+  sizes?: Array<{
+    id: string;
+    name: string;
+  }>;
 }
 
 interface EnhancedProductCardProps {
@@ -130,6 +141,50 @@ export default function EnhancedProductCard({
               {product.description}
             </p>
           )}
+          
+          {/* Indicadores de Cores e Tamanhos */}
+          <div className="flex items-center gap-3 mb-2">
+            {/* Indicador de Cores */}
+            {product.colors_enabled && product.colors && product.colors.length > 0 && (
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-gray-500">Cores:</span>
+                <div className="flex gap-1">
+                  {product.colors.slice(0, 3).map((color) => (
+                    <div
+                      key={color.id}
+                      className="w-4 h-4 rounded-full border border-gray-300 shadow-sm"
+                      style={{ backgroundColor: color.hex_code }}
+                      title={color.name}
+                    />
+                  ))}
+                  {product.colors.length > 3 && (
+                    <span className="text-xs text-gray-400 ml-1">+{product.colors.length - 3}</span>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            {/* Indicador de Tamanhos */}
+            {product.sizes_enabled && product.sizes && product.sizes.length > 0 && (
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-gray-500">Tamanhos:</span>
+                <div className="flex gap-1">
+                  {product.sizes.slice(0, 3).map((size) => (
+                    <span
+                      key={size.id}
+                      className="text-xs bg-gray-100 px-1.5 py-0.5 rounded text-gray-600"
+                      title={size.name}
+                    >
+                      {size.name}
+                    </span>
+                  ))}
+                  {product.sizes.length > 3 && (
+                    <span className="text-xs text-gray-400">+{product.sizes.length - 3}</span>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
           
           {settings.show_product_rating && (
             <div className="flex items-center gap-1 mb-2">

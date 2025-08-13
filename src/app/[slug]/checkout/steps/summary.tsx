@@ -30,6 +30,8 @@ interface SummaryStepProps {
     price: string;
     quantity: number;
     image?: string;
+    selectedColor?: string | null;
+    selectedSize?: string | null;
   }>;
   store: {
     id: string;
@@ -233,7 +235,9 @@ export default function SummaryStep({
           name: item.name,
           price: priceNumber, // API espera number, não string
           quantity: item.quantity,
-          image: item.image
+          image: item.image,
+          selectedColor: item.selectedColor,
+          selectedSize: item.selectedSize
         };
       });
 
@@ -296,9 +300,20 @@ export default function SummaryStep({
       toast.success('Pedido criado com sucesso!', { id: loadingToast });
 
       // 4. Gerar mensagem do WhatsApp
-      const itemsList = cart.map(item => 
-        `• ${item.quantity}x ${item.name} - R$ ${item.price}`
-      ).join('\n');
+      const itemsList = cart.map(item => {
+        let itemName = `${item.quantity}x ${item.name}`;
+        
+        // Adicionar cor e tamanho se especificados
+        const attributes = [];
+        if (item.selectedColor) attributes.push(`Cor: ${item.selectedColor}`);
+        if (item.selectedSize) attributes.push(`Tamanho: ${item.selectedSize}`);
+        
+        if (attributes.length > 0) {
+          itemName += ` (${attributes.join(', ')})`;
+        }
+        
+        return `• ${itemName} - R$ ${item.price}`;
+      }).join('\n');
 
       const deliveryInfo = deliveryData.type === 'delivery' 
         ? `📍 *Entrega:*\n${deliveryData.address}, ${deliveryData.number}${deliveryData.complement ? `, ${deliveryData.complement}` : ''}\n${deliveryData.neighborhood} - ${deliveryData.city}/${deliveryData.state}\nCEP: ${deliveryData.cep}`
@@ -435,8 +450,8 @@ Pedido feito pelo site 🐝 Bee Link`;
           <h3 className="font-medium text-gray-900">Itens do Pedido</h3>
         </div>
         <div className="space-y-3">
-          {cart.map((item) => (
-            <div key={`${item.name}-${item.quantity}`} className="flex items-center space-x-3 py-2 border-b border-gray-100 last:border-b-0">
+          {cart.map((item, index) => (
+            <div key={`${item.name}-${item.selectedColor || 'no-color'}-${item.selectedSize || 'no-size'}-${index}`} className="flex items-center space-x-3 py-2 border-b border-gray-100 last:border-b-0">
               {item.image && (
                 <img 
                   src={item.image} 
@@ -446,6 +461,13 @@ Pedido feito pelo site 🐝 Bee Link`;
               )}
               <div className="flex-1">
                 <p className="font-medium text-gray-900">{item.name}</p>
+                {(item.selectedColor || item.selectedSize) && (
+                  <p className="text-xs text-gray-500">
+                    {item.selectedColor && `Cor: ${item.selectedColor}`}
+                    {item.selectedColor && item.selectedSize && ' • '}
+                    {item.selectedSize && `Tamanho: ${item.selectedSize}`}
+                  </p>
+                )}
                 <p className="text-sm text-gray-600">
                   {item.quantity}x R$ {item.price}
                 </p>

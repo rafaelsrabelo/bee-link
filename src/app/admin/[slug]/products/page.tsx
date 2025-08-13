@@ -14,9 +14,29 @@ import CreateStoreCategoryModal from '../../../../components/ui/create-store-cat
 import DeleteModal from '../../../../components/ui/delete-modal';
 import LottieLoader from '../../../../components/ui/lottie-loader';
 import MobileImageUpload from '../../../../components/ui/mobile-image-upload';
+import ProductAttributesManager from '../../../../components/ui/product-attributes-manager';
 import ProductCategorySelector from '../../../../components/ui/product-category-selector';
+import ProductImagesManager from '../../../../components/ui/product-images-manager';
 import PromotionsManager from '../../../../components/ui/promotions-manager';
 import { useAuth } from '../../../../contexts/AuthContext';
+
+interface Color {
+  name: string;
+  hex_code: string;
+}
+
+interface Size {
+  name: string;
+  value: string;
+}
+
+interface ProductImage {
+  id: string;
+  url: string;
+  color_name?: string;
+  color_hex?: string;
+  is_primary?: boolean;
+}
 
 interface Product {
   id: string;
@@ -35,6 +55,12 @@ interface Product {
   readyToShip?: boolean;
   available?: boolean;
   store_id?: string;
+  colors?: Color[];
+  sizes?: Size[];
+  has_variants?: boolean;
+  images?: ProductImage[];
+  colors_enabled?: boolean;
+  sizes_enabled?: boolean;
 }
 
 interface Store {
@@ -98,6 +124,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
   const [showCreateCategoryModal, setShowCreateCategoryModal] = useState(false);
   const [showCategoriesManager, setShowCategoriesManager] = useState(false);
   const [categoriesRefreshKey, setCategoriesRefreshKey] = useState(0);
+  const [availableColors, setAvailableColors] = useState<Color[]>([]);
   const [savingProduct, setSavingProduct] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
   const [activeTab, setActiveTab] = useState('products');
@@ -137,9 +164,28 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
     }
   };
 
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const { slug } = use(params);
+
+  // Carregar cores disponíveis
+  useEffect(() => {
+    const loadColors = async () => {
+      try {
+        const response = await fetch(`/api/stores/${slug}/attributes-config`);
+        if (response.ok) {
+          const data = await response.json();
+          setAvailableColors(data.colors || []);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar cores:', error);
+      }
+    };
+
+    if (slug) {
+      loadColors();
+    }
+  }, [slug]);
 
   // Verificar se todos os campos obrigatórios estão preenchidos
   const isFormValid = Boolean(
@@ -153,10 +199,17 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
 
   // Carregar tudo de uma vez
   useEffect(() => {
-    if (user && slug) {
+    // Se não está carregando autenticação e não tem usuário, redirecionar
+    if (!authLoading && !user) {
+      router.push('/login');
+      return;
+    }
+    
+    // Só carregar quando não estiver carregando autenticação e tiver user e slug
+    if (!authLoading && user && slug) {
       loadStoreAndProducts();
     }
-  }, [slug]); // Removido user da dependência para evitar recarregamentos desnecessários
+  }, [authLoading, user, slug, router]); // Adicionado router nas dependências
 
   const loadStoreAndProducts = async () => {
     if (!slug) return;
@@ -189,12 +242,15 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
       // Carregar produtos
       await loadProducts();
     } catch (error) {
+      console.error('Erro ao carregar dados da loja:', error);
       toast.error('Erro ao carregar dados da loja');
+      // Garantir que o loading seja removido mesmo em caso de erro
+      setLoading(false);
+      setProductsLoaded(true);
     } finally {
-      setTimeout(() => {
-        setLoading(false);
-        setProductsLoaded(true);
-      }, 500);
+      // Remover o setTimeout para evitar delays desnecessários
+      setLoading(false);
+      setProductsLoaded(true);
     }
   };
 
@@ -223,12 +279,15 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
         setProducts([]);
       }
     } catch (error) {
+      console.error('Erro ao carregar produtos:', error);
       toast.error('Erro ao carregar produtos');
+      // Garantir que o loading seja removido mesmo em caso de erro
+      setLoading(false);
+      setProductsLoaded(true);
     } finally {
-      setTimeout(() => {
-        setLoading(false);
-        setProductsLoaded(true);
-      }, 500);
+      // Remover o setTimeout para evitar delays desnecessários
+      setLoading(false);
+      setProductsLoaded(true);
     }
   };
 
@@ -411,7 +470,11 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
       const updatedProduct = {
         ...productWithoutCategoryData,
         category: categoryName,
-        category_id: editingProduct.category_id || undefined
+        category_id: editingProduct.category_id || undefined,
+        colors: editingProduct.colors || [],
+        sizes: editingProduct.sizes || [],
+        has_variants: (editingProduct.colors && editingProduct.colors.length > 0) || (editingProduct.sizes && editingProduct.sizes.length > 0),
+        images: editingProduct.images || []
       };
 
       // Usar API específica para UPDATE - NÃO deleta todos os produtos!
@@ -568,14 +631,15 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
                 return analytics.top_cart_products[0]?.product_id === productId;
               };
 
-  if (loading || !store) {
+  // Mostrar loading enquanto autenticação ou dados estão carregando
+  if (authLoading || loading || !store) {
     return (
       <ProtectedRoute>
         <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-violet-50 flex items-center justify-center">
           <LottieLoader 
             animationData={loadingAnimation}
             size="lg"
-            text="Carregando..."
+            text={authLoading ? "Verificando autenticação..." : "Carregando..."}
             color="#8B5CF6"
           />
         </div>
@@ -1040,14 +1104,12 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
                     </div>
                   </div>
                   
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Imagem do Produto</label>
-                    <MobileImageUpload
-                      onImageSelect={handleEditImageUpload}
-                      currentImage={editingProduct.image}
-                      disabled={uploadingEditImage}
-                      loading={uploadingEditImage}
-                    />
+                  <div className="md:col-span-2">
+                                <ProductImagesManager
+              images={editingProduct.images || []}
+              onImagesChange={(images) => setEditingProduct({...editingProduct, images})}
+              colors={store?.colors}
+            />
                   </div>
                   
                   <div>
@@ -1075,6 +1137,25 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
                       onChange={(e) => setEditingProduct({...editingProduct, description: e.target.value})}
                       rows={3}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  {/* Cores e Tamanhos */}
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Cores e Tamanhos
+                    </label>
+                    <ProductAttributesManager
+                      storeSlug={slug || ''}
+                      selectedColors={editingProduct.colors || []}
+                      selectedSizes={editingProduct.sizes || []}
+                      onColorsChange={(colors) => setEditingProduct({...editingProduct, colors})}
+                      onSizesChange={(sizes) => setEditingProduct({...editingProduct, sizes})}
+                      colorsEnabled={editingProduct.colors_enabled}
+                      sizesEnabled={editingProduct.sizes_enabled}
+                      onColorsEnabledChange={(enabled) => setEditingProduct({...editingProduct, colors_enabled: enabled})}
+                      onSizesEnabledChange={(enabled) => setEditingProduct({...editingProduct, sizes_enabled: enabled})}
+                      colors={store?.colors}
                     />
                   </div>
                   

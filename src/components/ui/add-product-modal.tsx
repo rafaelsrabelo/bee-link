@@ -1,10 +1,30 @@
 'use client';
 
 import { Package, Upload, X } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import MobileImageUpload from './mobile-image-upload';
+import ProductAttributesManager from './product-attributes-manager';
 import ProductCategorySelector from './product-category-selector';
+import ProductImagesManager from './product-images-manager';
+
+interface Color {
+  name: string;
+  hex_code: string;
+}
+
+interface Size {
+  name: string;
+  value: string;
+}
+
+interface ProductImage {
+  id: string;
+  url: string;
+  color_name?: string;
+  color_hex?: string;
+  is_primary?: boolean;
+}
 
 interface Product {
   id: string;
@@ -17,6 +37,12 @@ interface Product {
   readyToShip?: boolean;
   available?: boolean;
   store_id?: string;
+  colors?: Color[];
+  sizes?: Size[];
+  has_variants?: boolean;
+  images?: ProductImage[];
+  colors_enabled?: boolean;
+  sizes_enabled?: boolean;
 }
 
 interface AddProductModalProps {
@@ -44,12 +70,38 @@ export default function AddProductModal({
     category_id: undefined,
     description: '',
     readyToShip: false,
-    available: true
+    available: true,
+    colors: [],
+    sizes: [],
+    has_variants: false,
+    images: [],
+    colors_enabled: true,
+    sizes_enabled: true
   });
   const [uploadingImage, setUploadingImage] = useState(false);
   const [saving, setSaving] = useState(false);
   const [categories, setCategories] = useState<{id: number; name: string}[]>([]);
+  const [availableColors, setAvailableColors] = useState<Color[]>([]);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
+
+  // Carregar cores disponíveis
+  useEffect(() => {
+    const loadColors = async () => {
+      try {
+        const response = await fetch(`/api/stores/${storeSlug}/attributes-config`);
+        if (response.ok) {
+          const data = await response.json();
+          setAvailableColors(data.colors || []);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar cores:', error);
+      }
+    };
+
+    if (storeSlug) {
+      loadColors();
+    }
+  }, [storeSlug]);
 
   const handleImageUpload = async (file: File) => {
     setUploadingImage(true);
@@ -136,6 +188,12 @@ export default function AddProductModal({
           description: newProduct.description?.trim(),
           readyToShip: newProduct.readyToShip,
           available: newProduct.available,
+          colors: newProduct.colors || [],
+          sizes: newProduct.sizes || [],
+          has_variants: (newProduct.colors && newProduct.colors.length > 0) || (newProduct.sizes && newProduct.sizes.length > 0),
+          images: newProduct.images || [],
+          colors_enabled: newProduct.colors_enabled,
+          sizes_enabled: newProduct.sizes_enabled
         }),
       });
 
@@ -153,7 +211,13 @@ export default function AddProductModal({
           category_id: undefined,
           description: '',
           readyToShip: false,
-          available: true
+          available: true,
+          colors: [],
+          sizes: [],
+          has_variants: false,
+          images: [],
+          colors_enabled: true,
+          sizes_enabled: true
         });
       } else {
         const errorData = await response.json();
@@ -284,16 +348,12 @@ export default function AddProductModal({
             />
           </div>
 
-          {/* Imagem */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Imagem do Produto
-            </label>
-            <MobileImageUpload
-              currentImage={newProduct.image}
-              onImageSelect={handleImageUpload}
-              loading={uploadingImage}
-              disabled={uploadingImage}
+          {/* Múltiplas Imagens */}
+          <div className="md:col-span-2">
+            <ProductImagesManager
+              images={newProduct.images || []}
+              onImagesChange={(images) => setNewProduct({...newProduct, images})}
+              colors={colors}
             />
           </div>
 
@@ -308,6 +368,25 @@ export default function AddProductModal({
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Descreva o produto..."
+            />
+          </div>
+
+          {/* Cores e Tamanhos */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Cores e Tamanhos
+            </label>
+            <ProductAttributesManager
+              storeSlug={storeSlug}
+              selectedColors={newProduct.colors || []}
+              selectedSizes={newProduct.sizes || []}
+              onColorsChange={(colors) => setNewProduct({...newProduct, colors})}
+              onSizesChange={(sizes) => setNewProduct({...newProduct, sizes})}
+              colorsEnabled={newProduct.colors_enabled}
+              sizesEnabled={newProduct.sizes_enabled}
+              onColorsEnabledChange={(enabled) => setNewProduct({...newProduct, colors_enabled: enabled})}
+              onSizesEnabledChange={(enabled) => setNewProduct({...newProduct, sizes_enabled: enabled})}
+              colors={colors}
             />
           </div>
 

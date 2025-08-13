@@ -7,6 +7,8 @@ export interface CartItem {
   image: string;
   description?: string;
   quantity: number;
+  selectedColor?: string | null;
+  selectedSize?: string | null;
 }
 
 interface CartStore {
@@ -18,12 +20,12 @@ interface CartStore {
   // Ações
   setStoreSlug: (slug: string) => void;
   setLoading: (loading: boolean) => void;
-  addToCart: (product: { name: string; price: string; image: string }) => void;
-  removeFromCart: (productName: string) => void;
+  addToCart: (product: { name: string; price: string; image: string; selectedColor?: string | null; selectedSize?: string | null }) => void;
+  removeFromCart: (productName: string, selectedColor?: string | null, selectedSize?: string | null) => void;
   clearCart: () => void;
   getCartTotal: () => number;
   getCartItemCount: () => number;
-  getCartItemQuantity: (productName: string) => number;
+  getCartItemQuantity: (productName: string, selectedColor?: string | null, selectedSize?: string | null) => number;
 }
 
 export const useCartStore = create<CartStore>()(
@@ -49,7 +51,7 @@ export const useCartStore = create<CartStore>()(
         set({ isLoading: loading });
       },
 
-      addToCart: (product: { name: string; price: string; image: string; description?: string }) => {
+      addToCart: (product: { name: string; price: string; image: string; description?: string; selectedColor?: string | null; selectedSize?: string | null }) => {
         set((state) => {
           // Verificar se o storeSlug está definido
           if (!state.storeSlug) {
@@ -57,11 +59,19 @@ export const useCartStore = create<CartStore>()(
             return state;
           }
 
-          const existingItem = state.cart.find(item => item.name === product.name);
+          // Verificar se já existe um item com o mesmo nome, cor e tamanho
+          const existingItem = state.cart.find(item => 
+            item.name === product.name && 
+            item.selectedColor === product.selectedColor && 
+            item.selectedSize === product.selectedSize
+          );
+          
           if (existingItem) {
             return {
               cart: state.cart.map(item =>
-                item.name === product.name
+                item.name === product.name && 
+                item.selectedColor === product.selectedColor && 
+                item.selectedSize === product.selectedSize
                   ? { ...item, quantity: item.quantity + 1 }
                   : item
               )
@@ -73,20 +83,31 @@ export const useCartStore = create<CartStore>()(
         });
       },
 
-      removeFromCart: (productName) => {
+      removeFromCart: (productName, selectedColor, selectedSize) => {
         set((state) => {
-          const existingItem = state.cart.find(item => item.name === productName);
+          const existingItem = state.cart.find(item => 
+            item.name === productName && 
+            item.selectedColor === selectedColor && 
+            item.selectedSize === selectedSize
+          );
+          
           if (existingItem && existingItem.quantity > 1) {
             return {
               cart: state.cart.map(item =>
-                item.name === productName
+                item.name === productName && 
+                item.selectedColor === selectedColor && 
+                item.selectedSize === selectedSize
                   ? { ...item, quantity: item.quantity - 1 }
                   : item
               )
             };
           }
           return {
-            cart: state.cart.filter(item => item.name !== productName)
+            cart: state.cart.filter(item => 
+              !(item.name === productName && 
+                item.selectedColor === selectedColor && 
+                item.selectedSize === selectedSize)
+            )
           };
         });
       },
@@ -110,9 +131,13 @@ export const useCartStore = create<CartStore>()(
         return cart.reduce((total, item) => total + item.quantity, 0);
       },
 
-      getCartItemQuantity: (productName) => {
+      getCartItemQuantity: (productName, selectedColor, selectedSize) => {
         const { cart } = get();
-        const item = cart.find(item => item.name === productName);
+        const item = cart.find(item => 
+          item.name === productName && 
+          item.selectedColor === selectedColor && 
+          item.selectedSize === selectedSize
+        );
         return item?.quantity || 0;
       },
     }),

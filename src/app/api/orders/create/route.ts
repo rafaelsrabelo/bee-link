@@ -17,9 +17,20 @@ interface OrderWithItems extends Order {
 
 // Função para formatar mensagem do WhatsApp
 function formatWhatsAppMessage(order: OrderWithItems, store: StoreData) {
-  const items = order.items.map((item: OrderItem) => 
-    `• ${item.quantity}x ${item.name} - R$ ${item.price.toFixed(2).replace('.', ',')}`
-  ).join('\n');
+  const items = order.items.map((item: OrderItem) => {
+    let itemName = `${item.quantity}x ${item.name}`;
+    
+    // Adicionar cor e tamanho se especificados
+    const attributes = [];
+    if (item.selectedColor) attributes.push(`Cor: ${item.selectedColor}`);
+    if (item.selectedSize) attributes.push(`Tamanho: ${item.selectedSize}`);
+    
+    if (attributes.length > 0) {
+      itemName += ` (${attributes.join(', ')})`;
+    }
+    
+    return `• ${itemName} - R$ ${item.price.toFixed(2).replace('.', ',')}`;
+  }).join('\n');
 
   // Extrair informações das notes (temporário até migração)
   const notes = order.notes || '';

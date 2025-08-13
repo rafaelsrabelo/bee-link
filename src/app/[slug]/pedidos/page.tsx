@@ -506,9 +506,18 @@ export default function PedidosPage({ params }: PedidosPageProps) {
 
                     <div className="space-y-2 mb-4">
                       {order.items.slice(0, 2).map((item, index) => (
-                        <div key={index} className="flex justify-between text-sm">
-                          <span className="text-gray-700">{item.quantity}x {item.name}</span>
-                          <span className="font-medium">R$ {(item.price * item.quantity).toFixed(2).replace('.', ',')}</span>
+                        <div key={index} className="text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-gray-700">{item.quantity}x {item.name}</span>
+                            <span className="font-medium">R$ {(item.price * item.quantity).toFixed(2).replace('.', ',')}</span>
+                          </div>
+                          {(item.selectedColor || item.selectedSize) && (
+                            <div className="text-xs text-gray-500 ml-4">
+                              {item.selectedColor && `Cor: ${item.selectedColor}`}
+                              {item.selectedColor && item.selectedSize && ' • '}
+                              {item.selectedSize && `Tamanho: ${item.selectedSize}`}
+                            </div>
+                          )}
                         </div>
                       ))}
                       {order.items.length > 2 && (

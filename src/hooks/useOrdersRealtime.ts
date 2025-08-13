@@ -125,7 +125,7 @@ export function useOrdersRealtime({
       console.log('🔌 Desconectando WebSocket...');
       supabase.removeChannel(channel);
     };
-  }, [storeId, storeSlug, loadInitialOrders, onNewOrder, onOrderUpdate]);
+  }, [storeId, storeSlug]); // Removidas as dependências que causavam loop
 
   return {
     orders,

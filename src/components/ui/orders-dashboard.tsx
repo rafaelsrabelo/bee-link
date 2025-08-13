@@ -19,12 +19,13 @@
     X,
     XCircle
   } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import { usePendingOrdersStore } from '../../stores/pendingOrdersStore';
 import { usePrintSettingsStore } from '../../stores/printSettingsStore';
 import type { Order } from '../../types/order';
+
 import BotaoImprimir from './botao-imprimir';
 import CreateOrderModal from './create-order-modal';
 
@@ -275,6 +276,13 @@ function OrderDetailsPanel({
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <h4 className="font-semibold text-gray-900">{item.name}</h4>
+                      {(item.selectedColor || item.selectedSize) && (
+                        <p className="text-xs text-gray-500 mb-1">
+                          {item.selectedColor && `Cor: ${item.selectedColor}`}
+                          {item.selectedColor && item.selectedSize && ' • '}
+                          {item.selectedSize && `Tamanho: ${item.selectedSize}`}
+                        </p>
+                      )}
                       <p className="text-sm text-gray-600">Quantidade: {item.quantity}</p>
                       <p className="text-sm text-gray-600">Preço unitário: {formatPrice(item.price)}</p>
                     </div>
@@ -436,9 +444,6 @@ interface PrintSettings {
 
 export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardProps) {
   
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [loading, setLoading] = useState(true);
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   
@@ -446,8 +451,7 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
   useEffect(() => {
     console.log('🔄 Estado do modal mudou:', showCreateModal);
   }, [showCreateModal]);
-  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'polling' | 'error'>('connecting');
-  const [forceUpdate, setForceUpdate] = useState(0); // Força re-render quando necessário
+  
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   
@@ -462,6 +466,212 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
   // Store para configurações de impressão
   const { getPrintSettings, loadPrintSettings } = usePrintSettingsStore();
   const printSettings = getPrintSettings(storeSlug);
+  
+  // Função para tocar som de notificação
+  const playNotificationSound = () => {
+    const playBeep = () => {
+      try {
+        const audioContext = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+        
+        if (audioContext.state === 'suspended') {
+          audioContext.resume();
+        }
+        
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = 800;
+        oscillator.type = 'sine';
+        
+        gainNode.gain.setValueAtTime(0.8, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.3);
+        
+      } catch (error) {
+        try {
+          const audio = new Audio();
+          audio.src = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT';
+          audio.play();
+        } catch (audioError) {
+          alert('🔔 NOVO PEDIDO!');
+        }
+      }
+    };
+    
+    playBeep();
+    setTimeout(playBeep, 100);
+    setTimeout(playBeep, 500);
+    setTimeout(playBeep, 1000);
+  };
+
+  // Estados para pedidos
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'polling' | 'error'>('connecting');
+
+  // Função para carregar pedidos
+  const loadOrders = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/stores/${storeSlug}/orders?limit=100`);
+      
+          if (response.ok) {
+            const data = await response.json();
+            const newOrders = data.orders || [];
+            
+            // Verificar se há novos pedidos
+        setOrders(prevOrders => {
+          // Se é o primeiro carregamento, não tocar som
+          if (prevOrders.length === 0) {
+            return newOrders;
+          }
+          
+          const currentIds = new Set(prevOrders.map(o => o.id));
+            const newOrdersToAdd = newOrders.filter((o: Order) => !currentIds.has(o.id));
+            
+          console.log('🔍 Verificando novos pedidos:', {
+            totalAtual: prevOrders.length,
+            totalNovo: newOrders.length,
+            novosEncontrados: newOrdersToAdd.length,
+            novosIds: newOrdersToAdd.map(o => o.id)
+          });
+          
+          // Se há novos pedidos, tocar som
+          if (newOrdersToAdd.length > 0) {
+            // Filtrar apenas pedidos REAIS vindos da plataforma
+              const realOrdersFromPlatform = newOrdersToAdd.filter((o: Order) => {
+                const manualSources = ['presencial', 'telefone', 'whatsapp', 'instagram', 'ifood', 'indicacao', 'outros'];
+                const isManualOrder = o.status === 'delivered' || 
+                                     o.notes?.includes('Origem:') ||
+                                     manualSources.includes(o.source || '');
+                
+                const isRealOrderFromPlatform = o.status === 'pending' && 
+                                               o.source === 'link' && 
+                                               !o.notes?.includes('Origem:') &&
+                                               !manualSources.includes(o.source || '');
+                
+              console.log('📋 Analisando pedido:', {
+                id: o.id,
+                status: o.status,
+                source: o.source,
+                notes: o.notes,
+                isManual: isManualOrder,
+                isReal: isRealOrderFromPlatform
+              });
+              
+                return isRealOrderFromPlatform;
+              });
+              
+              if (realOrdersFromPlatform.length > 0) {
+                console.log('🔔 NOVO PEDIDO REAL DETECTADO! Tocando som...');
+              playNotificationSound();
+              incrementCount();
+              
+              // Mostrar toast de notificação
+              toast.success(`Novo pedido recebido! #${realOrdersFromPlatform[0].id.slice(0, 8).toUpperCase()}`, {
+                duration: 5000,
+                icon: '🆕'
+              });
+            } else {
+                console.log('📝 Pedidos manuais detectados - sem som');
+              }
+          }
+          
+                  return newOrders;
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao carregar pedidos:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [storeSlug, incrementCount, playNotificationSound]);
+
+  // Sistema simples sem loops
+  useEffect(() => {
+    if (!storeId) return;
+
+    // Carregar dados iniciais
+    loadOrders();
+    loadPrintSettings(storeSlug);
+
+    setConnectionStatus('connecting');
+
+    // Configurar canal Realtime
+    const channel = supabase
+      .channel(`orders-${storeId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'orders',
+          filter: `store_id=eq.${storeId}`
+        },
+        (payload) => {
+          console.log('🆕 Novo pedido detectado:', payload);
+          if (payload.new) {
+            const newOrder = payload.new as Order;
+            
+            // Adicionar à lista
+            setOrders(prevOrders => {
+              const exists = prevOrders.some(order => order.id === newOrder.id);
+              if (exists) return prevOrders;
+              
+              const updatedOrders = [newOrder, ...prevOrders];
+              
+              // Verificar se é pedido real da plataforma
+              const isRealOrder = newOrder.status === 'pending' && 
+                                 newOrder.source === 'link' && 
+                                 !newOrder.notes?.includes('Origem:');
+              
+              if (isRealOrder) {
+                console.log('🔔 NOVO PEDIDO REAL! Tocando som...');
+                playNotificationSound();
+                incrementCount();
+                
+                toast.success(`Novo pedido recebido! #${newOrder.id.slice(0, 8).toUpperCase()}`, {
+                  duration: 5000,
+                  icon: '🆕'
+                });
+              }
+              
+              return updatedOrders;
+              });
+            }
+          }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'orders',
+          filter: `store_id=eq.${storeId}`
+        },
+        (payload) => {
+          console.log('📝 Pedido atualizado:', payload);
+          setOrders(prevOrders => 
+            prevOrders.map(order => 
+              order.id === payload.new.id ? payload.new as Order : order
+            )
+          );
+        }
+      )
+      .subscribe((status) => {
+        console.log('📡 Status:', status);
+        setConnectionStatus(status === 'SUBSCRIBED' ? 'connected' : 'error');
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [storeId]); // Apenas storeId como dependência
   
 
   
@@ -572,168 +782,21 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
 
 
 
-  // Carregar pedidos iniciais (todos os pedidos em aberto)
-  const loadOrders = React.useCallback(async () => {
-    try {
-      
-      // Carregar todos os pedidos em aberto (não apenas de hoje) para e-commerce
-      const response = await fetch(`/api/stores/${storeSlug}/orders?limit=100`);
-      
-      if (response.ok) {
-        const data = await response.json();
-
-        setOrders(data.orders || []);
-        
-        // Marcar que o carregamento inicial foi concluído
-        setIsInitialLoad(false);
-        
-        // Salvar no store o valor de pedidos em aberto
-        const pendingCount = (data.orders || []).filter((order: Order) => 
-          ['pending', 'accepted', 'preparing'].includes(order.status)
-        ).length;
-        setPendingCount(pendingCount);
-      } else {
-        toast.error(`Erro ao carregar pedidos: ${response.status}`);
-      }
-    } catch (error) {
-      // Verificar se é erro de rede
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        toast.error('Erro de conexão. Verifique sua internet.');
-      } else {
-        toast.error('Erro ao carregar pedidos');
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [storeSlug, setPendingCount]);
-
   // Configurar sistema de notificações em tempo real
   useEffect(() => {
     if (!storeId) {
       return;
     }
 
-    // Carregar pedidos iniciais
-    loadOrders();
-    
     // Carregar configurações de impressão (apenas uma vez)
     loadPrintSettings(storeSlug);
-
-    let pollingInterval: NodeJS.Timeout;
-
-    // Usar apenas polling para evitar conflitos com outros canais Realtime
-    const startPolling = () => {
-      setConnectionStatus('polling');
-      
-      pollingInterval = setInterval(async () => {
-        try {
-          // Só fazer polling se não estiver carregando
-          if (loading) return;
-          
-          const response = await fetch(`/api/stores/${storeSlug}/orders?limit=100`);
-          if (response.ok) {
-            const data = await response.json();
-            const newOrders = data.orders || [];
-            
-            // Verificar se há novos pedidos
-            const currentIds = new Set(orders.map(o => o.id));
-            const newOrdersToAdd = newOrders.filter((o: Order) => !currentIds.has(o.id));
-            
-            // Se não há novos pedidos, não fazer nada
-            if (newOrdersToAdd.length === 0) {
-              return;
-            }
-            
-            if (newOrdersToAdd.length > 0 && !isInitialLoad) {
-              // Filtrar apenas pedidos REAIS vindos da plataforma (não manuais)
-              const realOrdersFromPlatform = newOrdersToAdd.filter((o: Order) => {
-                // Pedidos manuais (criados pelo admin) são identificados por:
-                // 1. Status 'delivered' (pedidos manuais são criados como entregues)
-                // 2. Notes contendo "Origem:" (indicando que foi criado pelo admin)
-                // 3. Source sendo qualquer um dos tipos manuais
-                const manualSources = ['presencial', 'telefone', 'whatsapp', 'instagram', 'ifood', 'indicacao', 'outros'];
-                const isManualOrder = o.status === 'delivered' || 
-                                     o.notes?.includes('Origem:') ||
-                                     manualSources.includes(o.source || '');
-                
-                // Pedidos REAIS da plataforma têm:
-                // - Status 'pending' (aguardando aprovação)
-                // - Source 'link' (vindos do link da loja)
-                // - Não têm "Origem:" nas notes
-                // - Não são pedidos manuais criados pelo admin
-                const isRealOrderFromPlatform = o.status === 'pending' && 
-                                               o.source === 'link' && 
-                                               !o.notes?.includes('Origem:') &&
-                                               !manualSources.includes(o.source || '');
-                
-                // Só tocar som para pedidos REAIS da plataforma
-                return isRealOrderFromPlatform;
-              });
-              
-              if (realOrdersFromPlatform.length > 0) {
-                // Tocar som APENAS para pedidos REAIS vindos da plataforma
-                console.log('🔔 NOVO PEDIDO REAL DETECTADO! Tocando som...');
-              playNotificationSound();
-              setTimeout(() => playNotificationSound(), 1000);
-              setTimeout(() => playNotificationSound(), 2000);
-              
-                // Incrementar contador no store apenas para pedidos reais
-              incrementCount();
-              } else if (newOrdersToAdd.length > 0) {
-                // Se há novos pedidos mas não são da plataforma, apenas log
-                console.log('📝 Pedidos manuais detectados - sem som');
-              }
-              
-              // Atualizar lista (evitar duplicatas)
-              setOrders(prev => {
-                const existingIds = new Set(prev.map((o: Order) => o.id));
-                const uniqueNewOrders = newOrdersToAdd.filter((o: Order) => !existingIds.has(o.id));
-                
-                // Se não há pedidos únicos para adicionar, retornar a lista atual
-                if (uniqueNewOrders.length === 0) {
-                  return prev;
-                }
-                
-                // Adicionar novos pedidos únicos no início da lista
-                return [...uniqueNewOrders, ...prev];
-              });
-            } else {
-              // Só atualizar se a lista realmente mudou
-              setOrders(prev => {
-                // Comparação simples: se os arrays têm tamanhos diferentes, atualizar
-                if (prev.length !== newOrders.length) {
-                  return newOrders;
-                }
-                
-                // Se têm o mesmo tamanho, verificar se são iguais
-                const prevIds = prev.map((o: Order) => o.id).sort();
-                const newIds = newOrders.map((o: Order) => o.id).sort();
-                
-                // Se os IDs são diferentes, atualizar
-                if (JSON.stringify(prevIds) !== JSON.stringify(newIds)) {
-                  return newOrders;
-                }
-                
-                // Se são iguais, manter a lista atual
-                return prev;
-              });
-            }
-          }
-        } catch (error) {
-          // Erro no polling
-        }
-      }, 20000); // Polling a cada 20 segundos (mais otimizado)
-    };
-
-    // Iniciar polling imediatamente
-    startPolling();
-
-    return () => {
-      if (pollingInterval) {
-        clearInterval(pollingInterval);
-      }
-    };
-  }, [storeSlug, storeId, loadOrders, incrementCount, orders, isInitialLoad, loadPrintSettings]);
+    
+    // Atualizar contador de pedidos pendentes quando orders mudar
+    const pendingCount = orders.filter((order: Order) => 
+      ['pending', 'accepted', 'preparing'].includes(order.status)
+    ).length;
+    setPendingCount(pendingCount);
+  }, [storeId, storeSlug, loadPrintSettings, orders, setPendingCount]);
 
   // Função para marcar notificação como lida
   const markNotificationAsRead = async (orderId: string) => {
@@ -749,53 +812,7 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
     }
   };
 
-    // Função para tocar som de notificação
-  const playNotificationSound = () => {
-    // Som com múltiplas tentativas e fallbacks
-    const playBeep = () => {
-      try {
-        const audioContext = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
-        
-        if (audioContext.state === 'suspended') {
-          audioContext.resume();
-        }
-        
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-        
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-        
-        oscillator.frequency.value = 800;
-        oscillator.type = 'sine';
-        
-        gainNode.gain.setValueAtTime(0.8, audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-        
-        oscillator.start(audioContext.currentTime);
-        oscillator.stop(audioContext.currentTime + 0.3);
-        
-      } catch (error) {
-        // Fallback: tentar com HTML5 Audio
-        try {
-          const audio = new Audio();
-          audio.src = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT';
-          audio.play();
-        } catch (audioError) {
-          // Último fallback: alert (sempre funciona)
-          alert('🔔 NOVO PEDIDO!');
-        }
-      }
-    };
-    
-    // Tentar tocar o som imediatamente
-    playBeep();
-    
-    // Tentar novamente após delays (para casos onde o contexto está suspenso)
-    setTimeout(playBeep, 100);
-    setTimeout(playBeep, 500);
-    setTimeout(playBeep, 1000);
-  };
+
 
   // Função para atualizar status do pedido com nota
   const updateOrderStatusWithNote = async (orderId: string, newStatus: Order['status'], note: string) => {
@@ -845,9 +862,6 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
         setSelectedOrder(prev => 
           prev?.id === orderId ? updatedOrder : prev
         );
-        
-        // Forçar re-render para atualizar estatísticas
-        setForceUpdate(prev => prev + 1);
         
 
       } else {
@@ -906,9 +920,6 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
         setSelectedOrder(prev => 
           prev?.id === orderId ? { ...prev, status: newStatus } : prev
         );
-        
-        // Forçar re-render para atualizar estatísticas
-        setForceUpdate(prev => prev + 1);
         
 
       } else {
@@ -1201,50 +1212,50 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
 
                 {/* Filtros de Status */}
                 <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={() => setStatusFilter('all')}
+                <button
+                  onClick={() => setStatusFilter('all')}
                     className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      statusFilter === 'all' 
-                        ? 'bg-blue-600 text-white' 
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                    type="button"
-                  >
+                    statusFilter === 'all' 
+                      ? 'bg-blue-600 text-white' 
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                  type="button"
+                >
                     Todos ({sortedOrders.length})
-                  </button>
-                  <button
-                    onClick={() => setStatusFilter('pending')}
+                </button>
+                <button
+                  onClick={() => setStatusFilter('pending')}
                     className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      statusFilter === 'pending' 
-                        ? 'bg-orange-600 text-white' 
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                    type="button"
-                  >
-                    Em Aberto ({stats.pending})
-                  </button>
-                  <button
-                    onClick={() => setStatusFilter('delivered')}
+                    statusFilter === 'pending' 
+                      ? 'bg-orange-600 text-white' 
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                  type="button"
+                >
+                  Em Aberto ({stats.pending})
+                </button>
+                <button
+                  onClick={() => setStatusFilter('delivered')}
                     className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      statusFilter === 'delivered' 
-                        ? 'bg-green-600 text-white' 
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                    type="button"
-                  >
-                    Entregues ({stats.delivered})
-                  </button>
-                  <button
-                    onClick={() => setStatusFilter('cancelled')}
+                    statusFilter === 'delivered' 
+                      ? 'bg-green-600 text-white' 
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                  type="button"
+                >
+                  Entregues ({stats.delivered})
+                </button>
+                <button
+                  onClick={() => setStatusFilter('cancelled')}
                     className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      statusFilter === 'cancelled' 
-                        ? 'bg-red-600 text-white' 
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                    type="button"
-                  >
-                    Cancelados ({stats.cancelled})
-                  </button>
+                    statusFilter === 'cancelled' 
+                      ? 'bg-red-600 text-white' 
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                  type="button"
+                >
+                  Cancelados ({stats.cancelled})
+                </button>
                 </div>
               </div>
             </div>
@@ -1303,15 +1314,15 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {paginatedOrders.map((order) => {
-                        const statusInfo = statusConfig[order.status];
-                        const StatusIcon = statusInfo.icon;
+                      const statusInfo = statusConfig[order.status];
+                      const StatusIcon = statusInfo.icon;
 
-                        return (
+                      return (
                           <tr
-                            key={order.id}
-                            onClick={() => setSelectedOrder(order)}
+                          key={order.id}
+                          onClick={() => setSelectedOrder(order)}
                             className={`cursor-pointer transition-colors ${
-                              selectedOrder?.id === order.id
+                            selectedOrder?.id === order.id
                                 ? 'bg-blue-50'
                                 : 'hover:bg-gray-50'
                             }`}
@@ -1334,10 +1345,10 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
                               <div className={`flex items-center space-x-1 ${statusInfo.color}`}>
                                 <StatusIcon className="w-4 h-4" />
                                 <span className="text-sm font-medium">{statusInfo.label}</span>
-                              </div>
+                            </div>
                             </td>
                             <td className="px-4 py-3 whitespace-nowrap text-sm font-bold text-gray-900">
-                              {formatPrice(order.total)}
+                                {formatPrice(order.total)}
                             </td>
                             <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
                               {formatDate(order.created_at)}
@@ -1354,7 +1365,7 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
                       <div className="flex items-center justify-between">
                         <div className="text-sm text-gray-700">
                           Mostrando {startIndex + 1} até {Math.min(endIndex, filteredOrders.length)} de {filteredOrders.length} pedidos
-                        </div>
+                            </div>
                         <div className="flex space-x-2">
                           <button
                             onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
@@ -1375,10 +1386,10 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
                           >
                             Próxima
                           </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                          </div>
+                          </div>
+                            </div>
+                          )}
                 </>
               )}
             </div>
@@ -1419,29 +1430,29 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
       {showCreateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <CreateOrderModal
-              storeSlug={storeSlug}
-              storeId={storeId}
-              onClose={() => setShowCreateModal(false)}
-              onOrderCreated={(newOrder) => {
-                // Adicionar o pedido à lista sem disparar notificações
-                // Usar Set para garantir IDs únicos
-                setOrders(prev => {
-                  const existingIds = new Set(prev.map(o => o.id));
-                  if (existingIds.has(newOrder.id)) {
-                    // Se já existe, não adicionar novamente
-                    return prev;
-                  }
-                  return [newOrder, ...prev];
-                });
-                setShowCreateModal(false);
-                setSelectedOrder(newOrder);
-                
-                // IMPORTANTE: Pedidos manuais (criados pelo admin) NÃO disparam som
-                // O som só toca para pedidos REAIS vindos da plataforma (status 'pending', source 'link')
-                // Isso evita o problema de som tocando quando o admin cria pedidos
-              }}
-            />
+        <CreateOrderModal
+          storeSlug={storeSlug}
+          storeId={storeId}
+          onClose={() => setShowCreateModal(false)}
+                      onOrderCreated={(newOrder) => {
+              // Adicionar o pedido à lista sem disparar notificações
+              // Usar Set para garantir IDs únicos
+              setOrders(prev => {
+                const existingIds = new Set(prev.map(o => o.id));
+                if (existingIds.has(newOrder.id)) {
+                  // Se já existe, não adicionar novamente
+                  return prev;
+                }
+                return [newOrder, ...prev];
+              });
+              setShowCreateModal(false);
+              setSelectedOrder(newOrder);
+              
+              // IMPORTANTE: Pedidos manuais (criados pelo admin) NÃO disparam som
+              // O som só toca para pedidos REAIS vindos da plataforma (status 'pending', source 'link')
+              // Isso evita o problema de som tocando quando o admin cria pedidos
+            }}
+        />
           </div>
         </div>
       )}

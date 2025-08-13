@@ -30,6 +30,21 @@ export async function GET(
       .eq('available', true)
       .order('name');
 
+    // 3. Buscar cores e tamanhos da loja
+    const { data: storeColors } = await supabase
+      .from('store_attributes')
+      .select('*')
+      .eq('attribute_type', 'color')
+      .or(`store_id.eq.${store.id},store_id.is.null`)
+      .order('sort_order', { ascending: true });
+
+    const { data: storeSizes } = await supabase
+      .from('store_attributes')
+      .select('*')
+      .eq('attribute_type', 'size')
+      .or(`store_id.eq.${store.id},store_id.is.null`)
+      .order('sort_order', { ascending: true });
+
     if (productsError) {
       console.error('Erro ao buscar produtos:', productsError);
       return NextResponse.json(
@@ -38,10 +53,12 @@ export async function GET(
       );
     }
 
-    // Formatar produtos mantendo os preços originais
+    // Formatar produtos mantendo os preços originais e adicionando cores/tamanhos
     const formattedProducts = (products || []).map(product => ({
       ...product,
-      price: product.price // Manter o preço original do banco
+      price: product.price, // Manter o preço original do banco
+      colors: storeColors || [],
+      sizes: storeSizes || []
     }));
 
     return NextResponse.json({

@@ -2,10 +2,10 @@
 
 import { 
   ClipboardList, 
-  Package, 
-  ShoppingCart,
+  MessageCircle,
   Music,
-  MessageCircle
+  Package, 
+  ShoppingCart
 } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -17,6 +17,7 @@ import EnhancedProductCard from '../../components/store/enhanced-product-card';
 import FloatingCart from '../../components/store/floating-cart';
 import HorizontalProductCard from '../../components/store/horizontal-product-card';
 import ProductModal from '../../components/store/product-modal';
+import QuickVariantModal from '../../components/ui/quick-variant-modal';
 
 import { trackAddToCart, trackPageView, trackProductClick } from '../../lib/analytics';
 import { useCartStore } from '../stores/cartStore';
@@ -106,6 +107,17 @@ interface Product {
   description?: string;
   readyToShip?: boolean;
   available?: boolean;
+  colors_enabled?: boolean;
+  sizes_enabled?: boolean;
+  colors?: Array<{
+    id: string;
+    name: string;
+    hex_code: string;
+  }>;
+  sizes?: Array<{
+    id: string;
+    name: string;
+  }>;
 }
 
 interface StorePageClientProps {
@@ -123,6 +135,8 @@ export default function StorePageClient({ store }: StorePageClientProps) {
   const [showCatalog, setShowCatalog] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [quickVariantProduct, setQuickVariantProduct] = useState<Product | null>(null);
+  const [isQuickVariantModalOpen, setIsQuickVariantModalOpen] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const { 
@@ -227,6 +241,18 @@ export default function StorePageClient({ store }: StorePageClientProps) {
   }, [products]);
 
   const handleAddToCart = (product: Product, quantity = 1) => {
+    // Check if product has variants that need selection
+    const hasColors = product.colors_enabled && product.colors && product.colors.length > 0;
+    const hasSizes = product.sizes_enabled && product.sizes && product.sizes.length > 0;
+    
+    if (hasColors || hasSizes) {
+      // Open variant selection modal
+      setQuickVariantProduct(product);
+      setIsQuickVariantModalOpen(true);
+      return;
+    }
+    
+    // Add directly if no variants
     for (let i = 0; i < quantity; i++) {
       addToCart({
         name: product.name,
@@ -234,6 +260,37 @@ export default function StorePageClient({ store }: StorePageClientProps) {
         image: product.image
       });
     }
+    
+    // Track add to cart event
+    trackAddToCart({
+      product_id: product.id,
+      product_name: product.name,
+      product_price: Number.parseFloat(product.price.replace('R$ ', '').replace(',', '.')),
+      category: product.category_data?.name || product.category,
+      is_direct_link: false,
+      referrer: document.referrer
+    });
+  };
+
+  const handleQuickVariantAddToCart = (product: Product, selectedColor?: string | null, selectedSize?: string | null) => {
+    // Add to cart with selected variants
+    addToCart({
+      name: product.name,
+      price: product.price,
+      image: product.image,
+      selectedColor,
+      selectedSize
+    });
+    
+    // Show success message
+    let successMessage = `${product.name} adicionado ao carrinho!`;
+    if (selectedColor || selectedSize) {
+      const attributes = [];
+      if (selectedColor) attributes.push(selectedColor);
+      if (selectedSize) attributes.push(selectedSize);
+      successMessage += ` (${attributes.join(', ')})`;
+    }
+    toast.success(successMessage);
     
     // Track add to cart event
     trackAddToCart({
@@ -504,7 +561,9 @@ export default function StorePageClient({ store }: StorePageClientProps) {
             name: item.name,
             price: item.price,
             quantity: item.quantity,
-            image: item.image
+            image: item.image,
+            selectedColor: item.selectedColor,
+            selectedSize: item.selectedSize
           }))}
           totalItems={getCartItemCount()}
           totalValue={getCartTotal()}
@@ -517,15 +576,20 @@ export default function StorePageClient({ store }: StorePageClientProps) {
             // Mostrar loading e redirecionar para página de checkout
             window.location.href = `/${store.slug}/checkout`;
           }}
-          onAddItem={(itemName) => {
-            // Encontrar o produto e adicionar ao carrinho
+          onAddItem={(itemName, selectedColor, selectedSize) => {
+            // Encontrar o produto e adicionar ao carrinho com cor e tamanho específicos
             const product = products.find(p => p.name === itemName);
             if (product) {
-              addToCart(product);
+              const productWithVariants = {
+                ...product,
+                selectedColor,
+                selectedSize
+              };
+              addToCart(productWithVariants);
             }
           }}
-          onRemoveItem={(itemName) => {
-            removeFromCart(itemName);
+          onRemoveItem={(itemName, selectedColor, selectedSize) => {
+            removeFromCart(itemName, selectedColor, selectedSize);
           }}
         />
       </div>
@@ -710,6 +774,18 @@ export default function StorePageClient({ store }: StorePageClientProps) {
           </p>
         </div>
       </div>
+
+      {/* Quick Variant Selection Modal */}
+      <QuickVariantModal
+        product={quickVariantProduct}
+        isOpen={isQuickVariantModalOpen}
+        onClose={() => {
+          setIsQuickVariantModalOpen(false);
+          setQuickVariantProduct(null);
+        }}
+        onAddToCart={handleQuickVariantAddToCart}
+        storeColors={store.colors}
+      />
     </div>
   );
 } 

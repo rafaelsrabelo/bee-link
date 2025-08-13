@@ -5,7 +5,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import FloatingCart from '../../../components/store/floating-cart';
+import ProductImageGallery from '../../../components/ui/product-image-gallery';
 
+import { toast } from 'react-hot-toast';
 import { trackAddToCart, trackPageView, trackProductClick } from '../../../lib/analytics';
 import CartControls from '../../components/cart-controls';
 
@@ -45,6 +47,24 @@ interface StoreData {
   };
 }
 
+interface ProductImage {
+  id: string;
+  url: string;
+  color_name?: string;
+  color_hex?: string;
+  is_primary?: boolean;
+}
+
+interface Color {
+  name: string;
+  hex_code: string;
+}
+
+interface Size {
+  name: string;
+  value: string;
+}
+
 interface ProductPageClientProps {
   store: StoreData;
   product: {
@@ -55,14 +75,34 @@ interface ProductPageClientProps {
     category: string;
     description: string;
     readyToShip?: boolean;
+    colors?: Color[];
+    sizes?: Size[];
+    has_variants?: boolean;
+    images?: ProductImage[];
+    colors_enabled?: boolean;
+    sizes_enabled?: boolean;
   };
 }
 
 export default function ProductPageClient({ store, product }: ProductPageClientProps) {
-  const [selectedImage, setSelectedImage] = useState(0);
-
+  const [selectedColor, setSelectedColor] = useState<string | null>(null);
+  const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const { cart, setStoreSlug, isLoading, addToCart, removeFromCart } = useCartStore();
+
+  // Debug temporário para verificar dados do produto
+  useEffect(() => {
+    console.log('🔍 Dados do produto:', {
+      id: product.id,
+      name: product.name,
+      colors: product.colors,
+      sizes: product.sizes,
+      images: product.images,
+      colors_enabled: product.colors_enabled,
+      sizes_enabled: product.sizes_enabled,
+      has_variants: product.has_variants
+    });
+  }, [product]);
 
   // Configurar o store slug quando o componente montar
   useEffect(() => {
@@ -102,14 +142,63 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
       utm_campaign: utmParams.utm_campaign
     });
   }, [product.id, product.name, product.price, product.category, store.store_name]);
-  
-  // Array de imagens do produto (por enquanto só uma, mas pode ser expandido)
-  const productImages = [product.image];
+
+
+
+  // Preparar imagens do produto (flexível - pode ter imagens sem cores)
+  const productImages = product.images && product.images.length > 0 
+    ? product.images 
+    : [{ id: '1', url: product.image, is_primary: true }];
+
+  // Preparar cores do produto (se disponíveis)
+  const availableColors = product.colors || [];
+
+  // Preparar tamanhos do produto (se disponíveis)
+  const availableSizes = product.sizes || [];
+
+  // Auto-selecionar primeira cor e tamanho se disponíveis
+  useEffect(() => {
+    if (product.colors_enabled && availableColors.length > 0 && !selectedColor) {
+      setSelectedColor(availableColors[0].name);
+    }
+    if (product.sizes_enabled && availableSizes.length > 0 && !selectedSize) {
+      setSelectedSize(availableSizes[0].name);
+    }
+  }, [product.colors_enabled, product.sizes_enabled, availableColors, availableSizes, selectedColor, selectedSize]);
 
   // Função para adicionar ao carrinho com tracking
   const handleAddToCart = () => {
+    // Validar se cor é obrigatória e foi selecionada
+    if (product.colors_enabled && availableColors.length > 0 && !selectedColor) {
+      toast.error('Por favor, selecione uma cor antes de adicionar ao carrinho.');
+      return;
+    }
+    
+    // Validar se tamanho é obrigatório e foi selecionado
+    if (product.sizes_enabled && availableSizes.length > 0 && !selectedSize) {
+      toast.error('Por favor, selecione um tamanho antes de adicionar ao carrinho.');
+      return;
+    }
+    
+    // Criar produto com variações selecionadas
+    const productWithVariants = {
+      ...product,
+      selectedColor,
+      selectedSize
+    };
+    
     // Adicionar produto ao carrinho
-    addToCart(product);
+    addToCart(productWithVariants);
+    
+    // Mostrar toast de sucesso
+    let successMessage = `${product.name} adicionado ao carrinho!`;
+    if (selectedColor || selectedSize) {
+      const attributes = [];
+      if (selectedColor) attributes.push(selectedColor);
+      if (selectedSize) attributes.push(selectedSize);
+      successMessage += ` (${attributes.join(', ')})`;
+    }
+    toast.success(successMessage);
     
     // Track add to cart event
     trackAddToCart({
@@ -122,6 +211,15 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
     });
   };
 
+  // Função para selecionar cor
+  const handleColorSelect = (colorName: string) => {
+    setSelectedColor(selectedColor === colorName ? null : colorName);
+  };
+
+  // Função para selecionar tamanho
+  const handleSizeSelect = (sizeName: string) => {
+    setSelectedSize(selectedSize === sizeName ? null : sizeName);
+  };
 
   return (
     <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: store.colors.background }}>
@@ -160,56 +258,34 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
         {/* Product Gallery */}
         <div className="mb-6">
           <div className="bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden shadow-xl">
-            <div className="aspect-square relative">
-              <Image
-                src={productImages[selectedImage]}
-                alt={product.name}
-                fill
-                className="object-cover"
-              />
-              <div className="absolute inset-0 bg-black/10" />
-              
-              {/* Pronta Entrega Tag */}
-              {product.readyToShip && (
-                <div className="absolute top-4 left-4 z-10">
-                  <div 
-                    className="bg-white/90 backdrop-blur-sm px-3 py-2 rounded-full text-sm font-medium shadow-sm border"
-                    style={{ 
-                      color: store.colors.primary,
-                      borderColor: store.colors.primary 
-                    }}
-                  >
-                    ✓ Pronta entrega
-                  </div>
-                </div>
-              )}
-            </div>
+            <ProductImageGallery 
+              images={productImages}
+            />
             
-            {/* Image Thumbnails (se houver mais de uma imagem) */}
-            {productImages.length > 1 && (
-              <div className="p-4 flex gap-2 overflow-x-auto">
-                {productImages.map((image, index) => (
-                  <button
-                    key={`${product.name}-image-${index}`}
-                    type="button"
-                    onClick={() => setSelectedImage(index)}
-                    className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
-                      selectedImage === index 
-                        ? 'border-white shadow-lg' 
-                        : 'border-white/30 hover:border-white/60'
-                    }`}
-                  >
-                    <Image
-                      src={image}
-                      alt={`${product.name} - Imagem ${index + 1}`}
-                      fill
-                      className="object-cover"
-                    />
-                  </button>
-                ))}
+            {/* Pronta Entrega Tag */}
+            {product.readyToShip && (
+              <div className="absolute top-4 left-4 z-10">
+                <div 
+                  className="bg-white/90 backdrop-blur-sm px-3 py-2 rounded-full text-sm font-medium shadow-sm border"
+                  style={{ 
+                    color: store.colors.primary,
+                    borderColor: store.colors.primary 
+                  }}
+                >
+                  ✓ Pronta entrega
+                </div>
               </div>
             )}
           </div>
+          
+          {/* Informação sobre múltiplas imagens */}
+          {productImages.length > 1 && (
+            <div className="mt-3 text-center">
+              <p className="text-sm text-gray-600">
+                📸 {productImages.length} fotos disponíveis - Use as setas para navegar
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Product Info */}
@@ -232,9 +308,89 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
               className="inline-block px-3 py-1 rounded-full text-xs font-medium text-white"
               style={{ backgroundColor: store.colors.primary }}
             >
-                              {typeof product.category === 'string' ? (product.category === 'bag' ? 'Bolsa' : 'Produto') : 'Produto'}
+              {typeof product.category === 'string' ? (product.category === 'bag' ? 'Bolsa' : 'Produto') : 'Produto'}
             </span>
           </div>
+
+          {/* Cores (se habilitadas) */}
+          {product.colors_enabled && availableColors.length > 0 && (
+            <div className="mb-4">
+              <h3 className="font-semibold mb-3" style={{ color: store.colors.primary }}>
+                Cores Disponíveis
+              </h3>
+              <div className="flex flex-wrap gap-3">
+                {availableColors.map((color) => (
+                  <button
+                    key={color.name}
+                    type="button"
+                    onClick={() => handleColorSelect(color.name)}
+                    className={`
+                      flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all duration-200 relative bg-white
+                      ${selectedColor === color.name
+                        ? 'border-blue-500 shadow-lg scale-105'
+                        : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
+                      }
+                    `}
+                  >
+                    <div 
+                      className="w-10 h-10 rounded-full border-2 border-gray-300 shadow-sm"
+                      style={{ backgroundColor: color.hex_code }}
+                    />
+                    <span className="text-xs font-medium text-gray-700 text-center leading-tight">
+                      {color.name}
+                    </span>
+                    {selectedColor === color.name && (
+                      <div className="absolute -top-1 -right-1 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center shadow-lg">
+                        <span className="text-white text-xs font-bold">✓</span>
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+              {selectedColor && (
+                <p className="mt-3 text-sm text-gray-600 bg-blue-50 px-3 py-2 rounded-lg">
+                  Cor selecionada: <span className="font-medium text-blue-700">{selectedColor}</span>
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Tamanhos (se habilitados) */}
+          {product.sizes_enabled && availableSizes.length > 0 && (
+            <div className="mb-4">
+              <h3 className="font-semibold mb-3" style={{ color: store.colors.primary }}>
+                Tamanhos Disponíveis
+              </h3>
+              <div className="flex flex-wrap gap-3">
+                {availableSizes.map((size) => (
+                  <button
+                    key={size.name}
+                    type="button"
+                    onClick={() => handleSizeSelect(size.name)}
+                    className={`
+                      px-4 py-3 rounded-xl border-2 transition-all duration-200 text-sm font-medium relative bg-white min-w-[60px]
+                      ${selectedSize === size.name
+                        ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-lg scale-105'
+                        : 'border-gray-200 text-gray-700 hover:border-gray-300 hover:shadow-md'
+                      }
+                    `}
+                  >
+                    {size.name}
+                    {selectedSize === size.name && (
+                      <div className="absolute -top-1 -right-1 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center shadow-lg">
+                        <span className="text-white text-xs font-bold">✓</span>
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+              {selectedSize && (
+                <p className="mt-3 text-sm text-gray-600 bg-blue-50 px-3 py-2 rounded-lg">
+                  Tamanho selecionado: <span className="font-medium text-blue-700">{selectedSize}</span>
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Description */}
           <div className="mb-6">
@@ -245,8 +401,6 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
               {product.description}
             </p>
           </div>
-
-
 
           {/* Store Info */}
           <div className="border-t border-gray-200 pt-4">
@@ -278,52 +432,10 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
           <CartControls 
             product={product} 
             storeColors={store.colors}
+            selectedColor={selectedColor}
+            selectedSize={selectedSize}
             onAddToCart={handleAddToCart}
           />
-{/* 
-          <button
-            type="button"
-            onClick={() => {
-              if (cart.length > 0) {
-                // Criar mensagem com itens do carrinho
-                const itemsList = cart.map(item => 
-                  `• ${item.name} - ${item.price} x${item.quantity}`
-                ).join('\n');
-
-                const total = cart.reduce((sum, item) => sum + (Number.parseFloat(item.price.replace(/[^\d,]/g, '').replace(',', '.')) * item.quantity), 0).toFixed(2).replace('.', ',');
-                
-                const message = `Olá! Gostaria de fazer um pedido da ${store.store_name}:\n\n${itemsList}\n\n*Total: R$ ${total}*`;
-                
-                // Limpar carrinho antes de abrir WhatsApp
-                const { clearCart } = useCartStore.getState();
-                clearCart();
-                
-                // Abrir WhatsApp diretamente
-                const whatsappUrl = store.social_networks?.whatsapp 
-                  ? `https://wa.me/${store.social_networks.whatsapp.replace(/[^\d]/g, '')}?text=${encodeURIComponent(message)}`
-                  : '#';
-                
-                // Para WebViews do Instagram, usar location.href é mais confiável
-                if (typeof window !== 'undefined' && window.navigator.userAgent.toLowerCase().includes('instagram')) {
-                  window.location.href = whatsappUrl;
-                } else {
-                  window.open(whatsappUrl, '_blank');
-                }
-              }
-            }}
-            disabled={cart.length === 0 || isLoading}
-            className={`w-full font-medium py-4 rounded-full text-lg backdrop-blur-sm flex items-center justify-center transition-all shadow-lg hover:shadow-xl ${
-              cart.length > 0 && !isLoading
-                ? 'bg-white/90 hover:bg-white' 
-                : 'bg-white/50 cursor-not-allowed'
-            }`}
-            style={{ color: store.colors.primary }}
-          >
-            <div className="w-8 h-8 rounded-full mr-3 flex items-center justify-center" style={{ backgroundColor: store.colors.primary }}>
-              <MessageCircle className="w-4 h-4 text-white" />
-            </div>
-            {isLoading ? 'Carregando...' : cart.length > 0 ? 'Comprar no WhatsApp' : 'Adicione itens ao carrinho'}
-          </button> */}
 
           <Link
             href={`/${store.slug}?showCatalog=true`}
@@ -373,7 +485,9 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
           name: item.name,
           price: item.price,
           quantity: item.quantity,
-          image: item.image
+          image: item.image,
+          selectedColor: item.selectedColor,
+          selectedSize: item.selectedSize
         }))}
         totalItems={cart.reduce((total, item) => total + item.quantity, 0)}
         totalValue={cart.reduce((total, item) => {
@@ -393,14 +507,19 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
             window.location.href = `/${store.slug}/checkout`;
           }, 100);
         }}
-        onAddItem={(itemName: string) => {
-          // Encontrar o produto e adicionar ao carrinho
+        onAddItem={(itemName: string, selectedColor?: string | null, selectedSize?: string | null) => {
+          // Encontrar o produto e adicionar ao carrinho com cor e tamanho específicos
           if (product.name === itemName) {
-            addToCart(product);
+            const productWithVariants = {
+              ...product,
+              selectedColor,
+              selectedSize
+            };
+            addToCart(productWithVariants);
           }
         }}
-        onRemoveItem={(itemName: string) => {
-          removeFromCart(itemName);
+        onRemoveItem={(itemName: string, selectedColor?: string | null, selectedSize?: string | null) => {
+          removeFromCart(itemName, selectedColor, selectedSize);
         }}
       />
     </div>
