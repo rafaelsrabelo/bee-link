@@ -56,8 +56,15 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
       const response = await fetch(`/api/stores/${storeSlug}/products-public`);
       if (response.ok) {
         const data = await response.json();
-        // Produtos carregados
-        setProducts(data.products || []);
+        // Produtos carregados - converter preços de string para number
+        const productsWithCorrectPrice = (data.products || []).map((product: any) => ({
+          ...product,
+          price: typeof product.price === 'string' 
+            ? parseFloat(product.price.replace('R$ ', '').replace(',', '.')) 
+            : product.price
+        }));
+        setProducts(productsWithCorrectPrice);
+        console.log('Produtos carregados:', productsWithCorrectPrice);
       } else {
         console.error('Erro na resposta:', response.status);
         toast.error('Erro ao carregar produtos');

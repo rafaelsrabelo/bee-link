@@ -1417,33 +1417,29 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
 
       {/* Modal de Criar Pedido */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <CreateOrderModal
-              storeSlug={storeSlug}
-              storeId={storeId}
-              onClose={() => setShowCreateModal(false)}
-              onOrderCreated={(newOrder) => {
-                // Adicionar o pedido à lista sem disparar notificações
-                // Usar Set para garantir IDs únicos
-                setOrders(prev => {
-                  const existingIds = new Set(prev.map(o => o.id));
-                  if (existingIds.has(newOrder.id)) {
-                    // Se já existe, não adicionar novamente
-                    return prev;
-                  }
-                  return [newOrder, ...prev];
-                });
-                setShowCreateModal(false);
-                setSelectedOrder(newOrder);
-                
-                // IMPORTANTE: Pedidos manuais (criados pelo admin) NÃO disparam som
-                // O som só toca para pedidos REAIS vindos da plataforma (status 'pending', source 'link')
-                // Isso evita o problema de som tocando quando o admin cria pedidos
-              }}
-            />
-          </div>
-        </div>
+        <CreateOrderModal
+          storeSlug={storeSlug}
+          storeId={storeId}
+          onClose={() => setShowCreateModal(false)}
+          onOrderCreated={(newOrder) => {
+            // Adicionar o pedido à lista sem disparar notificações
+            // Usar Set para garantir IDs únicos
+            setOrders(prev => {
+              const existingIds = new Set(prev.map(o => o.id));
+              if (existingIds.has(newOrder.id)) {
+                // Se já existe, não adicionar novamente
+                return prev;
+              }
+              return [newOrder, ...prev];
+            });
+            setShowCreateModal(false);
+            setSelectedOrder(newOrder);
+            
+            // IMPORTANTE: Pedidos manuais (criados pelo admin) NÃO disparam som
+            // O som só toca para pedidos REAIS vindos da plataforma (status 'pending', source 'link')
+            // Isso evita o problema de som tocando quando o admin cria pedidos
+          }}
+        />
       )}
     </div>
   );
