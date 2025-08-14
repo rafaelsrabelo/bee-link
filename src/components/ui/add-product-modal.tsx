@@ -5,6 +5,8 @@ import { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import MobileImageUpload from './mobile-image-upload';
 import ProductCategorySelector from './product-category-selector';
+import ProductMultiImageManager from './product-multi-image-manager';
+import type { ProductImage } from '../../types/product-image';
 
 interface Product {
   id: string;
@@ -46,6 +48,7 @@ export default function AddProductModal({
     readyToShip: false,
     available: true
   });
+  const [productImages, setProductImages] = useState<ProductImage[]>([]);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [saving, setSaving] = useState(false);
   const [categories, setCategories] = useState<{id: number; name: string}[]>([]);
@@ -141,6 +144,30 @@ export default function AddProductModal({
 
       if (response.ok) {
         const product = await response.json();
+        
+        // Salvar imagens se houver alguma
+        if (productImages.length > 0) {
+          try {
+            for (const image of productImages) {
+              await fetch(`/api/products/${product.id}/images`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  image_url: image.image_url,
+                  alt_text: image.alt_text,
+                  is_primary: image.is_primary,
+                  sort_order: image.sort_order
+                }),
+              });
+            }
+          } catch (imageError) {
+            console.error('Erro ao salvar imagens:', imageError);
+            toast.error('Produto criado, mas houve erro ao salvar algumas imagens');
+          }
+        }
+        
         onProductAdded(product);
         toast.success('Produto adicionado com sucesso!');
         onClose();
@@ -155,6 +182,7 @@ export default function AddProductModal({
           readyToShip: false,
           available: true
         });
+        setProductImages([]);
       } else {
         const errorData = await response.json();
         toast.error(errorData.error || 'Erro ao adicionar produto');
@@ -284,17 +312,31 @@ export default function AddProductModal({
             />
           </div>
 
-          {/* Imagem */}
+          {/* Imagens do Produto */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Imagem do Produto
-            </label>
-            <MobileImageUpload
-              currentImage={newProduct.image}
-              onImageSelect={handleImageUpload}
-              loading={uploadingImage}
-              disabled={uploadingImage}
+            <ProductMultiImageManager
+              images={productImages}
+              onImagesChange={setProductImages}
+              disabled={saving}
             />
+            
+            {/* Imagem tradicional (compatibilidade) */}
+            {productImages.length === 0 && (
+              <div className="mt-4 border-t pt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Ou adicione uma imagem única
+                </label>
+                <MobileImageUpload
+                  currentImage={newProduct.image}
+                  onImageSelect={handleImageUpload}
+                  loading={uploadingImage}
+                  disabled={uploadingImage || saving}
+                />
+                <p className="mt-2 text-xs text-gray-500">
+                  💡 Use o gerenciador acima para adicionar múltiplas imagens
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Descrição */}

@@ -24,10 +24,19 @@ export default async function ProductPage({ params }: ProductPageProps) {
       notFound();
     }
 
-    // Buscar o produto pelo ID
+    // Buscar o produto pelo ID com imagens
     const { data: product, error: productError } = await supabase
       .from('products')
-      .select('*')
+      .select(`
+        *,
+        product_images (
+          id,
+          image_url,
+          alt_text,
+          is_primary,
+          sort_order
+        )
+      `)
       .eq('id', productId)
       .eq('store_id', store.id)
       .single();

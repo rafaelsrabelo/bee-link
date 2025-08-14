@@ -105,7 +105,7 @@ export async function POST(
       const numericString = productData.price.replace(/[R$\s]/g, '').replace('.', '').replace(',', '.');
       processedPrice = Number.parseFloat(numericString);
       
-      if (isNaN(processedPrice)) {
+      if (Number.isNaN(processedPrice)) {
         return NextResponse.json({ error: 'Preço inválido' }, { status: 400 });
       }
     }
@@ -197,7 +197,7 @@ export async function PUT(
       const numericString = updateData.price.replace(/[R$\s]/g, '').replace('.', '').replace(',', '.');
       processedPrice = Number.parseFloat(numericString);
       
-      if (isNaN(processedPrice)) {
+      if (Number.isNaN(processedPrice)) {
         return NextResponse.json({ error: 'Preço inválido' }, { status: 400 });
       }
     }
@@ -226,6 +226,38 @@ export async function PUT(
         error: 'Erro ao atualizar produto', 
         details: updateError.message 
       }, { status: 500 });
+    }
+
+    // Salvar imagens múltiplas se fornecidas
+    if (updateData.images && Array.isArray(updateData.images) && updateData.images.length > 0) {
+      try {
+        // Primeiro, deletar imagens existentes do produto
+        await supabase
+          .from('product_images')
+          .delete()
+          .eq('product_id', id);
+
+        // Depois, inserir as novas imagens
+        const imagesToInsert = updateData.images.map((img: {image_url?: string; url?: string; alt_text?: string; is_primary?: boolean; sort_order?: number}, index: number) => ({
+          product_id: id,
+          image_url: img.image_url || img.url || '',
+          alt_text: img.alt_text || `${product.name} - Imagem ${index + 1}`,
+          is_primary: img.is_primary || index === 0,
+          sort_order: img.sort_order || index
+        }));
+
+        const { error: imagesError } = await supabase
+          .from('product_images')
+          .insert(imagesToInsert);
+
+        if (imagesError) {
+          console.error('Erro ao salvar imagens:', imagesError);
+          // Não falhar a atualização do produto se as imagens falharem
+        }
+      } catch (imageError) {
+        console.error('Erro ao processar imagens:', imageError);
+        // Não falhar a atualização do produto se as imagens falharem
+      }
     }
 
     return NextResponse.json(product);

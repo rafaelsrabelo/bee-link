@@ -57,10 +57,10 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
       if (response.ok) {
         const data = await response.json();
         // Produtos carregados - converter preços de string para number
-        const productsWithCorrectPrice = (data.products || []).map((product: any) => ({
+        const productsWithCorrectPrice = (data.products || []).map((product: {price: string | number; [key: string]: unknown}) => ({
           ...product,
           price: typeof product.price === 'string' 
-            ? parseFloat(product.price.replace('R$ ', '').replace(',', '.')) 
+            ? Number.parseFloat(product.price.replace('R$ ', '').replace(',', '.')) 
             : product.price
         }));
         setProducts(productsWithCorrectPrice);
@@ -148,7 +148,7 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
       // Garantir que os preços sejam números
       const processedItems = orderItems.map(item => ({
         ...item,
-        price: typeof item.price === 'string' ? parseFloat(item.price) : item.price
+        price: typeof item.price === 'string' ? Number.parseFloat(item.price) : item.price
       }));
 
       const orderData = {

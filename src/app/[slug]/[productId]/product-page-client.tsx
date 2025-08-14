@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import FloatingCart from '../../../components/store/floating-cart';
+import ProductImageGallery from '../../../components/ui/product-image-gallery-v2';
 
 import { trackAddToCart, trackPageView, trackProductClick } from '../../../lib/analytics';
 import CartControls from '../../components/cart-controls';
@@ -55,6 +56,13 @@ interface ProductPageClientProps {
     category: string;
     description: string;
     readyToShip?: boolean;
+    product_images?: Array<{
+      id: number;
+      image_url: string;
+      alt_text?: string;
+      is_primary: boolean;
+      sort_order: number;
+    }>;
   };
 }
 
@@ -159,54 +167,24 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
       <div className="pt-20 pb-32 px-4 relative z-10">
         {/* Product Gallery */}
         <div className="mb-6">
-          <div className="bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden shadow-xl">
-            <div className="aspect-square relative">
-              <Image
-                src={productImages[selectedImage]}
-                alt={product.name}
-                fill
-                className="object-cover"
-              />
-              <div className="absolute inset-0 bg-black/10" />
-              
-              {/* Pronta Entrega Tag */}
-              {product.readyToShip && (
-                <div className="absolute top-4 left-4 z-10">
-                  <div 
-                    className="bg-white/90 backdrop-blur-sm px-3 py-2 rounded-full text-sm font-medium shadow-sm border"
-                    style={{ 
-                      color: store.colors.primary,
-                      borderColor: store.colors.primary 
-                    }}
-                  >
-                    ✓ Pronta entrega
-                  </div>
-                </div>
-              )}
-            </div>
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden shadow-xl p-4">
+            <ProductImageGallery
+              images={product.product_images || []}
+              productName={product.name}
+            />
             
-            {/* Image Thumbnails (se houver mais de uma imagem) */}
-            {productImages.length > 1 && (
-              <div className="p-4 flex gap-2 overflow-x-auto">
-                {productImages.map((image, index) => (
-                  <button
-                    key={`${product.name}-image-${index}`}
-                    type="button"
-                    onClick={() => setSelectedImage(index)}
-                    className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
-                      selectedImage === index 
-                        ? 'border-white shadow-lg' 
-                        : 'border-white/30 hover:border-white/60'
-                    }`}
-                  >
-                    <Image
-                      src={image}
-                      alt={`${product.name} - Imagem ${index + 1}`}
-                      fill
-                      className="object-cover"
-                    />
-                  </button>
-                ))}
+            {/* Pronta Entrega Tag (sobreposta à galeria) */}
+            {product.readyToShip && (
+              <div className="absolute top-8 left-8 z-10">
+                <div 
+                  className="bg-white/90 backdrop-blur-sm px-3 py-2 rounded-full text-sm font-medium shadow-sm border"
+                  style={{ 
+                    color: store.colors.primary,
+                    borderColor: store.colors.primary 
+                  }}
+                >
+                  ✓ Pronta entrega
+                </div>
               </div>
             )}
           </div>

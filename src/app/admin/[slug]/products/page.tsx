@@ -15,14 +15,23 @@ import DeleteModal from '../../../../components/ui/delete-modal';
 import LottieLoader from '../../../../components/ui/lottie-loader';
 import MobileImageUpload from '../../../../components/ui/mobile-image-upload';
 import ProductCategorySelector from '../../../../components/ui/product-category-selector';
+import ProductMultiImageManager from '../../../../components/ui/product-multi-image-manager';
 import PromotionsManager from '../../../../components/ui/promotions-manager';
 import { useAuth } from '../../../../contexts/AuthContext';
+import type { ProductImage } from '../../../../types/product-image';
 
 interface Product {
   id: string;
   name: string;
   price: string;
-  image: string;
+  image: string; // Mantém por compatibilidade (imagem principal)
+  images?: Array<{
+    id: number;
+    image_url: string;
+    alt_text?: string;
+    is_primary: boolean;
+    sort_order: number;
+  }>;
   category: string;
   category_id?: number;
   category_data?: {
@@ -70,6 +79,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
   } | null>(null);
   const [isEditing, setIsEditing] = useState<string | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [editingProductImages, setEditingProductImages] = useState<ProductImage[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingEditImage, setUploadingEditImage] = useState(false);
@@ -382,9 +392,24 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
     }
   };
 
-  const handleEditProduct = (product: Product) => {
+  const handleEditProduct = async (product: Product) => {
     setIsEditing(product.id);
     setEditingProduct({ ...product });
+    
+    // Carregar imagens do produto
+    try {
+      const response = await fetch(`/api/products/${product.id}/images`);
+      if (response.ok) {
+        const data = await response.json();
+        setEditingProductImages(data.images || []);
+      } else {
+        console.error('Erro ao carregar imagens:', response.status);
+        setEditingProductImages([]);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar imagens:', error);
+      setEditingProductImages([]);
+    }
   };
 
   const handleSaveEdit = async () => {
@@ -411,7 +436,8 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
       const updatedProduct = {
         ...productWithoutCategoryData,
         category: categoryName,
-        category_id: editingProduct.category_id || undefined
+        category_id: editingProduct.category_id || undefined,
+        images: editingProductImages // Incluir as imagens no request principal
       };
 
       // Usar API específica para UPDATE - NÃO deleta todos os produtos!
@@ -438,6 +464,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
 
       setIsEditing(null);
       setEditingProduct(null);
+      setEditingProductImages([]);
       toast.success('Produto atualizado com sucesso!');
     } catch (error) {
       toast.error('Erro ao atualizar produto');
@@ -450,6 +477,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
   const handleCancelEdit = () => {
     setIsEditing(null);
     setEditingProduct(null);
+    setEditingProductImages([]);
     setSavingEdit(false); // Reset loading state
   };
 
@@ -546,6 +574,8 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
 
 
 
+
+
                 const getProductClicks = (productId: string) => {
                 if (!analytics?.top_products) return 0;
                 const product = analytics.top_products.find((p) => p.product_id === productId);
@@ -567,6 +597,8 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
                 if (!analytics?.top_cart_products || analytics.top_cart_products.length === 0) return false;
                 return analytics.top_cart_products[0]?.product_id === productId;
               };
+
+
 
   if (loading || !store) {
     return (
@@ -1040,13 +1072,12 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
                     </div>
                   </div>
                   
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Imagem do Produto</label>
-                    <MobileImageUpload
-                      onImageSelect={handleEditImageUpload}
-                      currentImage={editingProduct.image}
-                      disabled={uploadingEditImage}
-                      loading={uploadingEditImage}
+                  <div className="md:col-span-2">
+                    <ProductMultiImageManager
+                      productId={editingProduct.id}
+                      images={editingProductImages}
+                      onImagesChange={setEditingProductImages}
+                      disabled={savingEdit}
                     />
                   </div>
                   
