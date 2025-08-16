@@ -3,7 +3,7 @@
 import { Edit, Eye, EyeOff, FolderPlus, MousePointer, Package, Plus, ShoppingCart, Star, Tag, Trash2, X } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { use, useEffect, useState } from 'react';
+import { use, useEffect, useRef, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import loadingAnimation from '../../../../../public/animations/loading-dots-blue.json';
 import ProtectedRoute from '../../../../components/auth/ProtectedRoute';
@@ -112,6 +112,17 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
   const [savingEdit, setSavingEdit] = useState(false);
   const [activeTab, setActiveTab] = useState('products');
   const [showAddProductModal, setShowAddProductModal] = useState(false);
+  const hasLoaded = useRef(false);
+
+  // Reset hasLoaded apenas no F5 (quando a página é recarregada)
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      hasLoaded.current = false;
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
 
   // Função para buscar nome da categoria pelo ID
   const getCategoryNameById = async (categoryId: number): Promise<string> => {
@@ -161,15 +172,17 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
 
 
 
-  // Carregar tudo de uma vez
+  // Carregar tudo de uma vez - SOLUÇÃO DEFINITIVA
   useEffect(() => {
-    if (user && slug) {
+    // Só carrega uma vez quando temos user e slug, e ainda não carregou
+    if (user && slug && !hasLoaded.current) {
+      hasLoaded.current = true;
       loadStoreAndProducts();
     }
-  }, [slug]); // Removido user da dependência para evitar recarregamentos desnecessários
+  }, [slug, user]); // Depende apenas de slug e user
 
   const loadStoreAndProducts = async () => {
-    if (!slug) return;
+    if (!slug || !user) return;
     
     setLoading(true);
     try {
@@ -222,7 +235,6 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
   const loadProducts = async () => {
     if (!slug) return;
     
-    setLoading(true);
     try {
       // Carregar produtos da loja
       const productsResponse = await fetch(`/api/stores/${slug}/products`);
@@ -235,10 +247,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
     } catch (error) {
       toast.error('Erro ao carregar produtos');
     } finally {
-      setTimeout(() => {
-        setLoading(false);
-        setProductsLoaded(true);
-      }, 500);
+      // Removido setLoading(false) pois é controlado por loadStoreAndProducts
     }
   };
 
