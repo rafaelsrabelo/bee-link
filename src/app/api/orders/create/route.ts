@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { supabase } from '../../../../lib/supabase';
 import type { CreateOrderRequest, Order, OrderItem } from '../../../../types/order';
+import { calculateDistance, geocodeAddress } from '@/lib/distance';
 
 interface StoreData {
   id: string;
@@ -100,7 +101,7 @@ export async function POST(request: NextRequest) {
 
     const { data: store, error: storeError } = await supabase
       .from('stores')
-      .select('id, name, social_networks')
+      .select('id, name, social_networks, latitude, longitude, address')
       .eq('slug', storeSlug)
       .single();
 
@@ -110,6 +111,88 @@ export async function POST(request: NextRequest) {
         { error: 'Loja não encontrada', slug: storeSlug, storeError: storeError?.message },
         { status: 404 }
       );
+    }
+
+    // VALIDAÇÃO DO RAIO DE ENTREGA
+    if (delivery_type === 'delivery' && delivery_distance_km && delivery_distance_km > 0) {
+      // Buscar configurações de entrega da loja
+      const { data: deliverySettings, error: deliveryError } = await supabase
+        .from('delivery_settings')
+        .select('*')
+        .eq('store_id', store.id)
+        .single();
+
+      if (deliveryError || !deliverySettings) {
+        console.error('❌ Configurações de entrega não encontradas:', deliveryError);
+        return NextResponse.json(
+          { error: 'Configurações de entrega não encontradas' },
+          { status: 400 }
+        );
+      }
+
+      // Verificar se entrega está habilitada
+      if (!deliverySettings.delivery_enabled) {
+        return NextResponse.json(
+          { error: 'Entrega não está habilitada para esta loja' },
+          { status: 400 }
+        );
+      }
+
+      // Verificar se a distância está dentro do raio permitido
+      if (delivery_distance_km > deliverySettings.delivery_radius_km) {
+        console.error('❌ Pedido fora do raio de entrega:', { 
+          distance: delivery_distance_km, 
+          maxRadius: deliverySettings.delivery_radius_km 
+        });
+        return NextResponse.json(
+          { 
+            error: `Pedido fora do raio de entrega. Distância: ${delivery_distance_km}km, Raio máximo: ${deliverySettings.delivery_radius_km}km` 
+          },
+          { status: 400 }
+        );
+      }
+
+      // Se não foi fornecida distância mas temos endereço, calcular
+      if (!delivery_distance_km && customer_address) {
+        let storeCoords = null;
+        
+        // Usar coordenadas salvas da loja se disponíveis
+        if (store.latitude && store.longitude) {
+          storeCoords = { lat: store.latitude, lng: store.longitude };
+        } else if (store.address) {
+          // Calcular coordenadas da loja a partir do endereço
+          const storeAddress = `${store.address.street}, ${store.address.number || ''}, ${store.address.neighborhood || ''}, ${store.address.city}, ${store.address.state}, ${store.address.zip_code || ''}`;
+          storeCoords = await geocodeAddress(storeAddress);
+        }
+
+        if (storeCoords) {
+          // Calcular coordenadas do cliente
+          const customerCoords = await geocodeAddress(customer_address);
+          
+          if (customerCoords) {
+            const calculatedDistance = calculateDistance(
+              storeCoords.lat,
+              storeCoords.lng,
+              customerCoords.lat,
+              customerCoords.lng
+            );
+
+            // Verificar se a distância calculada está dentro do raio
+            if (calculatedDistance > deliverySettings.delivery_radius_km) {
+              console.error('❌ Pedido fora do raio de entrega (calculado):', { 
+                distance: calculatedDistance, 
+                maxRadius: deliverySettings.delivery_radius_km 
+              });
+              return NextResponse.json(
+                { 
+                  error: `Pedido fora do raio de entrega. Distância: ${calculatedDistance.toFixed(1)}km, Raio máximo: ${deliverySettings.delivery_radius_km}km` 
+                },
+                { status: 400 }
+              );
+            }
+          }
+        }
+      }
     }
 
     let customerId: string;
