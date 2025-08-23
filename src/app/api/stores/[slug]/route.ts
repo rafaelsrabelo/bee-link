@@ -59,7 +59,8 @@ export async function PUT(
       show_products_by_category,
       layout_settings,
       latitude,
-      longitude
+      longitude,
+      payment_methods
     } = body;
     // Validações
     if (!name?.trim()) {
@@ -125,6 +126,7 @@ export async function PUT(
         category_display: 'filters',
         show_category_icons: true
       },
+      payment_methods: payment_methods || ['money', 'pix', 'credit_card', 'debit_card'],
       updated_at: new Date().toISOString()
     };
 

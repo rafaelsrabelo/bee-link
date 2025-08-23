@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, Instagram, MapPin, MessageCircle, Music, Palette, Printer, Save, Settings, Store as StoreIcon, Upload, Youtube } from 'lucide-react';
+import { Check, CreditCard, Instagram, MapPin, MessageCircle, Music, Palette, Printer, Save, Settings, Store as StoreIcon, Upload, Youtube } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { use, useEffect, useState } from 'react';
@@ -149,7 +149,8 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
       auto_cut: true,
       print_logo: true,
       print_address: true
-    }
+    },
+    payment_methods: ['money', 'pix', 'credit_card', 'debit_card'] as string[]
   });
 
   // Cores pré-definidas
@@ -202,6 +203,7 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
   const tabs = [
     { id: 'basic', label: 'Informações Básicas', icon: <StoreIcon className="w-4 h-4" /> },
     { id: 'address', label: 'Endereço', icon: <MapPin className="w-4 h-4" /> },
+    { id: 'payment', label: 'Métodos de Pagamento', icon: <CreditCard className="w-4 h-4" /> },
     { id: 'layout', label: 'Layout da Loja', icon: <Palette className="w-4 h-4" /> },
     { id: 'printing', label: 'Configurações de Impressão', icon: <Printer className="w-4 h-4" /> }
   ];
@@ -328,7 +330,8 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
           auto_cut: true,
           print_logo: true,
           print_address: true
-        }
+        },
+        payment_methods: storeData.payment_methods || ['money', 'pix', 'credit_card', 'debit_card']
       };
 
       setFormData(initialFormData);
@@ -1001,6 +1004,72 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
                           💡 As coordenadas serão calculadas automaticamente quando você salvar o formulário (necessário para cálculo de frete).
                         </p>
                       </div>
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'payment' && (
+                  <div className="space-y-8">
+                    {/* Métodos de Pagamento */}
+                    <div>
+                      <h2 className="text-lg font-semibold text-gray-900 mb-4">Métodos de Pagamento</h2>
+                      <p className="text-gray-600 mb-6">
+                        Selecione quais métodos de pagamento sua loja aceita. Apenas os métodos selecionados aparecerão para os clientes.
+                      </p>
+                      
+                      <div className="space-y-4">
+                        {[
+                          { id: 'money', name: 'Dinheiro', description: 'Pagamento em espécie', icon: '💵' },
+                          { id: 'pix', name: 'PIX', description: 'Transferência instantânea', icon: '📱' },
+                          { id: 'credit_card', name: 'Cartão de Crédito', description: 'Visa, Mastercard, etc.', icon: '💳' },
+                          { id: 'debit_card', name: 'Cartão de Débito', description: 'Débito na conta', icon: '🏦' }
+                        ].map((method) => (
+                          <div
+                            key={method.id}
+                            className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                              formData.payment_methods.includes(method.id)
+                                ? 'border-purple-500 bg-purple-50'
+                                : 'border-gray-300 hover:border-gray-400'
+                            }`}
+                            onClick={() => {
+                              const currentMethods = [...formData.payment_methods];
+                              if (currentMethods.includes(method.id)) {
+                                // Remove se já está selecionado
+                                const updatedMethods = currentMethods.filter(m => m !== method.id);
+                                updateFormData({ payment_methods: updatedMethods });
+                              } else {
+                                // Adiciona se não está selecionado
+                                updateFormData({ payment_methods: [...currentMethods, method.id] });
+                              }
+                            }}
+                          >
+                            <div className="flex items-center space-x-3">
+                              <span className="text-2xl">{method.icon}</span>
+                              <div className="flex-1">
+                                <h3 className="font-medium text-gray-900">{method.name}</h3>
+                                <p className="text-sm text-gray-600">{method.description}</p>
+                              </div>
+                              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                                formData.payment_methods.includes(method.id)
+                                  ? 'border-purple-500 bg-purple-500'
+                                  : 'border-gray-300'
+                              }`}>
+                                {formData.payment_methods.includes(method.id) && (
+                                  <Check className="w-3 h-3 text-white" />
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      
+                      {formData.payment_methods.length === 0 && (
+                        <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                          <p className="text-sm text-yellow-800">
+                            ⚠️ Você deve selecionar pelo menos um método de pagamento para que os clientes possam finalizar pedidos.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

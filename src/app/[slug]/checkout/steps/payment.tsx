@@ -18,6 +18,7 @@ interface PaymentStepProps {
     colors?: {
       primary: string;
     };
+    payment_methods?: string[];
   } | null;
 }
 
@@ -32,7 +33,8 @@ export default function PaymentStep({
 }: PaymentStepProps) {
   const [errors, setErrors] = useState<{[key: string]: string}>({});
 
-  const paymentMethods = [
+  // Métodos de pagamento disponíveis (baseado na configuração da loja)
+  const availablePaymentMethods = [
     {
       id: 'money',
       name: 'Dinheiro',
@@ -62,6 +64,14 @@ export default function PaymentStep({
       color: 'text-orange-600'
     }
   ];
+
+  // Filtrar apenas os métodos configurados pela loja
+  const storePaymentMethods = store?.payment_methods || ['money', 'pix', 'credit_card', 'debit_card'];
+  const paymentMethods = availablePaymentMethods.filter(method => 
+    storePaymentMethods.includes(method.id)
+  );
+
+
 
   const validateForm = () => {
     const newErrors: {[key: string]: string} = {};

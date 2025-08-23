@@ -23,6 +23,7 @@ interface StoreData {
   social_networks: {
     whatsapp: string;
   };
+  payment_methods?: string[];
 }
 
 interface CheckoutPageProps {
@@ -42,7 +43,7 @@ export default function CheckoutPage({ params }: CheckoutPageProps) {
   useEffect(() => {
     const fetchStore = async () => {
       try {
-        const response = await fetch(`/api/stores/${resolvedParams.slug}`);
+        const response = await fetch(`/api/stores/${resolvedParams.slug}?t=${Date.now()}`);
         if (response.ok) {
           const storeData = await response.json();
           setStore(storeData);
