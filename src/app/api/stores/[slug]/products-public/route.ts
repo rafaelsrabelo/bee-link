@@ -28,6 +28,7 @@ export async function GET(
       .select('*')
       .eq('store_id', store.id)
       .eq('available', true)
+      .order('display_order', { ascending: true })
       .order('name');
 
     if (productsError) {
@@ -89,7 +90,8 @@ export async function GET(
     // Formatar produtos mantendo os preços originais
     const formattedProducts = productsWithImages.map(product => ({
       ...product,
-      price: product.price // Manter o preço original do banco
+      price: product.price, // Manter o preço original do banco
+      display_order: product.display_order || 0 // Garantir que display_order existe
     }));
 
     return NextResponse.json({

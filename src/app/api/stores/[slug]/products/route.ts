@@ -31,6 +31,7 @@ export async function GET(
         category:product_categories(id, name, description, color)
       `)
       .eq('store_id', store.id)
+      .order('display_order', { ascending: true })
       .order('created_at', { ascending: false });
 
     if (productsError) {
@@ -49,9 +50,11 @@ export async function GET(
       store_id: string;
       available?: boolean;
       created_at: string;
+      display_order?: number;
       [key: string]: unknown;
     }) => ({
       ...product,
+      display_order: product.display_order || 0,
       category: typeof product.category === 'object' && product.category?.name 
         ? product.category.name 
         : (typeof product.category === 'string' ? product.category : 'Geral'),

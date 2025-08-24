@@ -1,6 +1,6 @@
 'use client';
 
-import { Edit, Eye, EyeOff, FolderPlus, MousePointer, Package, Plus, ShoppingCart, Star, Tag, Trash2, X } from 'lucide-react';
+import { Edit, Eye, EyeOff, FolderPlus, MousePointer, Package, Plus, ShoppingCart, Star, Tag, Trash2, X, ArrowUpDown } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { use, useEffect, useRef, useState } from 'react';
@@ -16,6 +16,8 @@ import LottieLoader from '../../../../components/ui/lottie-loader';
 import MobileImageUpload from '../../../../components/ui/mobile-image-upload';
 import ProductCategorySelector from '../../../../components/ui/product-category-selector';
 import ProductMultiImageManager from '../../../../components/ui/product-multi-image-manager';
+import ProductOrderManager from '../../../../components/ui/product-order-manager';
+import CategoryOrderManager from '../../../../components/ui/category-order-manager';
 import PromotionsManager from '../../../../components/ui/promotions-manager';
 import { useAuth } from '../../../../contexts/AuthContext';
 import type { ProductImage } from '../../../../types/product-image';
@@ -44,6 +46,7 @@ interface Product {
   readyToShip?: boolean;
   available?: boolean;
   store_id?: string;
+  display_order?: number;
 }
 
 interface Store {
@@ -111,6 +114,13 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
   const [savingProduct, setSavingProduct] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
   const [activeTab, setActiveTab] = useState('products');
+  const [categories, setCategories] = useState<Array<{
+    id: number;
+    name: string;
+    description?: string;
+    color?: string;
+    sort_order: number;
+  }>>([]);
   const [showAddProductModal, setShowAddProductModal] = useState(false);
   const hasLoaded = useRef(false);
 
@@ -162,6 +172,11 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
   const router = useRouter();
   const { slug } = use(params);
 
+  // Debug: verificar estado da autenticação
+  useEffect(() => {
+    console.log('Estado da autenticação:', { user: user?.id, slug });
+  }, [user, slug]);
+
   // Verificar se todos os campos obrigatórios estão preenchidos
   const isFormValid = Boolean(
     newProduct.name?.trim() && 
@@ -209,8 +224,8 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
       // Definir a loja no estado local
       setStore(storeData);
       
-      // Carregar produtos
-      await loadProducts();
+      // Carregar produtos e categorias
+      await Promise.all([loadProducts(), loadCategories()]);
     } catch (error) {
       toast.error('Erro ao carregar dados da loja');
     } finally {
@@ -248,6 +263,23 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
       toast.error('Erro ao carregar produtos');
     } finally {
       // Removido setLoading(false) pois é controlado por loadStoreAndProducts
+    }
+  };
+
+  const loadCategories = async () => {
+    if (!slug) return;
+    
+    try {
+      const response = await fetch(`/api/stores/${slug}/product-categories`);
+      if (response.ok) {
+        const categoriesData = await response.json();
+        setCategories(categoriesData || []);
+      } else {
+        setCategories([]);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar categorias:', error);
+      setCategories([]);
     }
   };
 
@@ -639,7 +671,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-24">
 
           {/* Section Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <div 
               className={`p-6 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
                 activeTab === 'products'
@@ -657,6 +689,27 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">Produtos</h3>
                   <p className="text-sm text-gray-600">Gerencie seus produtos</p>
+                </div>
+              </div>
+            </div>
+            
+            <div 
+              className={`p-6 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                activeTab === 'order'
+                  ? 'border-blue-500 bg-blue-50 shadow-lg'
+                  : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-md'
+              }`}
+              onClick={() => setActiveTab('order')}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`p-3 rounded-lg ${
+                  activeTab === 'order' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'
+                }`}>
+                  <ArrowUpDown className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Ordenação</h3>
+                  <p className="text-sm text-gray-600">Defina a ordem de exibição</p>
                 </div>
               </div>
             </div>
@@ -1220,6 +1273,44 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
             colors={store?.colors}
           />
             </>
+          )}
+
+          {/* Order Tab */}
+          {activeTab === 'order' && (
+            <div className="space-y-8">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Gerenciar Ordenação</h3>
+                <p className="text-sm text-gray-600 mb-6">
+                  Defina a ordem de exibição das categorias e produtos na página do cliente. 
+                  A ordem será refletida automaticamente na visualização pública.
+                </p>
+              </div>
+
+              {/* Ordenação de Categorias */}
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <CategoryOrderManager
+                  categories={categories}
+                  storeSlug={slug || ''}
+                  onOrderChange={(updatedCategories) => {
+                    setCategories(updatedCategories);
+                  }}
+                />
+              </div>
+
+              {/* Ordenação de Produtos */}
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <ProductOrderManager
+                  products={products.map(p => ({
+                    ...p,
+                    display_order: p.display_order || 0
+                  }))}
+                  storeSlug={slug || ''}
+                  onOrderChange={(updatedProducts) => {
+                    setProducts(updatedProducts as Product[]);
+                  }}
+                />
+              </div>
+            </div>
           )}
 
           {/* Promotions Tab */}
