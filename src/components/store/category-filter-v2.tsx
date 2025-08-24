@@ -35,45 +35,17 @@ export default function CategoryFilter({ products, storeColors, onCategoryClick 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const categoryRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
 
-  // Função para calcular cor de texto com melhor contraste
-  const getContrastTextColor = (backgroundColor: string) => {
-    // Converter hex para RGB
-    const hex = backgroundColor.replace('#', '');
-    const r = Number.parseInt(hex.substr(0, 2), 16);
-    const g = Number.parseInt(hex.substr(2, 2), 16);
-    const b = Number.parseInt(hex.substr(4, 2), 16);
-    
-    // Calcular luminância
-    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-    
-    // Retornar branco para fundos escuros, preto para fundos claros
-    return luminance > 0.5 ? '#1f2937' : '#ffffff';
-  };
-
-  // Função para gerar cor de fundo com melhor contraste
-  const getBackgroundColor = (isActive: boolean) => {
-    if (isActive) {
-      return storeColors.primary;
-    }
-    
-    // Para botões inativos, usar uma cor mais neutra com melhor contraste
-    return 'rgba(255, 255, 255, 0.9)';
-  };
-
   // Filtrar produtos disponíveis e extrair categorias
   const availableProducts = products.filter((p: Product) => p.available !== false);
   
   // Priorizar category_data.name se disponível, senão usar category
   const categories = [...new Set(availableProducts.map(p => {
-    // Se tem category_data, usar name
     if (p.category_data?.name) {
       return p.category_data.name;
     }
-    // Se não tem category_data mas tem category, usar category
     if (p.category) {
       return p.category;
     }
-    // Fallback para "Geral"
     return 'Geral';
   }))];
 
@@ -86,10 +58,9 @@ export default function CategoryFilter({ products, storeColors, onCategoryClick 
     setActiveCategory(category);
     
     {
-      // Rolar para a categoria específica
       const categoryElement = document.getElementById(`category-${category}`);
       if (categoryElement) {
-        const offset = 100; // Offset para não ficar colado no topo
+        const offset = 100;
         const elementPosition = categoryElement.getBoundingClientRect().top;
         const offsetPosition = elementPosition + window.pageYOffset - offset;
 
@@ -100,7 +71,6 @@ export default function CategoryFilter({ products, storeColors, onCategoryClick 
       }
     }
 
-    // Callback opcional
     if (onCategoryClick) {
       onCategoryClick(category);
     }
@@ -113,7 +83,6 @@ export default function CategoryFilter({ products, storeColors, onCategoryClick 
         for (const entry of entries) {
           if (entry.isIntersecting) {
             const categoryName = entry.target.getAttribute('data-category');
-            // Só atualizar se não for "Todos" e for diferente da categoria atual
             if (categoryName && categoryName !== 'Todos' && categoryName !== activeCategory) {
               setActiveCategory(categoryName);
             }
@@ -121,12 +90,11 @@ export default function CategoryFilter({ products, storeColors, onCategoryClick 
         }
       },
       {
-        rootMargin: '-20% 0px -70% 0px', // Detectar quando a categoria está no terço superior da tela
+        rootMargin: '-20% 0px -70% 0px',
         threshold: 0.1
       }
     );
 
-    // Observar seções de categoria
     const categoryElements = document.querySelectorAll('[data-category]');
     for (const el of categoryElements) {
       observer.observe(el);
@@ -158,7 +126,7 @@ export default function CategoryFilter({ products, storeColors, onCategoryClick 
     }
   }, []);
 
-  // Inicializar com a primeira categoria selecionada quando o componente montar
+  // Inicializar com a primeira categoria selecionada
   useEffect(() => {
     if (validCategories.length > 0) {
       setActiveCategory(validCategories[0]);
@@ -179,11 +147,10 @@ export default function CategoryFilter({ products, storeColors, onCategoryClick 
   }
 
   return (
-    <div className="sticky top-0 z-40 backdrop-blur-md border-b border-gray-200/20 shadow-sm" 
-         style={{ backgroundColor: `${storeColors.background}98` }}>
+    <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-200/50 shadow-sm">
       <div 
         ref={scrollContainerRef}
-        className="flex gap-3 px-4 py-3 overflow-x-auto scrollbar-hide"
+        className="flex gap-2 px-4 py-3 overflow-x-auto scrollbar-hide"
       >
         {allCategories.map((category) => {
           const isActive = activeCategory === category;
@@ -197,24 +164,12 @@ export default function CategoryFilter({ products, storeColors, onCategoryClick 
               }}
               onClick={() => scrollToCategory(category)}
               className={`
-                flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300
+                flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300
                 ${isActive 
-                  ? 'shadow-lg transform scale-105' 
-                  : 'hover:shadow-md hover:transform hover:scale-102'
+                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg transform scale-105' 
+                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-900 border border-gray-200 hover:border-gray-300'
                 }
               `}
-              style={{
-                backgroundColor: getBackgroundColor(isActive),
-                color: isActive 
-                  ? getContrastTextColor(storeColors.primary)
-                  : '#374151',
-                border: isActive 
-                  ? 'none' 
-                  : `2px solid ${storeColors.primary}30`,
-                boxShadow: isActive 
-                  ? `0 4px 12px ${storeColors.primary}30` 
-                  : '0 2px 8px rgba(0, 0, 0, 0.08)'
-              }}
             >
               {category}
             </button>

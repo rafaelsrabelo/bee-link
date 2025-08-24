@@ -11,7 +11,7 @@ import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
-import CategoryFilter from '../../components/store/category-filter';
+import CategoryFilter from '../../components/store/category-filter-ifood';
 import ConfigurableBanner from '../../components/store/configurable-banner';
 import EnhancedProductCard from '../../components/store/enhanced-product-card';
 import FloatingCart from '../../components/store/floating-cart';

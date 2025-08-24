@@ -35,45 +35,17 @@ export default function CategoryFilter({ products, storeColors, onCategoryClick 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const categoryRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
 
-  // Função para calcular cor de texto com melhor contraste
-  const getContrastTextColor = (backgroundColor: string) => {
-    // Converter hex para RGB
-    const hex = backgroundColor.replace('#', '');
-    const r = Number.parseInt(hex.substr(0, 2), 16);
-    const g = Number.parseInt(hex.substr(2, 2), 16);
-    const b = Number.parseInt(hex.substr(4, 2), 16);
-    
-    // Calcular luminância
-    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-    
-    // Retornar branco para fundos escuros, preto para fundos claros
-    return luminance > 0.5 ? '#1f2937' : '#ffffff';
-  };
-
-  // Função para gerar cor de fundo com melhor contraste
-  const getBackgroundColor = (isActive: boolean) => {
-    if (isActive) {
-      return storeColors.primary;
-    }
-    
-    // Para botões inativos, usar uma cor mais neutra com melhor contraste
-    return 'rgba(255, 255, 255, 0.9)';
-  };
-
   // Filtrar produtos disponíveis e extrair categorias
   const availableProducts = products.filter((p: Product) => p.available !== false);
   
   // Priorizar category_data.name se disponível, senão usar category
   const categories = [...new Set(availableProducts.map(p => {
-    // Se tem category_data, usar name
     if (p.category_data?.name) {
       return p.category_data.name;
     }
-    // Se não tem category_data mas tem category, usar category
     if (p.category) {
       return p.category;
     }
-    // Fallback para "Geral"
     return 'Geral';
   }))];
 
@@ -86,10 +58,9 @@ export default function CategoryFilter({ products, storeColors, onCategoryClick 
     setActiveCategory(category);
     
     {
-      // Rolar para a categoria específica
       const categoryElement = document.getElementById(`category-${category}`);
       if (categoryElement) {
-        const offset = 100; // Offset para não ficar colado no topo
+        const offset = 100;
         const elementPosition = categoryElement.getBoundingClientRect().top;
         const offsetPosition = elementPosition + window.pageYOffset - offset;
 
@@ -100,7 +71,6 @@ export default function CategoryFilter({ products, storeColors, onCategoryClick 
       }
     }
 
-    // Callback opcional
     if (onCategoryClick) {
       onCategoryClick(category);
     }
@@ -110,19 +80,28 @@ export default function CategoryFilter({ products, storeColors, onCategoryClick 
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
+        // Encontrar a categoria mais visível
+        let maxIntersection = 0;
+        let mostVisibleCategory = activeCategory;
+
         for (const entry of entries) {
-          if (entry.isIntersecting) {
+          if (entry.intersectionRatio > maxIntersection) {
+            maxIntersection = entry.intersectionRatio;
             const categoryName = entry.target.getAttribute('data-category');
-            // Só atualizar se não for "Todos" e for diferente da categoria atual
-            if (categoryName && categoryName !== 'Todos' && categoryName !== activeCategory) {
-              setActiveCategory(categoryName);
+            if (categoryName && categoryName !== 'Todos') {
+              mostVisibleCategory = categoryName;
             }
           }
         }
+
+        // Atualizar apenas se a categoria mais visível for diferente da atual
+        if (mostVisibleCategory !== activeCategory) {
+          setActiveCategory(mostVisibleCategory);
+        }
       },
       {
-        rootMargin: '-20% 0px -70% 0px', // Detectar quando a categoria está no terço superior da tela
-        threshold: 0.1
+        rootMargin: '-15% 0px -70% 0px', // Ajustado para detectar melhor
+        threshold: [0, 0.1, 0.5, 1.0] // Múltiplos thresholds para melhor precisão
       }
     );
 
@@ -137,7 +116,7 @@ export default function CategoryFilter({ products, storeColors, onCategoryClick 
         observer.unobserve(el);
       }
     };
-  }, [activeCategory]);
+  }, [activeCategory]); // Readicionado activeCategory para detectar mudanças
 
   // Centralizar categoria ativa no scroll horizontal
   const centerActiveCategory = useCallback((category: string) => {
@@ -158,7 +137,7 @@ export default function CategoryFilter({ products, storeColors, onCategoryClick 
     }
   }, []);
 
-  // Inicializar com a primeira categoria selecionada quando o componente montar
+  // Inicializar com a primeira categoria selecionada
   useEffect(() => {
     if (validCategories.length > 0) {
       setActiveCategory(validCategories[0]);
@@ -179,8 +158,10 @@ export default function CategoryFilter({ products, storeColors, onCategoryClick 
   }
 
   return (
-    <div className="sticky top-0 z-40 backdrop-blur-md border-b border-gray-200/20 shadow-sm" 
-         style={{ backgroundColor: `${storeColors.background}98` }}>
+    <div 
+      className="sticky top-0 z-40 backdrop-blur-md border-b border-gray-200/30 shadow-sm"
+      style={{ backgroundColor: `${storeColors.background}95` }}
+    >
       <div 
         ref={scrollContainerRef}
         className="flex gap-3 px-4 py-3 overflow-x-auto scrollbar-hide"
@@ -197,23 +178,25 @@ export default function CategoryFilter({ products, storeColors, onCategoryClick 
               }}
               onClick={() => scrollToCategory(category)}
               className={`
-                flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300
+                flex-shrink-0 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300
                 ${isActive 
                   ? 'shadow-lg transform scale-105' 
                   : 'hover:shadow-md hover:transform hover:scale-102'
                 }
               `}
               style={{
-                backgroundColor: getBackgroundColor(isActive),
+                backgroundColor: isActive 
+                  ? storeColors.primary 
+                  : 'rgba(255, 255, 255, 0.9)',
                 color: isActive 
-                  ? getContrastTextColor(storeColors.primary)
+                  ? '#ffffff' 
                   : '#374151',
                 border: isActive 
                   ? 'none' 
-                  : `2px solid ${storeColors.primary}30`,
+                  : `1px solid ${storeColors.primary}20`,
                 boxShadow: isActive 
                   ? `0 4px 12px ${storeColors.primary}30` 
-                  : '0 2px 8px rgba(0, 0, 0, 0.08)'
+                  : '0 2px 8px rgba(0, 0, 0, 0.06)'
               }}
             >
               {category}

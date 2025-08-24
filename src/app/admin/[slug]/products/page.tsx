@@ -1,6 +1,6 @@
 'use client';
 
-import { Edit, Eye, EyeOff, FolderPlus, MousePointer, Package, Plus, ShoppingCart, Star, Tag, Trash2, X, ArrowUpDown } from 'lucide-react';
+import { ArrowUpDown, Edit, Eye, EyeOff, FolderPlus, MousePointer, Package, Plus, ShoppingCart, Star, Tag, Trash2, X } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { use, useEffect, useRef, useState } from 'react';
@@ -10,6 +10,7 @@ import ProtectedRoute from '../../../../components/auth/ProtectedRoute';
 import AddProductModal from '../../../../components/ui/add-product-modal';
 import AdminHeader from '../../../../components/ui/admin-header';
 import CategoriesManager from '../../../../components/ui/categories-manager';
+import CategoryOrderManager from '../../../../components/ui/category-order-manager';
 import CreateStoreCategoryModal from '../../../../components/ui/create-store-category-modal';
 import DeleteModal from '../../../../components/ui/delete-modal';
 import LottieLoader from '../../../../components/ui/lottie-loader';
@@ -17,7 +18,6 @@ import MobileImageUpload from '../../../../components/ui/mobile-image-upload';
 import ProductCategorySelector from '../../../../components/ui/product-category-selector';
 import ProductMultiImageManager from '../../../../components/ui/product-multi-image-manager';
 import ProductOrderManager from '../../../../components/ui/product-order-manager';
-import CategoryOrderManager from '../../../../components/ui/category-order-manager';
 import PromotionsManager from '../../../../components/ui/promotions-manager';
 import { useAuth } from '../../../../contexts/AuthContext';
 import type { ProductImage } from '../../../../types/product-image';
