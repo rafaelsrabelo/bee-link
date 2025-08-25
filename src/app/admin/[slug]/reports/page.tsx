@@ -270,7 +270,20 @@ export default function ReportsPage({ params }: { params: Promise<{ slug: string
     ).length;
     const totalRevenue = filteredOrders
       .filter(order => ['delivered', 'completed_whatsapp'].includes(order.status))
-      .reduce((sum, order) => sum + order.total, 0);
+      .reduce((sum, order) => {
+        // Detectar se o valor está em centavos ou reais
+        let orderTotal = order.total;
+        if (order.total > 1000) {
+          // Provavelmente está em centavos, converter para reais
+          orderTotal = order.total / 100;
+        } else if (order.total >= 100 && order.total < 1000) {
+          // Valores entre 100 e 999 podem ser centavos (ex: 599 = 5.99)
+          if (order.total % 1 === 0) { // Se for número inteiro
+            orderTotal = order.total / 100;
+          }
+        }
+        return sum + orderTotal;
+      }, 0);
     const averageOrderValue = completedOrders > 0 ? totalRevenue / completedOrders : 0;
 
     return {
@@ -283,10 +296,26 @@ export default function ReportsPage({ params }: { params: Promise<{ slug: string
   };
 
   const formatPrice = (price: number) => {
+    // Detectar se o valor está em centavos ou reais
+    // Se o valor for maior que 1000, provavelmente está em centavos
+    // Se for menor que 1000, provavelmente está em reais
+    let priceInReais = price;
+    
+    if (price > 1000) {
+      // Provavelmente está em centavos, converter para reais
+      priceInReais = price / 100;
+    } else if (price >= 100 && price < 1000) {
+      // Valores entre 100 e 999 podem ser centavos (ex: 599 = 5.99)
+      // Verificar se faz sentido como centavos
+      if (price % 1 === 0) { // Se for número inteiro
+        priceInReais = price / 100;
+      }
+    }
+    
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL'
-    }).format(price);
+    }).format(priceInReais);
   };
 
   const formatDate = (dateString: string) => {

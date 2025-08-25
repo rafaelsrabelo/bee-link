@@ -98,7 +98,7 @@ function OrderDetailsPanel({
               type="button"
               onClick={() => onUpdateStatus(order.id, 'accepted')}
               disabled={updatingStatus === order.id}
-              className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 transition-colors"
+              className="flex items-center space-x-2 bg-gray-800 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-900 disabled:opacity-50 transition-colors"
             >
               <Check className="w-4 h-4" />
               <span>{updatingStatus === order.id ? 'Aceitando...' : 'Aceitar'}</span>
@@ -130,7 +130,7 @@ function OrderDetailsPanel({
               type="button"
               onClick={() => onUpdateStatus(order.id, 'preparing')}
               disabled={updatingStatus === order.id}
-              className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              className="flex items-center space-x-2 bg-gray-800 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-900 disabled:opacity-50 transition-colors"
             >
               <ChefHat className="w-4 h-4" />
               <span>{updatingStatus === order.id ? 'Preparando...' : 'Preparar'}</span>
@@ -153,7 +153,7 @@ function OrderDetailsPanel({
               type="button"
               onClick={() => onUpdateStatus(order.id, 'delivering')}
               disabled={updatingStatus === order.id}
-              className="flex items-center space-x-2 bg-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-700 disabled:opacity-50 transition-colors"
+              className="flex items-center space-x-2 bg-gray-800 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-900 disabled:opacity-50 transition-colors"
             >
               <Truck className="w-4 h-4" />
               <span>{updatingStatus === order.id ? 'Enviando...' : 'Sair p/ Entrega'}</span>
@@ -176,7 +176,7 @@ function OrderDetailsPanel({
               type="button"
               onClick={() => onUpdateStatus(order.id, 'delivered')}
               disabled={updatingStatus === order.id}
-              className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 transition-colors"
+              className="flex items-center space-x-2 bg-gray-800 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-900 disabled:opacity-50 transition-colors"
             >
               <Package className="w-4 h-4" />
               <span>{updatingStatus === order.id ? 'Finalizando...' : 'Marcar Entregue'}</span>
@@ -404,9 +404,9 @@ const statusConfig = {
   delivering: {
     label: 'Entregando',
     icon: Truck,
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-50',
-    borderColor: 'border-purple-200'
+    color: 'text-gray-600',
+    bgColor: 'bg-gray-50',
+    borderColor: 'border-gray-200'
   },
   delivered: {
     label: 'Entregue',
@@ -849,10 +849,16 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
 
   // Função para formatar preço
   const formatPrice = (price: number) => {
+    // Detectar se o valor está em centavos ou reais
+    let priceInReais = price;
+    if (price > 1000) {
+      // Provavelmente está em centavos, converter para reais
+      priceInReais = price / 100;
+    }
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL'
-    }).format(price);
+    }).format(priceInReais);
   };
 
   if (loading) {
@@ -882,7 +888,7 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
                 console.log('🔄 Clicou no botão Adicionar Pedido');
                 setShowCreateModal(true);
               }}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
+              className="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
             >
               <Plus className="w-4 h-4" />
               Adicionar Pedido
@@ -905,7 +911,7 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
                 console.log('🔄 Clicou no botão Criar Primeiro Pedido');
                 setShowCreateModal(true);
               }}
-              className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 mx-auto transition-colors shadow-lg hover:shadow-xl"
+              className="bg-gray-800 hover:bg-gray-900 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 mx-auto transition-colors shadow-lg hover:shadow-xl"
               type="button"
             >
               <Plus className="w-5 h-5" />
@@ -966,7 +972,7 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
         <div className="flex items-center gap-4">
           <a
             href={`/admin/${storeSlug}/reports`}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
+            className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
           >
             <BarChart3 className="w-4 h-4" />
             Relatórios
@@ -974,7 +980,7 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
           <button
             type="button"
             onClick={() => setShowCreateModal(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
+            className="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
           >
             <Plus className="w-4 h-4" />
             Adicionar Pedido
@@ -1044,16 +1050,16 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
           </div>
         </div>
 
-        <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-purple-600">Total Vendido</p>
-              <p className="text-2xl font-bold text-purple-900">
+              <p className="text-sm font-medium text-gray-600">Total Vendido</p>
+              <p className="text-2xl font-bold text-gray-900">
                   {formatPrice(stats.revenue)}
               </p>
             </div>
-            <div className="bg-purple-100 p-2 rounded-lg">
-              <Calendar className="w-5 h-5 text-purple-600" />
+            <div className="bg-gray-100 p-2 rounded-lg">
+              <Calendar className="w-5 h-5 text-gray-600" />
             </div>
           </div>
         </div>
@@ -1109,7 +1115,7 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
                     onClick={() => setStatusFilter('all')}
                     className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                       statusFilter === 'all' 
-                        ? 'bg-blue-600 text-white' 
+                        ? 'bg-gray-800 text-white' 
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                     type="button"
@@ -1120,7 +1126,7 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
                     onClick={() => setStatusFilter('pending')}
                     className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                       statusFilter === 'pending' 
-                        ? 'bg-orange-600 text-white' 
+                        ? 'bg-gray-800 text-white' 
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                     type="button"
@@ -1131,7 +1137,7 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
                     onClick={() => setStatusFilter('delivered')}
                     className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                       statusFilter === 'delivered' 
-                        ? 'bg-green-600 text-white' 
+                        ? 'bg-gray-800 text-white' 
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                     type="button"
@@ -1142,7 +1148,7 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
                     onClick={() => setStatusFilter('cancelled')}
                     className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                       statusFilter === 'cancelled' 
-                        ? 'bg-red-600 text-white' 
+                        ? 'bg-gray-800 text-white' 
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                     type="button"
@@ -1175,7 +1181,7 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
                   {statusFilter === 'all' && (
                     <button
                       onClick={() => setShowCreateModal(true)}
-                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                      className="bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-900 transition-colors text-sm"
                       type="button"
                     >
                       Criar Pedido

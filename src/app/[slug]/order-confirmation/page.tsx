@@ -135,7 +135,13 @@ export default function OrderConfirmationPage({ params }: OrderConfirmationProps
   };
 
   const formatPrice = (price: number) => {
-    return price.toLocaleString('pt-BR', {
+    // Detectar se o valor está em centavos ou reais
+    let priceInReais = price;
+    if (price > 1000) {
+      // Provavelmente está em centavos, converter para reais
+      priceInReais = price / 100;
+    }
+    return priceInReais.toLocaleString('pt-BR', {
       style: 'currency',
       currency: 'BRL'
     });

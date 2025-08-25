@@ -1,6 +1,9 @@
 'use client';
 
+import CreateOrderModal from '@/components/ui/create-order-modal';
+import SoundToggle from '@/components/ui/sound-toggle';
 import { BarChart3, Bell, Calendar, CheckCircle, Clock, DollarSign, Loader2, MapPin, Package, Phone, Plus, Search, ShoppingBag, Truck, User, Wifi, WifiOff, X } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { use, useCallback, useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import loadingAnimation from '../../../../../public/animations/loading-dots-blue.json';
@@ -57,6 +60,7 @@ function WebSocketStatus({ isConnected, isConnecting, error }: WebSocketStatusPr
 export default function OrdersPage({ params }: { params: Promise<{ slug: string }> }) {
   const { user } = useAuth();
   const { slug } = use(params);
+  const router = useRouter();
   
   // Estados para pedidos
   const [orders, setOrders] = useState<Order[]>([]);
@@ -64,6 +68,7 @@ export default function OrdersPage({ params }: { params: Promise<{ slug: string 
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'accepted' | 'preparing' | 'delivering' | 'delivered' | 'cancelled'>('all');
+  const [showCreateOrderModal, setShowCreateOrderModal] = useState(false);
   
   // Estados para WebSocket
   const [isConnected, setIsConnected] = useState(false);
@@ -81,7 +86,23 @@ export default function OrdersPage({ params }: { params: Promise<{ slug: string 
       const response = await fetch(`/api/stores/${slug}/orders`);
       if (response.ok) {
         const data = await response.json();
-        setOrders(data.orders || []);
+        const allOrders = data.orders || [];
+        
+        // Filtrar pedidos: apenas do dia OU não finalizados/cancelados
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const filteredOrders = allOrders.filter((order: Order) => {
+          const orderDate = new Date(order.created_at);
+          orderDate.setHours(0, 0, 0, 0);
+          
+          const isFromToday = orderDate.getTime() === today.getTime();
+          const isNotFinished = order.status !== 'delivered' && order.status !== 'cancelled';
+          
+          return isFromToday || isNotFinished;
+        });
+        
+        setOrders(filteredOrders);
       } else {
         toast.error(`Erro ao carregar pedidos: ${response.status}`);
       }
@@ -223,6 +244,9 @@ export default function OrdersPage({ params }: { params: Promise<{ slug: string 
     // Criar conexão WebSocket simples
     const ws = new WebSocket('ws://localhost:3001');
     
+    // Criar áudio para notificação de novo pedido
+    const notificationSound = new Audio('/notification.mp3');
+    
     ws.onopen = () => {
       console.log('🔌 WebSocket conectado!');
       setIsConnected(true);
@@ -241,10 +265,20 @@ export default function OrdersPage({ params }: { params: Promise<{ slug: string 
         const data = JSON.parse(event.data);
         console.log('📦 Mensagem WebSocket recebida:', data);
         
-        if (data.type === 'order_created' || data.type === 'order_updated') {
-          // Recarregar pedidos quando houver mudança
+        if (data.type === 'order_created') {
+          console.log('🆕 Novo pedido recebido! Tocando som...');
+          // Verificar se o som está habilitado
+          const isSoundEnabled = localStorage.getItem('notification-sound-enabled') !== 'false';
+          if (isSoundEnabled) {
+            // Tocar som de notificação para novo pedido
+            notificationSound.play().catch(error => {
+              console.log('🔇 Erro ao tocar som:', error);
+            });
+          }
           loadInitialOrders();
-          // Removido o toast duplicado - apenas atualizar silenciosamente
+        } else if (data.type === 'order_updated') {
+          console.log('🔄 Pedido atualizado');
+          loadInitialOrders();
         }
       } catch (error) {
         console.error('Erro ao processar mensagem WebSocket:', error);
@@ -335,16 +369,29 @@ export default function OrdersPage({ params }: { params: Promise<{ slug: string 
                 error={error}
               />
             </div>
-            <div className="flex space-x-3">
-              <button className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
-                <BarChart3 className="w-4 h-4" />
-                <span>Relatórios</span>
-              </button>
-              <button className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
-                <Plus className="w-4 h-4" />
-                <span>+ Adicionar Pedido</span>
-              </button>
+            <div className="flex items-center space-x-2">
+              <SoundToggle />
             </div>
+          </div>
+
+          {/* Botões de ação */}
+          <div className="flex space-x-3 mb-6">
+            <button 
+              onClick={() => router.push(`/admin/${slug}/reports`)}
+              className="flex items-center space-x-2 px-4 py-2 border border-gray-400 text-gray-700 rounded-lg hover:bg-gray-50 hover:border-gray-500 transition-colors" 
+              type="button"
+            >
+              <BarChart3 className="w-4 h-4" />
+              <span>Relatórios</span>
+            </button>
+            <button 
+              onClick={() => setShowCreateOrderModal(true)}
+              className="flex items-center space-x-2 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition-colors" 
+              type="button"
+            >
+              <Plus className="w-4 h-4" />
+              <span>+ Adicionar Pedido</span>
+            </button>
           </div>
 
           {/* Dashboard Cards */}
@@ -390,13 +437,13 @@ export default function OrdersPage({ params }: { params: Promise<{ slug: string 
               </div>
             </div>
             
-            <div className="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-lg p-4">
+            <div className="bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-purple-700 font-medium">Total Vendido</p>
-                  <p className="text-2xl font-bold text-purple-900">R$ {stats.totalValue.toFixed(2).replace('.', ',')}</p>
+                  <p className="text-sm text-gray-700 font-medium">Total Vendido</p>
+                  <p className="text-2xl font-bold text-gray-900">R$ {stats.totalValue.toFixed(2).replace('.', ',')}</p>
                 </div>
-                <DollarSign className="w-8 h-8 text-purple-600 opacity-80" />
+                <DollarSign className="w-8 h-8 text-gray-600 opacity-80" />
               </div>
             </div>
           </div>
@@ -428,7 +475,7 @@ export default function OrdersPage({ params }: { params: Promise<{ slug: string 
                     onClick={() => setStatusFilter('all')}
                     className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
                       statusFilter === 'all' 
-                        ? 'bg-purple-600 text-white' 
+                        ? 'border border-gray-400 bg-gray-50 text-gray-700' 
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
@@ -438,7 +485,7 @@ export default function OrdersPage({ params }: { params: Promise<{ slug: string 
                     onClick={() => setStatusFilter('pending')}
                     className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
                       statusFilter === 'pending' 
-                        ? 'bg-purple-600 text-white' 
+                        ? 'border border-gray-400 bg-gray-50 text-gray-700' 
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
@@ -448,7 +495,7 @@ export default function OrdersPage({ params }: { params: Promise<{ slug: string 
                     onClick={() => setStatusFilter('delivered')}
                     className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
                       statusFilter === 'delivered' 
-                        ? 'bg-purple-600 text-white' 
+                        ? 'border border-gray-400 bg-gray-50 text-gray-700' 
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
@@ -458,7 +505,7 @@ export default function OrdersPage({ params }: { params: Promise<{ slug: string 
                     onClick={() => setStatusFilter('cancelled')}
                     className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
                       statusFilter === 'cancelled' 
-                        ? 'bg-purple-600 text-white' 
+                        ? 'border border-gray-400 bg-gray-50 text-gray-700' 
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
@@ -667,14 +714,14 @@ export default function OrdersPage({ params }: { params: Promise<{ slug: string 
                         <>
                           <button
                             onClick={() => updateOrderStatus(selectedOrder.id, 'accepted')}
-                            className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
+                            className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition-colors flex items-center justify-center space-x-2"
                           >
                             <CheckCircle className="w-4 h-4" />
                             <span>Aceitar Pedido</span>
                           </button>
                           <button
                             onClick={() => updateOrderStatus(selectedOrder.id, 'cancelled')}
-                            className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center space-x-2"
+                            className="w-full px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition-colors flex items-center justify-center space-x-2"
                           >
                             <X className="w-4 h-4" />
                             <span>Cancelar Pedido</span>
@@ -685,7 +732,7 @@ export default function OrdersPage({ params }: { params: Promise<{ slug: string 
                       {selectedOrder.status === 'accepted' && (
                         <button
                           onClick={() => updateOrderStatus(selectedOrder.id, 'preparing')}
-                          className="w-full px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center justify-center space-x-2"
+                          className="w-full px-4 py-2 border border-orange-300 text-orange-700 rounded-lg hover:bg-orange-50 transition-colors flex items-center justify-center space-x-2"
                         >
                           <Package className="w-4 h-4" />
                           <span>Preparar Pedido</span>
@@ -695,7 +742,7 @@ export default function OrdersPage({ params }: { params: Promise<{ slug: string 
                       {selectedOrder.status === 'preparing' && (
                         <button
                           onClick={() => updateOrderStatus(selectedOrder.id, 'delivering')}
-                          className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center space-x-2"
+                          className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition-colors flex items-center justify-center space-x-2"
                         >
                           <Truck className="w-4 h-4" />
                           <span>Saiu para Entrega</span>
@@ -705,7 +752,7 @@ export default function OrdersPage({ params }: { params: Promise<{ slug: string 
                       {selectedOrder.status === 'delivering' && (
                         <button
                           onClick={() => updateOrderStatus(selectedOrder.id, 'delivered')}
-                          className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2"
+                          className="w-full px-4 py-2 border border-green-300 text-green-700 rounded-lg hover:bg-green-50 transition-colors flex items-center justify-center space-x-2"
                         >
                           <CheckCircle className="w-4 h-4" />
                           <span>Entregue</span>
@@ -730,6 +777,14 @@ export default function OrdersPage({ params }: { params: Promise<{ slug: string 
             </div>
           </div>
         </div>
+
+        {/* Modal de Criar Pedido */}
+        <CreateOrderModal
+          isOpen={showCreateOrderModal}
+          onClose={() => setShowCreateOrderModal(false)}
+          storeSlug={slug}
+          onOrderCreated={loadInitialOrders}
+        />
       </div>
     </ProtectedRoute>
   );

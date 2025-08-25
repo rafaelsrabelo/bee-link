@@ -3,13 +3,13 @@
 import { Minus, Plus, Search, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
-import type { Order, OrderItem } from '../../types/order';
+import { fixCorruptedPrice } from '../../lib/price-utils';
 
 interface CreateOrderModalProps {
-  storeSlug: string;
-  storeId: string;
+  isOpen: boolean;
   onClose: () => void;
-  onOrderCreated: (order: Order) => void;
+  storeSlug: string;
+  onOrderCreated: () => void;
 }
 
 interface Product {
@@ -19,54 +19,53 @@ interface Product {
   image?: string;
 }
 
-const orderSources = [
-  { value: 'link', label: '🔗 Via Link da Loja' },
-  { value: 'whatsapp', label: '💬 WhatsApp' },
-  { value: 'presencial', label: '🏪 Presencial' },
-  { value: 'telefone', label: '📞 Telefone' },
-  { value: 'instagram', label: '📱 Instagram' },
-  { value: 'ifood', label: '🍔 iFood' },
-  { value: 'indicacao', label: '👥 Indicação' },
-  { value: 'outros', label: '📝 Outros' }
-];
+interface OrderItem {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  image?: string;
+}
 
-export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderCreated }: CreateOrderModalProps) {
+export default function CreateOrderModal({ 
+  isOpen, 
+  onClose, 
+  storeSlug, 
+  onOrderCreated 
+}: CreateOrderModalProps) {
+  const [formData, setFormData] = useState({
+    customerName: '',
+    customerPhone: '',
+    orderDate: new Date().toISOString().split('T')[0], // Data atual como padrão
+    deliveryType: 'pickup',
+    address: '',
+    paymentMethod: 'credit_card'
+  });
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
-  
-  const [formData, setFormData] = useState({
-    customer_name: '',
-    customer_phone: '',
-    customer_address: '',
-    source: 'presencial',
-    notes: '',
-    order_date: new Date().toISOString().split('T')[0] // Data atual como padrão
-  });
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Carregar produtos da loja
   useEffect(() => {
-    loadProducts();
-  }, []);  // eslint-disable-line react-hooks/exhaustive-deps
+    if (isOpen) {
+      loadProducts();
+    }
+  }, [isOpen, storeSlug]);
 
   const loadProducts = async () => {
     try {
-      // Carregando produtos
       const response = await fetch(`/api/stores/${storeSlug}/products-public`);
       if (response.ok) {
         const data = await response.json();
-        // Produtos carregados - converter preços de string para number
         const productsWithCorrectPrice = (data.products || []).map((product: {price: string | number; [key: string]: unknown}) => ({
           ...product,
           price: typeof product.price === 'string' 
-            ? Number.parseFloat(product.price.replace('R$ ', '').replace(',', '.')) 
+            ? fixCorruptedPrice(product.price) / 100 // Converter para reais
             : product.price
         }));
         setProducts(productsWithCorrectPrice);
-        console.log('Produtos carregados:', productsWithCorrectPrice);
       } else {
-        console.error('Erro na resposta:', response.status);
         toast.error('Erro ao carregar produtos');
       }
     } catch (error) {
@@ -114,26 +113,51 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
   };
 
   const getTotal = () => {
-    return orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    return orderItems.reduce((sum, item) => {
+      // Garantir que o preço seja um número válido
+      const price = typeof item.price === 'number' ? item.price : 0;
+      return sum + (price * item.quantity);
+    }, 0);
   };
 
   const formatPrice = (price: number) => {
+    // Detectar se o valor está em centavos ou reais
+    let priceInReais = price;
+    if (price > 1000) {
+      // Provavelmente está em centavos, converter para reais
+      priceInReais = price / 100;
+    }
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL'
-    }).format(price);
+    }).format(priceInReais);
+  };
+
+  // Função para resetar o formulário
+  const resetForm = () => {
+    setFormData({
+      customerName: '',
+      customerPhone: '',
+      orderDate: new Date().toISOString().split('T')[0],
+      deliveryType: 'pickup',
+      address: '',
+      paymentMethod: 'credit_card'
+    });
+    setOrderItems([]);
+    setSearchTerm('');
+  };
+
+  // Função para fechar o modal e limpar dados
+  const handleClose = () => {
+    resetForm();
+    onClose();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.customer_name.trim()) {
-      toast.error('Nome do cliente é obrigatório');
-      return;
-    }
-
-    if (!formData.customer_phone.trim()) {
-      toast.error('Telefone do cliente é obrigatório');
+    if (!formData.customerName || !formData.customerPhone) {
+      toast.error('Nome e telefone são obrigatórios');
       return;
     }
 
@@ -145,70 +169,43 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
     setLoading(true);
 
     try {
-      // Garantir que os preços sejam números
-      const processedItems = orderItems.map(item => ({
-        ...item,
-        price: typeof item.price === 'string' ? Number.parseFloat(item.price) : item.price
-      }));
-
       const orderData = {
-        storeSlug,
-        customer_name: formData.customer_name,
-        customer_phone: formData.customer_phone,
-        customer_address: formData.customer_address,
-        items: processedItems,
-        total: getTotal(),
-        source: formData.source,
-        isManualOrder: true, // Flag para identificar que é do admin
-        notes: `Origem: ${orderSources.find(s => s.value === formData.source)?.label || formData.source}${formData.notes ? `\nObservações: ${formData.notes}` : ''}`,
-        order_date: formData.order_date
+        customer_name: formData.customerName,
+        customer_phone: formData.customerPhone,
+        items: orderItems.map(item => ({
+          name: item.name,
+          price: item.price, // Manter em reais (não converter para centavos)
+          quantity: item.quantity
+        })),
+        delivery_type: formData.deliveryType,
+        delivery_address: formData.deliveryType === 'delivery' ? formData.address : '',
+        payment_method: formData.paymentMethod,
+        total: getTotal(), // Manter em reais (não converter para centavos)
+        order_date: formData.orderDate,
+        status: 'delivered', // Pedido já finalizado
+        isManualOrder: true // Flag para identificar que é do admin
       };
 
-      // Criando pedido
-
-      const response = await fetch('/api/orders/create', {
+      const response = await fetch(`/api/orders/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(orderData),
+        body: JSON.stringify({
+          ...orderData,
+          storeSlug
+        }),
       });
 
       if (response.ok) {
-        const result = await response.json();
-        
-        // Criar o objeto order para adicionar à lista
-        // Pedidos criados pelo admin sempre são manuais (delivered)
-        const isManualOrder = true;
-        
-        const newOrder: Order = {
-          id: result.orderId,
-          store_id: storeId,
-          customer_name: formData.customer_name,
-          customer_phone: formData.customer_phone,
-          customer_address: formData.customer_address,
-          items: orderItems,
-          total: getTotal(),
-          status: isManualOrder ? 'delivered' : 'pending',
-          source: formData.source,
-          notes: orderData.notes,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-
-        toast.success('Pedido criado com sucesso!', {
-          duration: 2000,
-          icon: '✅'
-        });
-        
-        // Fechar o modal após um pequeno delay para o usuário ver o toast
-        setTimeout(() => {
-          onOrderCreated(newOrder);
-          onClose();
-        }, 500);
+        toast.success('Pedido criado com sucesso!');
+        onOrderCreated();
+        onClose();
+        // Reset form
+        resetForm();
       } else {
-        const errorData = await response.json();
-        toast.error(errorData.error || 'Erro ao criar pedido');
+        const error = await response.json();
+        toast.error(error.error || 'Erro ao criar pedido');
       }
     } catch (error) {
       console.error('Erro ao criar pedido:', error);
@@ -218,9 +215,36 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
     }
   };
 
+  const addItem = () => {
+    setFormData(prev => ({
+      ...prev,
+      items: [...prev.items, { name: '', price: '', quantity: 1 }]
+    }));
+  };
+
+  const removeItem = (index: number) => {
+    if (formData.items.length > 1) {
+      setFormData(prev => ({
+        ...prev,
+        items: prev.items.filter((_, i) => i !== index)
+      }));
+    }
+  };
+
+  const updateItem = (index: number, field: string, value: string | number) => {
+    setFormData(prev => ({
+      ...prev,
+      items: prev.items.map((item, i) => 
+        i === index ? { ...item, [field]: value } : item
+      )
+    }));
+  };
+
+  if (!isOpen) return null;
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-white rounded-xl shadow-xl max-w-6xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-xl font-semibold text-gray-900">
@@ -228,7 +252,7 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
           </h2>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             disabled={loading}
             className="text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -246,6 +270,7 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
               </div>
             </div>
           )}
+          
           {/* Coluna da Esquerda - Formulário */}
           <div className="w-1/2 p-6 border-r overflow-y-auto">
             <div className="space-y-4">
@@ -262,8 +287,8 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
                     </label>
                     <input
                       type="text"
-                      value={formData.customer_name}
-                      onChange={(e) => setFormData(prev => ({ ...prev, customer_name: e.target.value }))}
+                      value={formData.customerName}
+                      onChange={(e) => setFormData(prev => ({ ...prev, customerName: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                       placeholder="Nome do cliente"
                       required
@@ -277,25 +302,11 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
                     </label>
                     <input
                       type="tel"
-                      value={formData.customer_phone}
-                      onChange={(e) => setFormData(prev => ({ ...prev, customer_phone: e.target.value }))}
+                      value={formData.customerPhone}
+                      onChange={(e) => setFormData(prev => ({ ...prev, customerPhone: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                       placeholder="(11) 99999-9999"
                       required
-                      disabled={loading}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Endereço
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.customer_address}
-                      onChange={(e) => setFormData(prev => ({ ...prev, customer_address: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                      placeholder="Endereço de entrega (opcional)"
                       disabled={loading}
                     />
                   </div>
@@ -306,8 +317,8 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
                     </label>
                     <input
                       type="date"
-                      value={formData.order_date}
-                      onChange={(e) => setFormData(prev => ({ ...prev, order_date: e.target.value }))}
+                      value={formData.orderDate}
+                      onChange={(e) => setFormData(prev => ({ ...prev, orderDate: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                       required
                       disabled={loading}
@@ -316,44 +327,68 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
                 </div>
               </div>
 
-              {/* Origem do Pedido */}
+              {/* Tipo de Entrega */}
               <div>
                 <h3 className="text-lg font-medium text-gray-900 mb-3">
-                  Origem do Pedido
+                  Entrega
                 </h3>
                 
-                <div className="grid grid-cols-2 gap-2">
-                  {orderSources.map((source) => (
-                    <button
-                      key={source.value}
-                      type="button"
-                      onClick={() => setFormData(prev => ({ ...prev, source: source.value }))}
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Tipo de Entrega
+                    </label>
+                    <select
+                      value={formData.deliveryType}
+                      onChange={(e) => setFormData(prev => ({ ...prev, deliveryType: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                       disabled={loading}
-                      className={`p-2 text-sm rounded-lg border transition-colors ${
-                        formData.source === source.value
-                          ? 'bg-blue-50 border-blue-200 text-blue-700'
-                          : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
-                      } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
-                      {source.label}
-                    </button>
-                  ))}
+                      <option value="pickup">Retirada no estabelecimento</option>
+                      <option value="delivery">Entrega</option>
+                    </select>
+                  </div>
+
+                  {formData.deliveryType === 'delivery' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Endereço de Entrega
+                      </label>
+                      <textarea
+                        value={formData.address}
+                        onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        rows={3}
+                        placeholder="Endereço de entrega"
+                        disabled={loading}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Observações */}
+              {/* Método de Pagamento */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Observações
-                </label>
-                <textarea
-                  value={formData.notes}
-                  onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                  rows={3}
-                  placeholder="Observações adicionais..."
-                  disabled={loading}
-                />
+                <h3 className="text-lg font-medium text-gray-900 mb-3">
+                  Pagamento
+                </h3>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Método de Pagamento
+                  </label>
+                  <select
+                    value={formData.paymentMethod}
+                    onChange={(e) => setFormData(prev => ({ ...prev, paymentMethod: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={loading}
+                  >
+                    <option value="credit_card">Cartão de Crédito</option>
+                    <option value="debit_card">Cartão de Débito</option>
+                    <option value="pix">PIX</option>
+                    <option value="cash">Dinheiro</option>
+                  </select>
+                </div>
               </div>
             </div>
           </div>
@@ -517,7 +552,7 @@ export default function CreateOrderModal({ storeSlug, storeId, onClose, onOrderC
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
             >
               Cancelar

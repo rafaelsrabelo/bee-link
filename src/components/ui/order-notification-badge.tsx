@@ -51,6 +51,9 @@ export default function OrderNotificationBadge({
     let ws: WebSocket | null = null;
     let reconnectTimeout: NodeJS.Timeout | null = null;
 
+    // Criar áudio para notificação
+    const notificationSound = new Audio('/notification.mp3');
+
     const connectWebSocket = () => {
       try {
         ws = new WebSocket('ws://localhost:3001');
@@ -68,7 +71,19 @@ export default function OrderNotificationBadge({
             const data = JSON.parse(event.data);
             console.log('🔔 Badge recebeu mensagem:', data);
             
-            if (data.type === 'order_created' || data.type === 'order_updated') {
+            if (data.type === 'order_created') {
+              console.log('🔔 Novo pedido! Tocando som no badge...');
+              // Verificar se o som está habilitado
+              const isSoundEnabled = localStorage.getItem('notification-sound-enabled') !== 'false';
+              if (isSoundEnabled) {
+                // Tocar som de notificação para novo pedido
+                notificationSound.play().catch(error => {
+                  console.log('🔇 Erro ao tocar som no badge:', error);
+                });
+              }
+              // Recarregar contagem quando houver mudança
+              loadPendingOrders();
+            } else if (data.type === 'order_updated') {
               console.log('🔔 Badge atualizando contagem...');
               // Recarregar contagem quando houver mudança
               loadPendingOrders();
