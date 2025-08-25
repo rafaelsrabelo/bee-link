@@ -1,4 +1,5 @@
 import { Server as SocketIOServer } from 'socket.io';
+import type { Server as HTTPServer } from 'node:http';
 
 class WebSocketManager {
   private io: SocketIOServer | null = null;
@@ -7,8 +8,7 @@ class WebSocketManager {
 
 
 
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  initialize(server: any) {
+  initialize(server: HTTPServer) {
     this.io = new SocketIOServer(server, {
       cors: {
         origin: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
@@ -193,7 +193,7 @@ class WebSocketManager {
 const websocketManager = new WebSocketManager();
 
 // Função para inicializar o servidor WebSocket
-function initializeWebSocketServer(server: unknown) {
+function initializeWebSocketServer(server: HTTPServer) {
   websocketManager.initialize(server);
 }
 
