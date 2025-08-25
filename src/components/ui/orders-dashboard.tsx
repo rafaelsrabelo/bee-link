@@ -574,6 +574,7 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
 
   // Carregar pedidos iniciais (todos os pedidos em aberto)
   const loadOrders = React.useCallback(async () => {
+    console.log('🔄 loadOrders chamada para storeSlug:', storeSlug);
     try {
       
       // Carregar todos os pedidos em aberto (não apenas de hoje) para e-commerce
@@ -581,6 +582,7 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
       
       if (response.ok) {
         const data = await response.json();
+        console.log('📦 Pedidos carregados:', data.orders?.length || 0);
 
         setOrders(data.orders || []);
         
@@ -593,9 +595,11 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
         ).length;
         setPendingCount(pendingCount);
       } else {
+        console.error('❌ Erro na resposta:', response.status);
         toast.error(`Erro ao carregar pedidos: ${response.status}`);
       }
     } catch (error) {
+      console.error('❌ Erro ao carregar pedidos:', error);
       // Verificar se é erro de rede
       if (error instanceof TypeError && error.message.includes('fetch')) {
         toast.error('Erro de conexão. Verifique sua internet.');
@@ -607,133 +611,31 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
     }
   }, [storeSlug, setPendingCount]);
 
-  // Configurar sistema de notificações em tempo real
+  // Carregar pedidos quando o componente montar
   useEffect(() => {
-    if (!storeId) {
-      return;
+    console.log('🔍 useEffect - storeSlug:', storeSlug);
+    if (storeSlug) {
+      console.log('🚀 Iniciando carregamento de pedidos...');
+      loadOrders();
     }
+  }, [storeSlug, loadOrders]);
 
-    // Carregar pedidos iniciais
-    loadOrders();
-    
-    // Carregar configurações de impressão (apenas uma vez)
+  // Simular WebSocket (desabilitado por enquanto)
+  const wsOrders: Order[] = [];
+  const wsLoading = false;
+  const isConnected = true;
+  const isConnecting = false;
+  const wsError = null;
+
+  // Atualizar status de conexão
+  useEffect(() => {
+    setConnectionStatus('connected');
+  }, []);
+
+  // Carregar configurações de impressão
+  useEffect(() => {
     loadPrintSettings(storeSlug);
-
-    let pollingInterval: NodeJS.Timeout;
-
-    // Usar apenas polling para evitar conflitos com outros canais Realtime
-    const startPolling = () => {
-      setConnectionStatus('polling');
-      
-      pollingInterval = setInterval(async () => {
-        try {
-          // Só fazer polling se não estiver carregando
-          if (loading) return;
-          
-          const response = await fetch(`/api/stores/${storeSlug}/orders?limit=100`);
-          if (response.ok) {
-            const data = await response.json();
-            const newOrders = data.orders || [];
-            
-            // Verificar se há novos pedidos
-            const currentIds = new Set(orders.map(o => o.id));
-            const newOrdersToAdd = newOrders.filter((o: Order) => !currentIds.has(o.id));
-            
-            // Se não há novos pedidos, não fazer nada
-            if (newOrdersToAdd.length === 0) {
-              return;
-            }
-            
-            if (newOrdersToAdd.length > 0 && !isInitialLoad) {
-              // Filtrar apenas pedidos REAIS vindos da plataforma (não manuais)
-              const realOrdersFromPlatform = newOrdersToAdd.filter((o: Order) => {
-                // Pedidos manuais (criados pelo admin) são identificados por:
-                // 1. Status 'delivered' (pedidos manuais são criados como entregues)
-                // 2. Notes contendo "Origem:" (indicando que foi criado pelo admin)
-                // 3. Source sendo qualquer um dos tipos manuais
-                const manualSources = ['presencial', 'telefone', 'whatsapp', 'instagram', 'ifood', 'indicacao', 'outros'];
-                const isManualOrder = o.status === 'delivered' || 
-                                     o.notes?.includes('Origem:') ||
-                                     manualSources.includes(o.source || '');
-                
-                // Pedidos REAIS da plataforma têm:
-                // - Status 'pending' (aguardando aprovação)
-                // - Source 'link' (vindos do link da loja)
-                // - Não têm "Origem:" nas notes
-                // - Não são pedidos manuais criados pelo admin
-                const isRealOrderFromPlatform = o.status === 'pending' && 
-                                               o.source === 'link' && 
-                                               !o.notes?.includes('Origem:') &&
-                                               !manualSources.includes(o.source || '');
-                
-                // Só tocar som para pedidos REAIS da plataforma
-                return isRealOrderFromPlatform;
-              });
-              
-              if (realOrdersFromPlatform.length > 0) {
-                // Tocar som APENAS para pedidos REAIS vindos da plataforma
-                console.log('🔔 NOVO PEDIDO REAL DETECTADO! Tocando som...');
-              playNotificationSound();
-              setTimeout(() => playNotificationSound(), 1000);
-              setTimeout(() => playNotificationSound(), 2000);
-              
-                // Incrementar contador no store apenas para pedidos reais
-              incrementCount();
-              } else if (newOrdersToAdd.length > 0) {
-                // Se há novos pedidos mas não são da plataforma, apenas log
-                console.log('📝 Pedidos manuais detectados - sem som');
-              }
-              
-              // Atualizar lista (evitar duplicatas)
-              setOrders(prev => {
-                const existingIds = new Set(prev.map((o: Order) => o.id));
-                const uniqueNewOrders = newOrdersToAdd.filter((o: Order) => !existingIds.has(o.id));
-                
-                // Se não há pedidos únicos para adicionar, retornar a lista atual
-                if (uniqueNewOrders.length === 0) {
-                  return prev;
-                }
-                
-                // Adicionar novos pedidos únicos no início da lista
-                return [...uniqueNewOrders, ...prev];
-              });
-            } else {
-              // Só atualizar se a lista realmente mudou
-              setOrders(prev => {
-                // Comparação simples: se os arrays têm tamanhos diferentes, atualizar
-                if (prev.length !== newOrders.length) {
-                  return newOrders;
-                }
-                
-                // Se têm o mesmo tamanho, verificar se são iguais
-                const prevIds = prev.map((o: Order) => o.id).sort();
-                const newIds = newOrders.map((o: Order) => o.id).sort();
-                
-                // Se os IDs são diferentes, atualizar
-                if (JSON.stringify(prevIds) !== JSON.stringify(newIds)) {
-                  return newOrders;
-                }
-                
-                // Se são iguais, manter a lista atual
-                return prev;
-              });
-            }
-          }
-        } catch (error) {
-          // Erro no polling
-        }
-      }, 20000); // Polling a cada 20 segundos (mais otimizado)
-    };
-
-    // Iniciar polling imediatamente
-    startPolling();
-
-    return () => {
-      if (pollingInterval) {
-        clearInterval(pollingInterval);
-      }
-    };
-  }, [storeSlug, storeId, loadOrders, incrementCount, orders, isInitialLoad, loadPrintSettings]);
+  }, [storeSlug, loadPrintSettings]);
 
   // Função para marcar notificação como lida
   const markNotificationAsRead = async (orderId: string) => {
@@ -1166,7 +1068,9 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
             {/* Header da Lista */}
             <div className="p-6 border-b">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Lista de Pedidos</h3>
+                <div className="flex items-center gap-3">
+                  <h3 className="text-lg font-semibold text-gray-900">Lista de Pedidos</h3>
+                </div>
                 <span className="text-sm text-gray-500">
                   {filteredOrders.length} {filteredOrders.length === 1 ? 'pedido' : 'pedidos'}
                 </span>
