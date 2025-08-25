@@ -21,11 +21,11 @@
   } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
+import { fixCorruptedPrice, formatPriceFromCents } from '../../lib/price-utils';
 import { supabase } from '../../lib/supabase';
 import { usePendingOrdersStore } from '../../stores/pendingOrdersStore';
 import { usePrintSettingsStore } from '../../stores/printSettingsStore';
 import type { Order } from '../../types/order';
-import { fixCorruptedPrice, formatPriceFromCents } from '../../lib/price-utils';
 import BotaoImprimir from './botao-imprimir';
 import CreateOrderModal from './create-order-modal';
 
@@ -277,7 +277,7 @@ function OrderDetailsPanel({
                     <div className="flex-1">
                       <h4 className="font-semibold text-gray-900">{item.name}</h4>
                       <p className="text-sm text-gray-600">Quantidade: {item.quantity}</p>
-                      <p className="text-sm text-gray-600">Preço unitário: {formatPriceFromCents(fixCorruptedPrice(item.price))}</p>
+                      <p className="text-sm text-gray-600">Preço unitário: {formatPriceFromCents(fixCorruptedPrice(item.price))} (debug: {item.price})</p>
                     </div>
                     <div className="text-right">
                       <p className="text-lg font-bold text-gray-900">
@@ -530,7 +530,11 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
     delivered: sortedOrders.filter(order => order.status === 'delivered').length,
     cancelled: sortedOrders.filter(order => order.status === 'cancelled').length,
     revenue: sortedOrders
-      .filter(order => ['delivered', 'accepted', 'preparing'].includes(order.status))
+      .filter(order => {
+        const isValidStatus = ['accepted', 'preparing', 'delivering', 'delivered'].includes(order.status);
+        console.log(`🔍 Pedido ${order.id}: status=${order.status}, total=${order.total}, incluído=${isValidStatus}`);
+        return isValidStatus;
+      })
       .reduce((sum, order) => sum + order.total, 0)
   };
 
@@ -1066,7 +1070,7 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
             <div>
               <p className="text-sm font-medium text-gray-600">Total Vendido</p>
               <p className="text-2xl font-bold text-gray-900">
-                  {formatPrice(stats.revenue)}
+                  {formatPriceFromCents(stats.revenue)}
               </p>
             </div>
             <div className="bg-gray-100 p-2 rounded-lg">

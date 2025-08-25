@@ -13,6 +13,7 @@ import LottieLoader from '../../../../components/ui/lottie-loader';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { useStoreCache } from '../../../../hooks/useStoreCache';
 import { supabase } from '../../../../lib/supabase';
+import { fixCorruptedPrice, formatPriceFromCents } from '../../../../lib/price-utils';
 import type { Order } from '../../../../types/order';
 
 interface WebSocketStatusProps {
@@ -232,7 +233,9 @@ export default function OrdersPage({ params }: { params: Promise<{ slug: string 
     delivering: orders.filter(o => o.status === 'delivering').length,
     delivered: orders.filter(o => o.status === 'delivered').length,
     cancelled: orders.filter(o => o.status === 'cancelled').length,
-    totalValue: orders.reduce((sum, order) => sum + order.total, 0)
+    totalValue: orders
+      .filter(order => ['accepted', 'preparing', 'delivering', 'delivered'].includes(order.status))
+      .reduce((sum, order) => sum + order.total, 0)
   };
 
   // Função para criar beep de notificação usando Web Audio API
@@ -759,7 +762,7 @@ export default function OrdersPage({ params }: { params: Promise<{ slug: string 
                           {item.quantity}x {item.name}
                         </span>
                         <span className="text-gray-900 font-medium">
-                          R$ {item.price}
+                          {formatPriceFromCents(fixCorruptedPrice(item.price))}
                         </span>
                       </div>
                     ))}

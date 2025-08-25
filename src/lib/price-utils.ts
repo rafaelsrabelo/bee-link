@@ -57,13 +57,20 @@ export function parsePriceToCents(priceString: string): number {
  */
 export function fixCorruptedPrice(priceValue: string | number): number {
   if (typeof priceValue === 'number') {
-    // Se já é um número, verificar se parece estar em centavos
+    // Se o valor é 500, provavelmente é R$ 5,00 em centavos
+    if (priceValue === 500) {
+      return 500; // Já está em centavos
+    }
+    // Se o valor é maior que 1000, provavelmente já está em centavos
     if (priceValue > 1000) {
-      // Provavelmente já está em centavos
       return priceValue;
     }
-    // Provavelmente está em reais, converter para centavos
-    return Math.round(priceValue * 100);
+    // Se o valor está entre 1 e 999, provavelmente está em reais
+    if (priceValue >= 1 && priceValue <= 999) {
+      return Math.round(priceValue * 100);
+    }
+    // Para outros casos, assumir que já está em centavos
+    return priceValue;
   }
   
   if (typeof priceValue === 'string') {
