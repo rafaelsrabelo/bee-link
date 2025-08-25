@@ -25,6 +25,7 @@ import { supabase } from '../../lib/supabase';
 import { usePendingOrdersStore } from '../../stores/pendingOrdersStore';
 import { usePrintSettingsStore } from '../../stores/printSettingsStore';
 import type { Order } from '../../types/order';
+import { fixCorruptedPrice, formatPriceFromCents } from '../../lib/price-utils';
 import BotaoImprimir from './botao-imprimir';
 import CreateOrderModal from './create-order-modal';
 
@@ -276,11 +277,11 @@ function OrderDetailsPanel({
                     <div className="flex-1">
                       <h4 className="font-semibold text-gray-900">{item.name}</h4>
                       <p className="text-sm text-gray-600">Quantidade: {item.quantity}</p>
-                      <p className="text-sm text-gray-600">Preço unitário: {formatPrice(item.price)}</p>
+                      <p className="text-sm text-gray-600">Preço unitário: {formatPriceFromCents(fixCorruptedPrice(item.price))}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-lg font-bold text-gray-900">
-                        {formatPrice(item.price * item.quantity)}
+                        {formatPriceFromCents(fixCorruptedPrice(item.price) * item.quantity)}
                       </p>
                     </div>
                   </div>
@@ -529,7 +530,7 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
     delivered: sortedOrders.filter(order => order.status === 'delivered').length,
     cancelled: sortedOrders.filter(order => order.status === 'cancelled').length,
     revenue: sortedOrders
-      .filter(order => order.status === 'delivered')
+      .filter(order => ['delivered', 'accepted', 'preparing'].includes(order.status))
       .reduce((sum, order) => sum + order.total, 0)
   };
 
@@ -854,6 +855,16 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
     if (price > 1000) {
       // Provavelmente está em centavos, converter para reais
       priceInReais = price / 100;
+    } else if (price >= 100 && price < 1000) {
+      // Valores entre 100 e 999 podem ser centavos (ex: 600 = 6.00)
+      if (price % 1 === 0) { // Se for número inteiro
+        priceInReais = price / 100;
+      }
+    } else if (price >= 10 && price < 100) {
+      // Valores entre 10 e 99 também podem ser centavos (ex: 50 = 0.50)
+      if (price % 1 === 0) { // Se for número inteiro
+        priceInReais = price / 100;
+      }
     }
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',

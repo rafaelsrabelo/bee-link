@@ -6,7 +6,7 @@ import { AlertCircle, CreditCard, MapPin, ShoppingBag, User } from 'lucide-react
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { useCartStore } from '../../../stores/cartStore';
-import { fixCorruptedPrice } from '../../../../lib/price-utils';
+import { fixCorruptedPrice, formatPriceFromCents } from '../../../../lib/price-utils';
 import { formatPrice } from '../../../../lib/utils';
 
 interface SummaryStepProps {
@@ -447,12 +447,12 @@ Pedido feito pelo site 🐝 Bee Link`;
               <div className="flex-1">
                 <p className="font-medium text-gray-900">{item.name}</p>
                 <p className="text-sm text-gray-600">
-                  {item.quantity}x {formatPrice(fixCorruptedPrice(item.price))}
+                  {item.quantity}x {formatPriceFromCents(fixCorruptedPrice(item.price))}
                 </p>
               </div>
               <div className="text-right">
                 <p className="font-medium text-gray-900">
-                  R$ {(Number.parseFloat((typeof item.price === 'string' ? item.price : String(item.price)).replace('R$', '').replace(',', '.').trim()) * item.quantity).toFixed(2).replace('.', ',')}
+                  {formatPriceFromCents(fixCorruptedPrice(item.price) * item.quantity)}
                 </p>
               </div>
             </div>

@@ -269,7 +269,7 @@ export default function ReportsPage({ params }: { params: Promise<{ slug: string
       ['delivered', 'completed_whatsapp'].includes(order.status)
     ).length;
     const totalRevenue = filteredOrders
-      .filter(order => ['delivered', 'completed_whatsapp'].includes(order.status))
+      .filter(order => ['delivered', 'completed_whatsapp', 'accepted', 'preparing'].includes(order.status))
       .reduce((sum, order) => {
         // Detectar se o valor está em centavos ou reais
         let orderTotal = order.total;
