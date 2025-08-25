@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { fixCorruptedPrice } from '../../lib/price-utils';
 
 export interface CartItem {
   name: string;
@@ -98,10 +99,10 @@ export const useCartStore = create<CartStore>()(
       getCartTotal: () => {
         const { cart } = get();
         return cart.reduce((total, item) => {
-          // Garantir que price seja uma string antes de usar replace
-          const priceString = typeof item.price === 'string' ? item.price : String(item.price);
-          const price = Number.parseFloat(priceString.replace('R$ ', '').replace(',', '.'));
-          return total + (price * item.quantity);
+          // Usar fixCorruptedPrice para converter o preço formatado para centavos
+          const priceInCents = fixCorruptedPrice(item.price);
+          const priceInReais = priceInCents / 100;
+          return total + (priceInReais * item.quantity);
         }, 0);
       },
 

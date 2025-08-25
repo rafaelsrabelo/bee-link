@@ -45,39 +45,65 @@ export default function OrderNotificationBadge({
 
     loadPendingOrders();
 
-    // WebSocket para atualizações em tempo real
-    const ws = new WebSocket('ws://localhost:3001');
-    
-    ws.onopen = () => {
-      console.log('🔔 Badge WebSocket conectado');
-      ws.send(JSON.stringify({
-        type: 'subscribe_store',
-        storeSlug: storeSlug
-      }));
-    };
-    
-    ws.onmessage = (event) => {
+    // Verificar se estamos no browser antes de conectar WebSocket
+    if (typeof window === 'undefined') return;
+
+    let ws: WebSocket | null = null;
+    let reconnectTimeout: NodeJS.Timeout | null = null;
+
+    const connectWebSocket = () => {
       try {
-        const data = JSON.parse(event.data);
-        console.log('🔔 Badge recebeu mensagem:', data);
+        ws = new WebSocket('ws://localhost:3001');
         
-        if (data.type === 'order_created' || data.type === 'order_updated') {
-          console.log('🔔 Badge atualizando contagem...');
-          // Recarregar contagem quando houver mudança
-          loadPendingOrders();
-        }
+        ws.onopen = () => {
+          console.log('🔔 Badge WebSocket conectado');
+          ws?.send(JSON.stringify({
+            type: 'subscribe_store',
+            storeSlug: storeSlug
+          }));
+        };
+        
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            console.log('🔔 Badge recebeu mensagem:', data);
+            
+            if (data.type === 'order_created' || data.type === 'order_updated') {
+              console.log('🔔 Badge atualizando contagem...');
+              // Recarregar contagem quando houver mudança
+              loadPendingOrders();
+            }
+          } catch (error) {
+            console.error('Erro ao processar mensagem WebSocket do badge:', error);
+          }
+        };
+
+        ws.onerror = (error) => {
+          // Silenciar erro de conexão - servidor pode não estar rodando
+          console.log('🔔 WebSocket do badge não disponível (servidor pode não estar rodando)');
+        };
+
+        ws.onclose = () => {
+          console.log('🔔 Badge WebSocket desconectado');
+          // Tentar reconectar após 5 segundos
+          reconnectTimeout = setTimeout(connectWebSocket, 5000);
+        };
+
       } catch (error) {
-        console.error('Erro ao processar mensagem WebSocket do badge:', error);
+        console.log('🔔 Erro ao inicializar WebSocket do badge:', error);
       }
     };
 
-    ws.onerror = (error) => {
-      console.error('❌ Erro WebSocket do badge:', error);
-    };
+    connectWebSocket();
 
     // Cleanup
     return () => {
-      ws.close();
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+      }
+      if (ws) {
+        ws.close();
+      }
     };
   }, [storeSlug, loadPendingOrders]);
 

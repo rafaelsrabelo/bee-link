@@ -3,18 +3,30 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
 // Configurar Cloudinary
-const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-const apiKey = process.env.CLOUDINARY_API_KEY;
-const apiSecret = process.env.CLOUDINARY_API_SECRET;
+const cloudName = process.env.CLOUDINARY_CLOUD_NAME || 'dkd3ajw3s';
+const apiKey = process.env.CLOUDINARY_API_KEY || '251789498317919';
+const apiSecret = process.env.CLOUDINARY_API_SECRET || 'ImemNXOQjT6ET2YuKw5v7S4cjgc';
+
+console.log('🔧 Configurando Cloudinary com:', {
+  cloud_name: cloudName,
+  api_key: apiKey,
+  api_secret: apiSecret ? `***${apiSecret.slice(-4)}` : 'undefined'
+});
 
 cloudinary.config({
-  cloud_name: cloudName || 'demo',
-  api_key: apiKey || 'demo',
-  api_secret: apiSecret || 'demo'
+  cloud_name: cloudName,
+  api_key: apiKey,
+  api_secret: apiSecret
 });
 
 export async function POST(request: NextRequest) {
   try {
+    // Debug: verificar se as variáveis estão carregadas
+    console.log('🔍 Debug Cloudinary config:');
+    console.log('Cloud Name:', process.env.CLOUDINARY_CLOUD_NAME);
+    console.log('API Key:', process.env.CLOUDINARY_API_KEY);
+    console.log('API Secret:', process.env.CLOUDINARY_API_SECRET ? `***${process.env.CLOUDINARY_API_SECRET.slice(-4)}` : 'undefined');
+    
     const formData = await request.formData();
     // Aceitar tanto 'file' quanto 'image' para compatibilidade
     const file = (formData.get('file') || formData.get('image')) as File;
@@ -62,18 +74,9 @@ export async function POST(request: NextRequest) {
     const base64Image = `data:${file.type};base64,${buffer.toString('base64')}`;
 
     try {
-      // Upload para Cloudinary com validação de dimensões
+      // Upload para Cloudinary com configuração básica
       const result = await cloudinary.uploader.upload(base64Image, {
-        folder: 'bee-link-products',
-        resource_type: 'image',
-        transformation: [
-          { width: 800, height: 800, crop: 'limit' },
-          { quality: 'auto' }
-        ],
-        eager_async: true,
-        eager: [
-          { width: minWidth, height: minHeight, crop: 'limit' }
-        ]
+        folder: 'bee-link-products'
       });
 
       // Verificar se as dimensões são adequadas

@@ -6,6 +6,7 @@ import { AlertCircle, CreditCard, MapPin, ShoppingBag, User } from 'lucide-react
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { useCartStore } from '../../../stores/cartStore';
+import { fixCorruptedPrice } from '../../../../lib/price-utils';
 
 interface SummaryStepProps {
   customerData: {
@@ -72,11 +73,9 @@ export default function SummaryStep({
 
   // Calcular total
   const subtotal = cart.reduce((sum, item) => {
-    // Garantir que price seja uma string antes de usar replace
-    const priceString = typeof item.price === 'string' ? item.price : String(item.price);
-    const price = Number.parseFloat(priceString.replace('R$', '').replace(',', '.').trim());
-    
-    return sum + (price * item.quantity);
+    const priceInCents = fixCorruptedPrice(item.price);
+    const priceInReais = priceInCents / 100;
+    return sum + (priceInReais * item.quantity);
   }, 0);
 
   // Calcular total com desconto e taxa de entrega
