@@ -1,6 +1,6 @@
 import { Plus, Star } from 'lucide-react';
 import Image from 'next/image';
-import { formatPrice } from '../../lib/utils';
+import { fixCorruptedPrice, formatPriceFromCents } from '../../lib/price-utils';
 import ProductNavigation from './product-navigation';
 
 interface Product {
@@ -132,7 +132,7 @@ export default function HorizontalProductCard({
               {settings.show_product_price && (
                 <div className="flex flex-col">
                   <p className="text-base font-bold" style={{ color: storeColors.primary }}>
-                    {formatPrice(product.price)}
+                    {formatPriceFromCents(fixCorruptedPrice(product.price))}
                   </p>
                   {settings.show_product_stock && (
                     <span className="text-xs text-green-600 font-medium">

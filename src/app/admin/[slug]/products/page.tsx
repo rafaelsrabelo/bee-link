@@ -7,6 +7,7 @@ import { use, useEffect, useRef, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import loadingAnimation from '../../../../../public/animations/loading-dots-blue.json';
 import ProtectedRoute from '../../../../components/auth/ProtectedRoute';
+
 import AddProductModal from '../../../../components/ui/add-product-modal';
 import AdminHeader from '../../../../components/ui/admin-header';
 import CategoriesManager from '../../../../components/ui/categories-manager';
@@ -14,12 +15,12 @@ import CategoryOrderManager from '../../../../components/ui/category-order-manag
 import CreateStoreCategoryModal from '../../../../components/ui/create-store-category-modal';
 import DeleteModal from '../../../../components/ui/delete-modal';
 import LottieLoader from '../../../../components/ui/lottie-loader';
-import MobileImageUpload from '../../../../components/ui/mobile-image-upload';
 import ProductCategorySelector from '../../../../components/ui/product-category-selector';
-import ProductMultiImageManager from '../../../../components/ui/product-multi-image-manager';
 import ProductOrderManager from '../../../../components/ui/product-order-manager';
 import PromotionsManager from '../../../../components/ui/promotions-manager';
+import UnifiedProductImageManager from '../../../../components/ui/unified-product-image-manager';
 import { useAuth } from '../../../../contexts/AuthContext';
+import { applyPriceMask, fixCorruptedPrice, formatPriceFromCents, parsePriceToCents } from '../../../../lib/price-utils';
 import type { ProductImage } from '../../../../types/product-image';
 
 interface Product {
@@ -110,6 +111,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
   });
   const [showCreateCategoryModal, setShowCreateCategoryModal] = useState(false);
   const [showCategoriesManager, setShowCategoriesManager] = useState(false);
+  const [showAddProductModal, setShowAddProductModal] = useState(false);
   const [categoriesRefreshKey, setCategoriesRefreshKey] = useState(0);
   const [savingProduct, setSavingProduct] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
@@ -121,7 +123,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
     color?: string;
     sort_order: number;
   }>>([]);
-  const [showAddProductModal, setShowAddProductModal] = useState(false);
+
   const hasLoaded = useRef(false);
 
   // Reset hasLoaded apenas no F5 (quando a página é recarregada)
@@ -380,10 +382,13 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
         categoryName = newProduct.category;
       }
       
+      // Converter preço formatado para centavos
+      const priceInCents = parsePriceToCents(newProduct.price || '');
+      
       const product: Product = {
         id: Date.now().toString(),
         name: newProduct.name || '',
-        price: newProduct.price || '',
+        price: priceInCents.toString(), // Converter para string
         image: newProduct.image || '',
         category: categoryName,
         category_id: newProduct.category_id || undefined,
@@ -435,7 +440,12 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
 
   const handleEditProduct = async (product: Product) => {
     setIsEditing(product.id);
-    setEditingProduct({ ...product });
+    // Formatar o preço para exibição
+    const formattedProduct = {
+      ...product,
+      price: formatPriceFromCents(Number(product.price))
+    };
+    setEditingProduct(formattedProduct);
     
     // Carregar imagens do produto
     try {
@@ -474,10 +484,14 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
       // Remover campos que não existem na tabela products
       const { category_data, ...productWithoutCategoryData } = editingProduct;
       
+      // Converter preço formatado para centavos
+      const priceInCents = parsePriceToCents(editingProduct.price);
+      
       const updatedProduct = {
         ...productWithoutCategoryData,
         category: categoryName,
         category_id: editingProduct.category_id || undefined,
+        price: priceInCents.toString(), // Converter para string
         images: editingProductImages // Incluir as imagens no request principal
       };
 
@@ -672,6 +686,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
 
           {/* Section Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            {/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
             <div 
               className={`p-6 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
                 activeTab === 'products'
@@ -693,6 +708,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
               </div>
             </div>
             
+            {/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
             <div 
               className={`p-6 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
                 activeTab === 'order'
@@ -714,6 +730,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
               </div>
             </div>
             
+            {/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
             <div 
               className={`p-6 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
                 activeTab === 'promotions'
@@ -845,7 +862,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
                         {product.name}
                       </h3>
                       <span className="text-lg font-bold" style={{ color: store.colors.primary }}>
-                        R$ {product.price}
+                        {formatPriceFromCents(fixCorruptedPrice(product.price))}
                       </span>
                     </div>
                     
@@ -970,38 +987,37 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Preço *</label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-2 text-gray-500">R$</span>
-                    <input
-                      type="text"
-                      value={newProduct.price}
-                      onChange={(e) => {
-                        // Remover tudo exceto números
-                        const value = e.target.value.replace(/[^\d]/g, '');
-                        // Converter para centavos e formatar
-                        const cents = Number.parseInt(value) || 0;
-                        const reais = Math.floor(cents / 100);
-                        const centavos = cents % 100;
-                        const formatted = `${reais},${centavos.toString().padStart(2, '0')}`;
-                        setNewProduct({...newProduct, price: formatted});
-                      }}
-                      placeholder="0,00"
-                      className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                  </div>
+                  <input
+                    type="text"
+                    value={newProduct.price}
+                    onChange={(e) => {
+                      const maskedValue = applyPriceMask(e.target.value);
+                      setNewProduct({...newProduct, price: maskedValue});
+                    }}
+                    placeholder="R$ 0,00"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  />
                   <p className="text-xs text-gray-500 mt-1">
-                    Digite apenas números (ex: 41,99)
+                    Digite apenas os números (ex: 1050 = R$ 10,50)
                   </p>
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Imagem do Produto</label>
-                  <MobileImageUpload
-                    onImageSelect={handleImageUpload}
-                    currentImage={newProduct.image}
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Imagens do Produto</label>
+                  <UnifiedProductImageManager
+                    images={[]}
+                    onImagesChange={(images) => {
+                      // A primeira imagem sempre será a principal
+                      if (images.length > 0) {
+                        const primaryImage = images.find(img => img.is_primary) || images[0];
+                        setNewProduct(prev => ({ ...prev, image: primaryImage.image_url }));
+                      }
+                    }}
                     disabled={uploadingImage}
-                    loading={uploadingImage}
                   />
+                  <p className="mt-2 text-xs text-gray-500">
+                    💡 A primeira imagem será exibida na listagem de produtos
+                  </p>
                 </div>
                 
                 <div>
@@ -1113,29 +1129,23 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Preço</label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-2 text-gray-500">R$</span>
-                      <input
-                        type="text"
-                        value={editingProduct.price}
-                        onChange={(e) => {
-                          // Remover tudo exceto números
-                          const value = e.target.value.replace(/[^\d]/g, '');
-                          // Converter para centavos e formatar
-                          const cents = Number.parseInt(value) || 0;
-                          const reais = Math.floor(cents / 100);
-                          const centavos = cents % 100;
-                          const formatted = `${reais},${centavos.toString().padStart(2, '0')}`;
-                          setEditingProduct({...editingProduct, price: formatted});
-                        }}
-                        placeholder="0,00"
-                        className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      />
-                    </div>
+                    <input
+                      type="text"
+                      value={editingProduct.price}
+                      onChange={(e) => {
+                        const maskedValue = applyPriceMask(e.target.value);
+                        setEditingProduct({...editingProduct, price: maskedValue});
+                      }}
+                      placeholder="R$ 0,00"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Digite apenas os números (ex: 1050 = R$ 10,50)
+                    </p>
                   </div>
                   
                   <div className="md:col-span-2">
-                    <ProductMultiImageManager
+                    <UnifiedProductImageManager
                       productId={editingProduct.id}
                       images={editingProductImages}
                       onImagesChange={setEditingProductImages}
@@ -1272,6 +1282,7 @@ export default function ProductsPage({ params }: { params: Promise<{ slug: strin
             storeSlug={slug || ''}
             colors={store?.colors}
           />
+
             </>
           )}
 

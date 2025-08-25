@@ -8,6 +8,7 @@ import FloatingCart from '../../../components/store/floating-cart';
 import ProductImageGallery from '../../../components/ui/product-image-gallery-v2';
 
 import { trackAddToCart, trackPageView, trackProductClick } from '../../../lib/analytics';
+import { fixCorruptedPrice, formatPriceFromCents } from '../../../lib/price-utils';
 import CartControls from '../../components/cart-controls';
 
 import { useCartStore } from '../../stores/cartStore';
@@ -197,10 +198,7 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
               {product.name}
             </h1>
             <div className="text-3xl font-bold" style={{ color: store.colors.primary }}>
-              {typeof product.price === 'string' && product.price.includes('R$') 
-                ? product.price 
-                : `R$ ${Number(product.price).toFixed(2).replace('.', ',')}`
-              }
+                              {formatPriceFromCents(fixCorruptedPrice(product.price))}
             </div>
           </div>
 

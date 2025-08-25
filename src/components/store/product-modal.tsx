@@ -4,6 +4,7 @@ import { Minus, Plus, ShoppingCart, X } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { trackAddToCart } from '../../lib/analytics';
+import { fixCorruptedPrice, formatPriceFromCents } from '../../lib/price-utils';
 
 interface Product {
   id: string;
@@ -138,7 +139,7 @@ export default function ProductModal({
             <div className="mb-4">
               <h3 className="text-xl font-bold text-gray-900 mb-2">{product.name}</h3>
               <p className="text-2xl font-bold" style={{ color: storeColors.primary }}>
-                {product.price}
+                {formatPriceFromCents(fixCorruptedPrice(product.price))}
               </p>
             </div>
 

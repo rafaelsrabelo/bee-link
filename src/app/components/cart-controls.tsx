@@ -2,6 +2,7 @@
 
 import { Minus, Plus } from "lucide-react";
 import { trackAddToCart, trackProductClick } from "../../lib/analytics";
+import { parsePriceToCents } from "../../lib/price-utils";
 import { useCartStore } from "../stores/cartStore";
 import CartControlsLoading from "./cart-controls-loading";
 
