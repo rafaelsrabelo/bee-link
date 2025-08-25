@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { useCartStore } from '../../../stores/cartStore';
 import { fixCorruptedPrice } from '../../../../lib/price-utils';
+import { formatPrice } from '../../../../lib/utils';
 
 interface SummaryStepProps {
   customerData: {
@@ -446,7 +447,7 @@ Pedido feito pelo site 🐝 Bee Link`;
               <div className="flex-1">
                 <p className="font-medium text-gray-900">{item.name}</p>
                 <p className="text-sm text-gray-600">
-                  {item.quantity}x R$ {item.price}
+                  {item.quantity}x {formatPrice(fixCorruptedPrice(item.price))}
                 </p>
               </div>
               <div className="text-right">

@@ -1,5 +1,5 @@
-import { Server as SocketIOServer } from 'socket.io';
 import type { Server as HTTPServer } from 'node:http';
+import { Server as SocketIOServer } from 'socket.io';
 
 class WebSocketManager {
   private io: SocketIOServer | null = null;
