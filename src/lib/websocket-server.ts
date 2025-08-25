@@ -106,14 +106,14 @@ class WebSocketManager {
   }
 
   // Métodos para enviar mensagens
-  emitToStore(storeId: string, event: string, data: any) {
+  emitToStore(storeId: string, event: string, data: unknown) {
     if (!this.io) return;
     
     this.io.to(`store:${storeId}`).emit(event, data);
     console.log(`📤 Enviado para loja ${storeId}: ${event}`, data);
   }
 
-  emitToUser(userId: string, event: string, data: any) {
+  emitToUser(userId: string, event: string, data: unknown) {
     if (!this.io) return;
     
     const userSockets = this.userConnections.get(userId);
@@ -125,7 +125,7 @@ class WebSocketManager {
     }
   }
 
-  emitToAll(event: string, data: any) {
+  emitToAll(event: string, data: unknown) {
     if (!this.io) return;
     
     this.io.emit(event, data);
@@ -133,7 +133,7 @@ class WebSocketManager {
   }
 
   // Métodos específicos para pedidos
-  notifyNewOrder(storeId: string, order: any) {
+  notifyNewOrder(storeId: string, order: unknown) {
     this.emitToStore(storeId, 'new_order', {
       type: 'new_order',
       data: order,
@@ -142,7 +142,7 @@ class WebSocketManager {
     });
   }
 
-  notifyOrderUpdate(storeId, order) {
+  notifyOrderUpdate(storeId: string, order: unknown) {
     this.emitToStore(storeId, 'order_update', {
       type: 'order_update',
       data: order,
@@ -151,7 +151,7 @@ class WebSocketManager {
     });
   }
 
-  notifyOrderDelete(storeId, orderId) {
+  notifyOrderDelete(storeId: string, orderId: string) {
     this.emitToStore(storeId, 'order_delete', {
       type: 'order_delete',
       data: { id: orderId },
@@ -160,7 +160,7 @@ class WebSocketManager {
     });
   }
 
-  notifyPendingOrdersCount(storeId, count) {
+  notifyPendingOrdersCount(storeId: string, count: number) {
     this.emitToStore(storeId, 'pending_orders_count', {
       type: 'pending_orders_count',
       data: { count },
@@ -193,7 +193,7 @@ class WebSocketManager {
 const websocketManager = new WebSocketManager();
 
 // Função para inicializar o servidor WebSocket
-function initializeWebSocketServer(server) {
+function initializeWebSocketServer(server: unknown) {
   websocketManager.initialize(server);
 }
 
