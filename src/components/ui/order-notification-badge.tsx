@@ -56,7 +56,8 @@ export default function OrderNotificationBadge({
 
     const connectWebSocket = () => {
       try {
-        ws = new WebSocket('ws://localhost:3001');
+        const wsUrl = process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'ws://localhost:3001';
+        ws = new WebSocket(wsUrl);
         
         ws.onopen = () => {
           console.log('🔔 Badge WebSocket conectado');

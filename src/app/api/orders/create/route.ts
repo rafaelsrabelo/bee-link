@@ -312,7 +312,8 @@ export async function POST(request: NextRequest) {
 
     // 4. Notificar WebSocket sobre novo pedido
     try {
-      const wsResponse = await fetch('http://localhost:3001/notify', {
+              const wsUrl = process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'http://localhost:3001';
+        const wsResponse = await fetch(`${wsUrl.replace('ws://', 'http://').replace('wss://', 'https://')}/notify`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

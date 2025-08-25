@@ -4,7 +4,7 @@ import CreateOrderModal from '@/components/ui/create-order-modal';
 import SoundToggle from '@/components/ui/sound-toggle';
 import { BarChart3, Bell, Calendar, CheckCircle, Clock, DollarSign, Loader2, MapPin, Package, Phone, Plus, Search, ShoppingBag, Truck, User, Wifi, WifiOff, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { use, useCallback, useEffect, useState } from 'react';
+import { use, useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import loadingAnimation from '../../../../../public/animations/loading-dots-blue.json';
 import ProtectedRoute from '../../../../components/auth/ProtectedRoute';
@@ -235,6 +235,45 @@ export default function OrdersPage({ params }: { params: Promise<{ slug: string 
     totalValue: orders.reduce((sum, order) => sum + order.total, 0)
   };
 
+  // Função para criar beep de notificação usando Web Audio API
+  const createNotificationSound = useCallback(() => {
+    if (typeof window !== 'undefined' && window.AudioContext) {
+      const audioContext = new AudioContext();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.setValueAtTime(800, audioContext.currentTime); // Frequência do beep
+      oscillator.type = 'sine';
+      
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime); // Volume
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.5);
+      
+      console.log('🔊 Beep de notificação criado');
+    }
+  }, []);
+
+  // Criar áudio para notificação de novo pedido (fora do useEffect)
+  const notificationSound = useMemo(() => {
+    if (typeof window !== 'undefined') {
+      // Tentar carregar o arquivo de áudio primeiro
+      const audio = new Audio('/notification.mp3');
+      audio.preload = 'auto';
+      audio.volume = 0.7; // Volume em 70%
+      
+      // Log para debug
+      console.log('🔊 Áudio de notificação criado:', audio);
+      
+      return audio;
+    }
+    return null;
+  }, []);
+
   // WebSocket simples e funcional
   useEffect(() => {
     if (!store?.slug) return;
@@ -242,10 +281,8 @@ export default function OrdersPage({ params }: { params: Promise<{ slug: string 
     setIsConnecting(true);
     
     // Criar conexão WebSocket simples
-    const ws = new WebSocket('ws://localhost:3001');
-    
-    // Criar áudio para notificação de novo pedido
-    const notificationSound = new Audio('/notification.mp3');
+    const wsUrl = process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'ws://localhost:3001';
+    const ws = new WebSocket(wsUrl);
     
     ws.onopen = () => {
       console.log('🔌 WebSocket conectado!');
@@ -269,11 +306,32 @@ export default function OrdersPage({ params }: { params: Promise<{ slug: string 
           console.log('🆕 Novo pedido recebido! Tocando som...');
           // Verificar se o som está habilitado
           const isSoundEnabled = localStorage.getItem('notification-sound-enabled') !== 'false';
+          console.log('🔊 Som habilitado:', isSoundEnabled);
+          console.log('🔊 Áudio disponível:', !!notificationSound);
+          
           if (isSoundEnabled) {
-            // Tocar som de notificação para novo pedido
-            notificationSound.play().catch(error => {
-              console.log('🔇 Erro ao tocar som:', error);
-            });
+            console.log('🔊 Tentando tocar som...');
+            
+            // Tentar tocar o arquivo de áudio primeiro
+            if (notificationSound) {
+              notificationSound.currentTime = 0; // Reset para o início
+              notificationSound.play()
+                .then(() => {
+                  console.log('🔊 Som tocado com sucesso!');
+                })
+                .catch(error => {
+                  console.log('🔇 Erro ao tocar arquivo de áudio:', error);
+                  // Se falhar, usar o beep gerado
+                  console.log('🔊 Usando beep gerado...');
+                  createNotificationSound();
+                });
+            } else {
+              // Se não há arquivo de áudio, usar o beep gerado
+              console.log('🔊 Usando beep gerado...');
+              createNotificationSound();
+            }
+          } else {
+            console.log('🔇 Som não tocado - habilitado:', isSoundEnabled);
           }
           loadInitialOrders();
         } else if (data.type === 'order_updated') {
@@ -302,7 +360,7 @@ export default function OrdersPage({ params }: { params: Promise<{ slug: string 
     return () => {
       ws.close();
     };
-  }, [store?.slug, loadInitialOrders]);
+  }, [store?.slug, loadInitialOrders, notificationSound, createNotificationSound]);
 
   // Carregar dados iniciais
   useEffect(() => {
@@ -363,9 +421,9 @@ export default function OrdersPage({ params }: { params: Promise<{ slug: string 
           <div className="mb-6 flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <h1 className="text-2xl font-bold text-gray-900">Gerenciar Pedidos</h1>
-              <WebSocketStatus 
-                isConnected={isConnected}
-                isConnecting={isConnecting}
+            <WebSocketStatus 
+              isConnected={isConnected}
+              isConnecting={isConnecting}
                 error={error}
               />
             </div>
@@ -391,6 +449,29 @@ export default function OrdersPage({ params }: { params: Promise<{ slug: string 
             >
               <Plus className="w-4 h-4" />
               <span>+ Adicionar Pedido</span>
+            </button>
+            <button 
+              onClick={() => {
+                console.log('🔊 Testando som...');
+                if (notificationSound) {
+                  notificationSound.currentTime = 0;
+                  notificationSound.play().then(() => {
+                    console.log('🔊 Teste de som funcionou!');
+                  }).catch(err => {
+                    console.log('🔇 Erro no teste de som:', err);
+                    console.log('🔊 Usando beep gerado...');
+                    createNotificationSound();
+                  });
+                } else {
+                  console.log('🔊 Usando beep gerado...');
+                  createNotificationSound();
+                }
+              }}
+              className="flex items-center space-x-2 px-4 py-2 border border-blue-400 text-blue-700 rounded-lg hover:bg-blue-50 transition-colors" 
+              type="button"
+            >
+              <Bell className="w-4 h-4" />
+              <span>Testar Som</span>
             </button>
           </div>
 
@@ -450,7 +531,7 @@ export default function OrdersPage({ params }: { params: Promise<{ slug: string 
 
           {/* Content Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Lista de Pedidos */}
+          {/* Lista de Pedidos */}
             <div className="lg:col-span-2 bg-white rounded-lg shadow-sm border border-gray-200">
               <div className="p-6 border-b border-gray-200">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Lista de Pedidos</h2>
@@ -514,29 +595,29 @@ export default function OrdersPage({ params }: { params: Promise<{ slug: string 
                 </div>
 
                 {/* Lista */}
-                {loading ? (
-                  <div className="flex items-center justify-center py-12">
-                    <LottieLoader 
-                      animationData={loadingAnimation}
-                      size="md"
-                      text="Carregando pedidos..."
-                    />
-                  </div>
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <LottieLoader 
+                animationData={loadingAnimation}
+                size="md"
+                text="Carregando pedidos..."
+              />
+            </div>
                 ) : filteredOrders.length === 0 ? (
-                  <div className="text-center py-12">
-                    <ShoppingBag className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      Nenhum pedido encontrado
-                    </h3>
-                    <p className="text-gray-600">
+            <div className="text-center py-12">
+              <ShoppingBag className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Nenhum pedido encontrado
+              </h3>
+              <p className="text-gray-600">
                       {searchTerm ? 'Nenhum pedido corresponde à busca.' : 'Quando houver pedidos, eles aparecerão aqui.'}
-                    </p>
-                  </div>
-                ) : (
+              </p>
+            </div>
+          ) : (
                   <div className="space-y-2">
                     {filteredOrders.map((order) => (
-                      <div
-                        key={order.id}
+                <div
+                  key={order.id}
                         onClick={() => setSelectedOrder(order)}
                         className={`p-4 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
                           selectedOrder?.id === order.id 
@@ -660,13 +741,13 @@ export default function OrdersPage({ params }: { params: Promise<{ slug: string 
                           <span>{selectedOrder.customer_phone}</span>
                         </div>
                         {selectedOrder.customer_address && (
-                          <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2">
                             <MapPin className="w-4 h-4" />
                             <span>{selectedOrder.customer_address}</span>
                           </div>
                         )}
                       </div>
-                    </div>
+                  </div>
 
                     {/* Itens */}
                     <div>
@@ -674,18 +755,18 @@ export default function OrdersPage({ params }: { params: Promise<{ slug: string 
                       <div className="space-y-2">
                         {selectedOrder.items.map((item, index) => (
                           <div key={index} className="flex justify-between text-sm">
-                            <span className="text-gray-700">
-                              {item.quantity}x {item.name}
-                            </span>
-                            <span className="text-gray-900 font-medium">
-                              R$ {item.price}
-                            </span>
-                          </div>
-                        ))}
+                        <span className="text-gray-700">
+                          {item.quantity}x {item.name}
+                        </span>
+                        <span className="text-gray-900 font-medium">
+                          R$ {item.price}
+                        </span>
                       </div>
-                    </div>
+                    ))}
+                      </div>
+                  </div>
 
-                    {/* Total */}
+                  {/* Total */}
                     <div className="border-t pt-4">
                       <div className="flex justify-between items-center">
                         <span className="font-medium text-gray-900">Total:</span>
@@ -703,10 +784,10 @@ export default function OrdersPage({ params }: { params: Promise<{ slug: string 
                         <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(selectedOrder.status)}`}>
                           {getStatusLabel(selectedOrder.status)}
                         </span>
-                      </div>
                     </div>
+                  </div>
 
-                    {/* Ações */}
+                  {/* Ações */}
                     <div className="space-y-2">
                       <h4 className="font-medium text-gray-900 mb-2">Ações</h4>
                       
@@ -747,17 +828,17 @@ export default function OrdersPage({ params }: { params: Promise<{ slug: string 
                           <Truck className="w-4 h-4" />
                           <span>Saiu para Entrega</span>
                         </button>
-                      )}
+                    )}
                       
                       {selectedOrder.status === 'delivering' && (
-                        <button
+                      <button
                           onClick={() => updateOrderStatus(selectedOrder.id, 'delivered')}
                           className="w-full px-4 py-2 border border-green-300 text-green-700 rounded-lg hover:bg-green-50 transition-colors flex items-center justify-center space-x-2"
-                        >
+                      >
                           <CheckCircle className="w-4 h-4" />
                           <span>Entregue</span>
-                        </button>
-                      )}
+                      </button>
+                    )}
                     </div>
                   </div>
                 </div>
