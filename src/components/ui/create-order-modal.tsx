@@ -9,7 +9,7 @@ interface CreateOrderModalProps {
   isOpen: boolean;
   onClose: () => void;
   storeSlug: string;
-  onOrderCreated: () => void;
+  onOrderCreated: (newOrder?: any) => void;
 }
 
 interface Product {
@@ -39,7 +39,8 @@ export default function CreateOrderModal({
     orderDate: new Date().toISOString().split('T')[0], // Data atual como padrão
     deliveryType: 'pickup',
     address: '',
-    paymentMethod: 'credit_card'
+    paymentMethod: 'credit_card',
+    items: [] as Array<{ name: string; price: string; quantity: number }>
   });
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
@@ -141,7 +142,8 @@ export default function CreateOrderModal({
       orderDate: new Date().toISOString().split('T')[0],
       deliveryType: 'pickup',
       address: '',
-      paymentMethod: 'credit_card'
+      paymentMethod: 'credit_card',
+      items: []
     });
     setOrderItems([]);
     setSearchTerm('');

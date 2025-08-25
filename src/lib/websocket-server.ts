@@ -1,4 +1,4 @@
-const { Server: SocketIOServer } = require('socket.io');
+import { Server as SocketIOServer } from 'socket.io';
 
 class WebSocketManager {
   constructor() {
@@ -201,7 +201,7 @@ function getWebSocketManager() {
   return websocketManager;
 }
 
-module.exports = {
+export {
   initializeWebSocketServer,
   getWebSocketManager,
   websocketManager
