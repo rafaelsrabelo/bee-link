@@ -1,13 +1,14 @@
 import { Server as SocketIOServer } from 'socket.io';
 
 class WebSocketManager {
-  constructor() {
-    this.io = null;
-    this.storeConnections = new Map(); // storeId -> Set<socketId>
-    this.userConnections = new Map(); // userId -> Set<socketId>
-  }
+  private io: SocketIOServer | null = null;
+  private storeConnections: Map<string, Set<string>> = new Map(); // storeId -> Set<socketId>
+  private userConnections: Map<string, Set<string>> = new Map(); // userId -> Set<socketId>
 
-  initialize(server) {
+
+
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  initialize(server: any) {
     this.io = new SocketIOServer(server, {
       cors: {
         origin: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
@@ -54,14 +55,14 @@ class WebSocketManager {
   }
 
   // Métodos para gerenciar conexões
-  addStoreConnection(storeId, socketId) {
+  addStoreConnection(storeId: string, socketId: string) {
     if (!this.storeConnections.has(storeId)) {
       this.storeConnections.set(storeId, new Set());
     }
     this.storeConnections.get(storeId)?.add(socketId);
   }
 
-  removeStoreConnection(storeId, socketId) {
+  removeStoreConnection(storeId: string, socketId: string) {
     const connections = this.storeConnections.get(storeId);
     if (connections) {
       connections.delete(socketId);
@@ -71,14 +72,14 @@ class WebSocketManager {
     }
   }
 
-  addUserConnection(userId, socketId) {
+  addUserConnection(userId: string, socketId: string) {
     if (!this.userConnections.has(userId)) {
       this.userConnections.set(userId, new Set());
     }
     this.userConnections.get(userId)?.add(socketId);
   }
 
-  removeUserConnection(userId, socketId) {
+  removeUserConnection(userId: string, socketId: string) {
     const connections = this.userConnections.get(userId);
     if (connections) {
       connections.delete(socketId);
@@ -88,7 +89,7 @@ class WebSocketManager {
     }
   }
 
-  removeSocketConnections(socketId) {
+  removeSocketConnections(socketId: string) {
     // Remover de todas as lojas
     for (const [storeId, connections] of this.storeConnections.entries()) {
       if (connections.has(socketId)) {
@@ -105,14 +106,14 @@ class WebSocketManager {
   }
 
   // Métodos para enviar mensagens
-  emitToStore(storeId, event, data) {
+  emitToStore(storeId: string, event: string, data: any) {
     if (!this.io) return;
     
     this.io.to(`store:${storeId}`).emit(event, data);
     console.log(`📤 Enviado para loja ${storeId}: ${event}`, data);
   }
 
-  emitToUser(userId, event, data) {
+  emitToUser(userId: string, event: string, data: any) {
     if (!this.io) return;
     
     const userSockets = this.userConnections.get(userId);
@@ -124,7 +125,7 @@ class WebSocketManager {
     }
   }
 
-  emitToAll(event, data) {
+  emitToAll(event: string, data: any) {
     if (!this.io) return;
     
     this.io.emit(event, data);
@@ -132,7 +133,7 @@ class WebSocketManager {
   }
 
   // Métodos específicos para pedidos
-  notifyNewOrder(storeId, order) {
+  notifyNewOrder(storeId: string, order: any) {
     this.emitToStore(storeId, 'new_order', {
       type: 'new_order',
       data: order,

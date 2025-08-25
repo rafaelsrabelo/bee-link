@@ -1328,22 +1328,24 @@ export default function OrdersDashboard({ storeSlug, storeId }: OrdersDashboardP
       {/* Modal de Criar Pedido */}
       {showCreateModal && (
         <CreateOrderModal
+          isOpen={showCreateModal}
           storeSlug={storeSlug}
-          storeId={storeId}
           onClose={() => setShowCreateModal(false)}
           onOrderCreated={(newOrder) => {
             // Adicionar o pedido à lista sem disparar notificações
             // Usar Set para garantir IDs únicos
-            setOrders(prev => {
-              const existingIds = new Set(prev.map(o => o.id));
-              if (existingIds.has(newOrder.id)) {
-                // Se já existe, não adicionar novamente
-                return prev;
-              }
-              return [newOrder, ...prev];
-            });
+            if (newOrder && typeof newOrder === 'object' && 'id' in newOrder) {
+              setOrders(prev => {
+                const existingIds = new Set(prev.map(o => o.id));
+                if (existingIds.has(newOrder.id as string)) {
+                  // Se já existe, não adicionar novamente
+                  return prev;
+                }
+                return [newOrder as Order, ...prev];
+              });
+              setSelectedOrder(newOrder as Order);
+            }
             setShowCreateModal(false);
-            setSelectedOrder(newOrder);
             
             // IMPORTANTE: Pedidos manuais (criados pelo admin) NÃO disparam som
             // O som só toca para pedidos REAIS vindos da plataforma (status 'pending', source 'link')

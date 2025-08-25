@@ -9,7 +9,7 @@ interface CreateOrderModalProps {
   isOpen: boolean;
   onClose: () => void;
   storeSlug: string;
-  onOrderCreated: (newOrder?: any) => void;
+  onOrderCreated: (newOrder?: unknown) => void;
 }
 
 interface Product {

@@ -746,7 +746,7 @@ export default function OrdersPage({ params }: { params: Promise<{ slug: string 
                             <span>{selectedOrder.customer_address}</span>
                           </div>
                         )}
-                      </div>
+                    </div>
                   </div>
 
                     {/* Itens */}
