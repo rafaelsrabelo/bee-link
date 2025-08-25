@@ -1,7 +1,8 @@
 'use client';
 
 import { Bell } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import type { Order } from '../../types/order';
 
 interface OrderNotificationBadgeProps {
   storeSlug?: string;
@@ -14,6 +15,83 @@ export default function OrderNotificationBadge({
   storeId, 
   className = '' 
 }: OrderNotificationBadgeProps) {
-  // Desabilitado temporariamente
-  return null;
+  const [pendingCount, setPendingCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  // Carregar pedidos pendentes
+  const loadPendingOrders = useCallback(async () => {
+    if (!storeSlug) return;
+    
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/stores/${storeSlug}/orders`);
+      if (response.ok) {
+        const data = await response.json();
+        const pendingCount = (data.orders || []).filter((order: Order) => 
+          order.status === 'pending' || order.status === 'accepted' || order.status === 'preparing'
+        ).length;
+        setPendingCount(pendingCount);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar pedidos pendentes:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [storeSlug]);
+
+  // WebSocket para atualizações em tempo real
+  useEffect(() => {
+    if (!storeSlug) return;
+
+    loadPendingOrders();
+
+    // WebSocket para atualizações em tempo real
+    const ws = new WebSocket('ws://localhost:3001');
+    
+    ws.onopen = () => {
+      console.log('🔔 Badge WebSocket conectado');
+      ws.send(JSON.stringify({
+        type: 'subscribe_store',
+        storeSlug: storeSlug
+      }));
+    };
+    
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log('🔔 Badge recebeu mensagem:', data);
+        
+        if (data.type === 'order_created' || data.type === 'order_updated') {
+          console.log('🔔 Badge atualizando contagem...');
+          // Recarregar contagem quando houver mudança
+          loadPendingOrders();
+        }
+      } catch (error) {
+        console.error('Erro ao processar mensagem WebSocket do badge:', error);
+      }
+    };
+
+    ws.onerror = (error) => {
+      console.error('❌ Erro WebSocket do badge:', error);
+    };
+
+    // Cleanup
+    return () => {
+      ws.close();
+    };
+  }, [storeSlug, loadPendingOrders]);
+
+  // Não mostrar se não há pedidos pendentes
+  if (loading || pendingCount === 0) {
+    return null;
+  }
+
+  return (
+    <div className={`relative ${className}`}>
+      <Bell className="w-4 h-4" />
+      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center font-bold">
+        {pendingCount > 9 ? '9+' : pendingCount}
+      </span>
+    </div>
+  );
 }

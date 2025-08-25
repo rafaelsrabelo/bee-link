@@ -310,7 +310,35 @@ export async function POST(request: NextRequest) {
     const whatsappMessage = formatWhatsAppMessage(order, store);
     await sendWhatsAppMessage(store.social_networks?.whatsapp, whatsappMessage);
 
-    // 4. Retornar sucesso
+    // 4. Notificar WebSocket sobre novo pedido
+    try {
+      const wsResponse = await fetch('http://localhost:3001/notify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          storeSlug,
+          eventType: 'order_created',
+          data: {
+            orderId: order.id,
+            customerName: order.customer_name,
+            total: order.total,
+            status: order.status
+          }
+        }),
+      });
+      
+      if (wsResponse.ok) {
+        console.log('📡 WebSocket notificado sobre novo pedido');
+      } else {
+        console.log('⚠️ WebSocket não disponível, continuando...');
+      }
+    } catch (error) {
+      console.log('⚠️ Erro ao notificar WebSocket:', error);
+    }
+
+    // 5. Retornar sucesso
     return NextResponse.json({
       success: true,
       orderId: order.id,
