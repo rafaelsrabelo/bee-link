@@ -12,8 +12,8 @@ import AdminHeader from '../../../../components/ui/admin-header';
 import LottieLoader from '../../../../components/ui/lottie-loader';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { useStoreCache } from '../../../../hooks/useStoreCache';
-import { supabase } from '../../../../lib/supabase';
 import { fixCorruptedPrice, formatPriceFromCents } from '../../../../lib/price-utils';
+import { supabase } from '../../../../lib/supabase';
 import type { Order } from '../../../../types/order';
 
 interface WebSocketStatusProps {
