@@ -106,16 +106,13 @@ export default function ProductImageGallery({
               </div>
             )}
 
-            {/* Navigation Arrows (show if there are images) */}
-            {sortedImages.length > 0 && (
+            {/* Navigation Arrows (show only if there are multiple images) */}
+            {sortedImages.length > 1 && (
               <>
                 <button
                   type="button"
                   onClick={goToPrevious}
-                  disabled={sortedImages.length === 1}
-                  className={`absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 ${
-                    sortedImages.length === 1 ? 'opacity-30 cursor-not-allowed' : ''
-                  }`}
+                  className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200"
                   aria-label="Imagem anterior"
                 >
                   <ChevronLeft className="w-5 h-5" />
@@ -124,10 +121,7 @@ export default function ProductImageGallery({
                 <button
                   type="button"
                   onClick={goToNext}
-                  disabled={sortedImages.length === 1}
-                  className={`absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 ${
-                    sortedImages.length === 1 ? 'opacity-30 cursor-not-allowed' : ''
-                  }`}
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200"
                   aria-label="Próxima imagem"
                 >
                   <ChevronRight className="w-5 h-5" />

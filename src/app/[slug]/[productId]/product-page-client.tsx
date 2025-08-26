@@ -185,50 +185,38 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
               productName={product.name}
             />
             
-            {/* Pronta Entrega Tag (sobreposta à galeria) */}
-            {product.readyToShip && (
-              <div className="absolute top-8 left-8 z-10">
-                <div 
-                  className="bg-white/90 backdrop-blur-sm px-3 py-2 rounded-full text-sm font-medium shadow-sm border"
-                  style={{ 
-                    color: store.colors.primary,
-                    borderColor: store.colors.primary 
-                  }}
-                >
-                  ✓ Pronta entrega
-                </div>
-              </div>
-            )}
+
           </div>
         </div>
 
         {/* Product Info */}
         <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 mb-6 shadow-xl">
           <div className="mb-4">
-            <h1 className="text-2xl font-bold mb-2" style={{ color: store.colors.primary }}>
+            <h1 className="text-xl font-bold mb-2" style={{ color: store.colors.primary }}>
               {product.name}
             </h1>
-            <div className="text-3xl font-bold" style={{ color: store.colors.primary }}>
-                              {formatPriceFromCents(fixCorruptedPrice(product.price))}
+            <div className="text-2xl font-bold" style={{ color: store.colors.primary }}>
+              {formatPriceFromCents(fixCorruptedPrice(product.price))}
             </div>
           </div>
 
-          {/* Category Badge */}
-          <div className="mb-4">
-            <span 
-              className="inline-block px-3 py-1 rounded-full text-xs font-medium text-white"
-              style={{ backgroundColor: store.colors.primary }}
-            >
-                              {typeof product.category === 'string' ? (product.category === 'bag' ? 'Bolsa' : 'Produto') : 'Produto'}
-            </span>
-          </div>
+          {/* Pronta Entrega Badge - apenas quando aplicável */}
+          {product.readyToShip && (
+            <div className="mb-4">
+              <span 
+                className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200"
+              >
+                ✓ Pronta entrega
+              </span>
+            </div>
+          )}
 
           {/* Description */}
           <div className="mb-6">
-            <h3 className="font-semibold mb-2" style={{ color: store.colors.primary }}>
+            <h3 className="font-semibold mb-2 text-sm" style={{ color: store.colors.primary }}>
               Descrição
             </h3>
-            <p className="text-gray-700 leading-relaxed">
+            <p className="text-gray-700 leading-relaxed text-sm">
               {product.description}
             </p>
           </div>
