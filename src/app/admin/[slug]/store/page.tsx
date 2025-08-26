@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, CreditCard, Instagram, MapPin, MessageCircle, Music, Palette, Printer, Save, Settings, Store as StoreIcon, Upload, Youtube } from 'lucide-react';
+import { Check, CreditCard, ExternalLink, Eye, Instagram, MapPin, MessageCircle, Music, Palette, Save, Settings, Share2, Store as StoreIcon, Upload, Youtube } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { use, useEffect, useState } from 'react';
@@ -77,8 +77,6 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
   const [originalFormData, setOriginalFormData] = useState<typeof formData | null>(null);
   const [activeTab, setActiveTab] = useState('basic');
   const [searchingCep, setSearchingCep] = useState(false);
-  const [availablePrinters, setAvailablePrinters] = useState<string[]>([]);
-  const [loadingPrinters, setLoadingPrinters] = useState(false);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -141,15 +139,7 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
       category_display: 'filters' as 'tabs' | 'filters' | 'none',
       show_category_icons: true
     },
-    print_settings: {
-      default_printer: '',
-      auto_print: false,
-      print_format: 'thermal' as 'thermal' | 'a4',
-      paper_width: 80,
-      auto_cut: true,
-      print_logo: true,
-      print_address: true
-    },
+    
     payment_methods: ['money', 'pix', 'credit_card', 'debit_card'] as string[]
   });
 
@@ -204,8 +194,7 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
     { id: 'basic', label: 'Informações Básicas', icon: <StoreIcon className="w-4 h-4" /> },
     { id: 'address', label: 'Endereço', icon: <MapPin className="w-4 h-4" /> },
     { id: 'payment', label: 'Métodos de Pagamento', icon: <CreditCard className="w-4 h-4" /> },
-    { id: 'layout', label: 'Layout da Loja', icon: <Palette className="w-4 h-4" /> },
-    { id: 'printing', label: 'Configurações de Impressão', icon: <Printer className="w-4 h-4" /> }
+    { id: 'layout', label: 'Layout da Loja', icon: <Palette className="w-4 h-4" /> }
   ];
 
   const { user } = useAuth();
@@ -230,13 +219,6 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
       loadStore();
     }
   }, [user]);
-
-  // Carregar impressoras quando acessar a aba de impressão
-  useEffect(() => {
-    if (activeTab === 'printing' && availablePrinters.length === 0) {
-      loadAvailablePrinters();
-    }
-  }, [activeTab, availablePrinters.length]);
 
   const loadStore = async () => {
     try {
@@ -483,39 +465,52 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
     return null;
   };
 
-  // Função para descobrir impressoras disponíveis
-  const loadAvailablePrinters = async () => {
-    setLoadingPrinters(true);
-    try {
-      // Lista de impressoras comuns mais utilizadas
-      const commonPrinters = [
-        'Impressora Padrão do Sistema',
-        'Microsoft Print to PDF',
-        'Microsoft XPS Document Writer'
-      ];
+  // Funções para ações da loja
+  const getBaseUrl = () => {
+    if (typeof window !== 'undefined') {
+      return window.location.origin;
+    }
+    // Fallback para SSR - usar variável de ambiente ou URL de produção
+    return process.env.NEXT_PUBLIC_BASE_URL || 'https://app.beelink.beecoders.dev';
+  };
+  
+  const storeUrl = `${getBaseUrl()}/${formData.slug}`;
+  
+  const handleViewStore = () => {
+    window.open(storeUrl, '_blank');
+  };
 
-      // Tentar usar API do navegador para descobrir impressoras (se disponível)
-      if ('getInstalledRelatedApps' in navigator) {
-        // API experimental - pode não funcionar em todos os navegadores
-        try {
-          const printers = await (navigator as unknown as { getInstalledRelatedApps: () => Promise<Array<{ name: string }>> }).getInstalledRelatedApps();
-          const printerNames = printers
-            .filter((app) => app.name.toLowerCase().includes('print'))
-            .map((app) => app.name);
-          
-          setAvailablePrinters([...commonPrinters, ...printerNames]);
-        } catch {
-          setAvailablePrinters(commonPrinters);
-        }
-      } else {
-        // Fallback: lista de impressoras comuns
-        setAvailablePrinters(commonPrinters);
-      }
+  const handleCopyUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(storeUrl);
+      toast.success('Link da loja copiado para a área de transferência!');
     } catch (error) {
-      console.error('Erro ao carregar impressoras:', error);
-      setAvailablePrinters(['Impressora Padrão do Sistema']);
-    } finally {
-      setLoadingPrinters(false);
+      // Fallback para navegadores que não suportam clipboard API
+      const textArea = document.createElement('textarea');
+      textArea.value = storeUrl;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      toast.success('Link da loja copiado para a área de transferência!');
+    }
+  };
+
+  const handleShareStore = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: formData.name,
+          text: `Confira a loja ${formData.name} no Bee Link!`,
+          url: storeUrl,
+        });
+      } catch (error) {
+        // Usuário cancelou o compartilhamento
+        console.log('Compartilhamento cancelado');
+      }
+    } else {
+      // Fallback para navegadores que não suportam Web Share API
+      handleCopyUrl();
     }
   };
 
@@ -671,13 +666,22 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
                           <label className="block text-sm font-medium text-gray-700 mb-2">
                             URL da Loja
                           </label>
-                          <input
-                            type="text"
-                            value={formData.slug}
-                            disabled
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
-                            placeholder="URL da loja"
-                          />
+                          <div className="flex space-x-2">
+                            <input
+                              type="text"
+                              value={formData.slug}
+                              disabled
+                              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
+                              placeholder="URL da loja"
+                            />
+                            <button
+                              onClick={handleCopyUrl}
+                              className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors flex items-center space-x-1"
+                              title="Copiar URL"
+                            >
+                              <Share2 className="w-4 h-4" />
+                            </button>
+                          </div>
                           <p className="text-xs text-gray-500 mt-1">
                             A URL não pode ser alterada após a criação
                           </p>
@@ -738,6 +742,55 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
                           <p className="text-xs text-gray-500 mt-2">
                             Envie uma imagem quadrada para melhor resultado
                           </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Ações da Loja */}
+                    <div>
+                      <h2 className="text-lg font-semibold text-gray-900 mb-4">Ações da Loja</h2>
+                      <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900">Sua Loja Online</h3>
+                            <p className="text-sm text-gray-600">
+                              Acesse, compartilhe e gerencie sua loja virtual
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-medium text-gray-900">{formData.name}</p>
+                            <p className="text-xs text-gray-500">{storeUrl}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <button
+                            onClick={handleViewStore}
+                            className="flex items-center justify-center space-x-2 px-4 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors group"
+                          >
+                            <Eye className="w-5 h-5 text-blue-600 group-hover:text-blue-700" />
+                            <span className="font-medium text-gray-900">Visualizar Loja</span>
+                          </button>
+                          
+                          <button
+                            onClick={handleShareStore}
+                            className="flex items-center justify-center space-x-2 px-4 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors group"
+                          >
+                            <Share2 className="w-5 h-5 text-purple-600 group-hover:text-purple-700" />
+                            <span className="font-medium text-gray-900">Compartilhar</span>
+                          </button>
+                        </div>
+                        
+                        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                          <div className="flex items-start space-x-2">
+                            <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                            <div>
+                              <p className="text-sm font-medium text-blue-900">Dica de Marketing</p>
+                              <p className="text-xs text-blue-700 mt-1">
+                                Compartilhe o link da sua loja nas redes sociais, WhatsApp e outros canais para atrair mais clientes!
+                              </p>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1641,128 +1694,7 @@ export default function StoreSettingsPage({ params }: { params: Promise<{ slug: 
                   </div>
                 )}
 
-                {/* Tab de Configurações de Impressão */}
-                {activeTab === 'printing' && (
-                  <div className="space-y-8">
-                    {/* Configurações de Impressão */}
-                    <div>
-                      <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                        <Printer className="w-5 h-5 mr-2 text-blue-600" />
-                        Configurações de Impressão
-                      </h2>
-                      <p className="text-sm text-gray-600 mb-6">
-                        Configure sua impressora padrão para impressão automática de pedidos.
-                      </p>
 
-                      <div className="space-y-6">
-                        {/* Impressora Padrão */}
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Impressora Padrão
-                          </label>
-                          <div className="flex space-x-3">
-                            <select
-                              value={formData.print_settings.default_printer}
-                              onChange={(e) => updateFormData({
-                                print_settings: {
-                                  ...formData.print_settings,
-                                  default_printer: e.target.value
-                                }
-                              })}
-                              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            >
-                              <option value="">Selecione uma impressora</option>
-                              {availablePrinters.map((printer) => (
-                                <option key={printer} value={printer}>
-                                  {printer}
-                                </option>
-                              ))}
-                            </select>
-                            <button
-                              onClick={loadAvailablePrinters}
-                              disabled={loadingPrinters}
-                              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center space-x-2"
-                            >
-                              <Printer className="w-4 h-4" />
-                              <span>{loadingPrinters ? 'Buscando...' : 'Buscar'}</span>
-                            </button>
-                          </div>
-                          <p className="text-xs text-gray-500 mt-1">
-                            Selecione a impressora que será usada automaticamente para imprimir pedidos.
-                          </p>
-                        </div>
-
-                        {/* Teste de Impressão */}
-                        <div className="border-t pt-6">
-                          <h3 className="text-md font-medium text-gray-900 mb-4">Teste de Impressão</h3>
-                          <div className="flex justify-start">
-                            <button
-                              onClick={() => {
-                                // Criar conteúdo de teste
-                                const testContent = `================================
-    ${store?.name?.toUpperCase() || 'TESTE DA LOJA'}
-================================
-
-TESTE DE IMPRESSÃO
-Data: ${new Date().toLocaleDateString('pt-BR')}
-Hora: ${new Date().toLocaleTimeString('pt-BR')}
-
---- CONFIGURAÇÕES ---
-Impressora: ${formData.print_settings.default_printer || 'Não selecionada'}
-
-================================
-   TESTE REALIZADO COM SUCESSO!
-================================`;
-
-                                // Usar a mesma lógica de impressão
-                                const printFrame = document.createElement('iframe');
-                                printFrame.style.position = 'absolute';
-                                printFrame.style.top = '-1000px';
-                                printFrame.style.left = '-1000px';
-                                printFrame.style.visibility = 'hidden';
-                                document.body.appendChild(printFrame);
-
-                                const htmlContent = `
-                                  <!DOCTYPE html>
-                                  <html>
-                                    <head>
-                                      <title>Teste de Impressão</title>
-                                      <style>
-                                        @page { margin: 5mm; size: 80mm auto; }
-                                        body { font-family: 'Courier New', monospace; font-size: 11px; line-height: 1.1; margin: 0; padding: 0; }
-                                        .print-content { white-space: pre-line; }
-                                      </style>
-                                    </head>
-                                    <body>
-                                      <div class="print-content">${testContent}</div>
-                                      <script>
-                                        window.onload = function() {
-                                          setTimeout(() => window.print(), 500);
-                                        };
-                                      </script>
-                                    </body>
-                                  </html>
-                                `;
-
-                                if (printFrame.contentDocument) {
-                                  printFrame.contentDocument.open();
-                                  printFrame.contentDocument.write(htmlContent);
-                                  printFrame.contentDocument.close();
-                                }
-
-                                toast.success('Teste de impressão enviado!');
-                              }}
-                              className="bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 flex items-center space-x-2 text-sm"
-                            >
-                              <Printer className="w-4 h-4" />
-                              <span>Fazer Teste</span>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
 
