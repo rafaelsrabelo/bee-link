@@ -169,7 +169,19 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
         <div className="mb-6">
           <div className="bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden shadow-xl p-4">
             <ProductImageGallery
-              images={product.product_images || []}
+              images={
+                product.product_images && product.product_images.length > 0
+                  ? product.product_images
+                  : product.image
+                    ? [{
+                        id: 0,
+                        image_url: product.image,
+                        alt_text: `${product.name} - Imagem principal`,
+                        is_primary: true,
+                        sort_order: 0
+                      }]
+                    : []
+              }
               productName={product.name}
             />
             
