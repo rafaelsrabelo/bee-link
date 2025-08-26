@@ -167,7 +167,7 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
       <div className="pt-20 pb-32 px-4 relative z-10">
         {/* Product Gallery */}
         <div className="mb-6">
-          <div className="bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden shadow-xl p-4">
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden shadow-xl h-80">
             <ProductImageGallery
               images={
                 product.product_images && product.product_images.length > 0

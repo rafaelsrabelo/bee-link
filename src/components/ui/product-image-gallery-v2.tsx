@@ -87,10 +87,10 @@ export default function ProductImageGallery({
 
   return (
     <>
-      <div className={`space-y-4 ${className}`}>
+      <div className={`${className}`}>
         {/* Main Image */}
-        <div className="relative bg-gray-100 rounded-lg overflow-hidden group">
-          <div className="aspect-square relative">
+        <div className="relative bg-gray-100 rounded-lg overflow-hidden group h-full">
+          <div className="relative w-full h-full">
             <Image
               src={currentImage.image_url}
               alt={currentImage.alt_text || `${productName} - Imagem ${currentIndex + 1}`}

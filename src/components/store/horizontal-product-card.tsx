@@ -82,7 +82,7 @@ export default function HorizontalProductCard({
         <ProductNavigation 
           storeSlug={storeSlug}
           productId={product.id}
-          className="relative w-32 h-32 flex-shrink-0"
+          className="relative w-32 flex-shrink-0 overflow-hidden"
           onProductClick={onProductClick}
           product={product}
         >
@@ -90,7 +90,8 @@ export default function HorizontalProductCard({
             src={product.image} 
             alt={product.name} 
             fill 
-            className="object-cover rounded-l-xl"
+            className="object-cover rounded-l-xl h-full"
+            style={{ objectPosition: 'center' }}
           />
           
           {/* Overlay sutil no hover */}
