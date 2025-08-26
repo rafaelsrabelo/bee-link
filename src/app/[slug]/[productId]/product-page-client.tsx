@@ -158,8 +158,7 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
           <ArrowLeft className="w-6 h-6" />
         </Link>
         <div className="text-center flex-1">
-          <div className="font-semibold text-base" style={{ color: store.colors.text }}>{store.store_name}</div>
-          <div className="text-xs opacity-80" style={{ color: store.colors.text }}>Produto</div>
+          <div className="font-semibold text-base text-white">{store.store_name}</div>
         </div>
         <div className="w-10" />
       </div>
@@ -353,8 +352,9 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
         }))}
         totalItems={cart.reduce((total, item) => total + item.quantity, 0)}
         totalValue={cart.reduce((total, item) => {
-          const price = Number.parseFloat(item.price.replace('R$', '').replace(',', '.').trim());
-          return total + (price * item.quantity);
+          const priceInCents = fixCorruptedPrice(item.price);
+          const priceInReais = priceInCents / 100;
+          return total + (priceInReais * item.quantity);
         }, 0)}
         storeColors={store.colors}
         isCheckingOut={isCheckingOut}
