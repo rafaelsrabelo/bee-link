@@ -80,10 +80,23 @@ export default function ProductImageGallery({
 
   // Se não há imagens, não renderizar nada
   if (!sortedImages.length) {
-    return null;
+    return (
+      <div className={`${className} flex items-center justify-center bg-gray-100 rounded-lg`}>
+        <p className="text-gray-500">Nenhuma imagem disponível</p>
+      </div>
+    );
   }
 
   const currentImage = sortedImages[currentIndex];
+
+  // Verificar se a URL da imagem é válida
+  if (!currentImage.image_url || currentImage.image_url.trim() === '') {
+    return (
+      <div className={`${className} flex items-center justify-center bg-gray-100 rounded-lg`}>
+        <p className="text-gray-500">Imagem não disponível</p>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -97,7 +110,12 @@ export default function ProductImageGallery({
               fill
               className="object-cover transition-opacity duration-300"
               onLoad={() => setIsLoading(false)}
+              onError={() => {
+                console.error('Erro ao carregar imagem:', currentImage.image_url);
+                setIsLoading(false);
+              }}
               priority={currentIndex === 0}
+              sizes="(max-width: 768px) 100vw, 50vw"
             />
             
             {isLoading && (

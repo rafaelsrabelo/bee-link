@@ -115,6 +115,26 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
   // Array de imagens do produto (por enquanto só uma, mas pode ser expandido)
   const productImages = [product.image];
 
+  // Debug: verificar dados da imagem
+  console.log('Product data:', product);
+  console.log('Product image:', product.image);
+  console.log('Product images:', product.product_images);
+  
+  // Criar array de imagens para a galeria
+  const galleryImages = product.product_images && product.product_images.length > 0
+    ? product.product_images
+    : product.image
+      ? [{
+          id: 0,
+          image_url: product.image,
+          alt_text: `${product.name} - Imagem principal`,
+          is_primary: true,
+          sort_order: 0
+        }]
+      : [];
+  
+  console.log('Gallery images:', galleryImages);
+
   // Função para adicionar ao carrinho com tracking
   const handleAddToCart = () => {
     // Adicionar produto ao carrinho
@@ -169,20 +189,9 @@ export default function ProductPageClient({ store, product }: ProductPageClientP
         <div className="mb-6">
           <div className="bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden shadow-xl h-80">
             <ProductImageGallery
-              images={
-                product.product_images && product.product_images.length > 0
-                  ? product.product_images
-                  : product.image
-                    ? [{
-                        id: 0,
-                        image_url: product.image,
-                        alt_text: `${product.name} - Imagem principal`,
-                        is_primary: true,
-                        sort_order: 0
-                      }]
-                    : []
-              }
+              images={galleryImages}
               productName={product.name}
+              className="h-full"
             />
             
 
