@@ -19,6 +19,7 @@ import HorizontalProductCard from '../../components/store/horizontal-product-car
 import ProductModal from '../../components/store/product-modal';
 
 import { trackAddToCart, trackPageView, trackProductClick } from '../../lib/analytics';
+import { fixCorruptedPrice } from '../../lib/price-utils';
 import { useCartStore } from '../stores/cartStore';
 
 // Função para extrair parâmetros UTM da URL
@@ -113,7 +114,12 @@ interface StorePageClientProps {
 }
 
 const generateWhatsAppMessage = (items: Array<{name: string; price: string; quantity: number}>, totalValue: number, store: StoreData) => {
-  const itemsText = items.map(item => `${item.quantity}x ${item.name} - ${item.price}`).join('\n');
+  const itemsText = items.map(item => {
+    // Formatar o preço corretamente
+    const priceInCents = fixCorruptedPrice(item.price);
+    const formattedPrice = (priceInCents / 100).toFixed(2).replace('.', ',');
+    return `${item.quantity}x ${item.name} - R$ ${formattedPrice}`;
+  }).join('\n');
   return `Olá! Gostaria de fazer um pedido:\n\n${itemsText}\n\nTotal: R$ ${totalValue.toFixed(2).replace('.', ',')}`;
 };
 

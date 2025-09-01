@@ -2,6 +2,7 @@
 
 import { Minus, Plus, ShoppingCart, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { fixCorruptedPrice } from '../../lib/price-utils';
 
 interface CartItem {
   id: string;
@@ -126,7 +127,7 @@ export default function FloatingCart({
                       {item.name}
                     </p>
                     <p className="text-sm text-gray-500">
-                      R$ {item.price}
+                      {formatPrice(fixCorruptedPrice(item.price) / 100)}
                     </p>
                   </div>
                   

@@ -1,8 +1,8 @@
+import { calculateDistance, geocodeAddress } from '@/lib/distance';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { supabase } from '../../../../lib/supabase';
 import type { CreateOrderRequest, Order, OrderItem } from '../../../../types/order';
-import { calculateDistance, geocodeAddress } from '@/lib/distance';
 
 interface StoreData {
   id: string;
@@ -18,9 +18,20 @@ interface OrderWithItems extends Order {
 
 // Função para formatar mensagem do WhatsApp
 function formatWhatsAppMessage(order: OrderWithItems, store: StoreData) {
-  const items = order.items.map((item: OrderItem) => 
-    `• ${item.quantity}x ${item.name} - R$ ${item.price.toFixed(2).replace('.', ',')}`
-  ).join('\n');
+  const items = order.items.map((item: OrderItem) => {
+    // Converter o preço para centavos se necessário
+    let priceInCents = item.price;
+    
+    // Se o preço é menor que 1000, provavelmente está em reais e precisa ser convertido para centavos
+    if (priceInCents < 1000) {
+      priceInCents = Math.round(priceInCents * 100);
+    }
+    
+    // Formatar o preço em centavos para reais
+    const priceInReais = (priceInCents / 100).toFixed(2).replace('.', ',');
+    
+    return `• ${item.quantity}x ${item.name} - R$ ${priceInReais}`;
+  }).join('\n');
 
   // Extrair informações das notes (temporário até migração)
   const notes = order.notes || '';
@@ -40,6 +51,13 @@ function formatWhatsAppMessage(order: OrderWithItems, store: StoreData) {
     ? `\n💰 *Subtotal: R$ ${subtotalMatch[1]}*`
     : '';
 
+  // Formatar o total também
+  let totalInCents = order.total;
+  if (totalInCents < 1000) {
+    totalInCents = Math.round(totalInCents * 100);
+  }
+  const totalFormatted = (totalInCents / 100).toFixed(2).replace('.', ',');
+
   const message = `🛒 *NOVO PEDIDO RECEBIDO!*
 
 📋 *Pedido #${order.id.slice(0, 8)}*
@@ -52,7 +70,7 @@ ${items}
 
 ${subtotalInfo}${discountInfo}${deliveryFeeInfo}
 
-💵 *Total Final:* R$ ${order.total.toFixed(2).replace('.', ',')}
+💵 *Total Final:* R$ ${totalFormatted}
 ${order.notes ? `📝 *Observações:* ${order.notes}\n` : ''}
 
 ⏰ *Horário:* ${new Date().toLocaleString('pt-BR')}
@@ -265,10 +283,20 @@ export async function POST(request: NextRequest) {
       };
       notesWithExtras += `\nForma de pagamento: ${paymentMethodNames[payment_method] || payment_method}`;
     }
-    if (delivery_fee && delivery_fee > 0) notesWithExtras += `\nTaxa de entrega: R$ ${delivery_fee.toFixed(2)}`;
-    if (coupon_code) notesWithExtras += `\nCupom: ${coupon_code} (-R$ ${coupon_discount?.toFixed(2) || '0'})`;
-    if (subtotal) notesWithExtras += `\nSubtotal: R$ ${subtotal.toFixed(2)}`;
-    notesWithExtras += `\nTotal Final: R$ ${total.toFixed(2)}`;
+    if (delivery_fee && delivery_fee > 0) {
+      const deliveryFeeFormatted = (delivery_fee / 100).toFixed(2).replace('.', ',');
+      notesWithExtras += `\nTaxa de entrega: R$ ${deliveryFeeFormatted}`;
+    }
+    if (coupon_code) {
+      const couponDiscountFormatted = coupon_discount ? (coupon_discount / 100).toFixed(2).replace('.', ',') : '0,00';
+      notesWithExtras += `\nCupom: ${coupon_code} (-R$ ${couponDiscountFormatted})`;
+    }
+    if (subtotal) {
+      const subtotalFormatted = (subtotal / 100).toFixed(2).replace('.', ',');
+      notesWithExtras += `\nSubtotal: R$ ${subtotalFormatted}`;
+    }
+    const totalFormatted = (total / 100).toFixed(2).replace('.', ',');
+    notesWithExtras += `\nTotal Final: R$ ${totalFormatted}`;
     
     orderInsert.notes = notesWithExtras;
 

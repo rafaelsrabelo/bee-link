@@ -5,9 +5,9 @@ import PriceWithDiscount from '@/components/ui/price-with-discount';
 import { AlertCircle, CreditCard, MapPin, ShoppingBag, User } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
-import { useCartStore } from '../../../stores/cartStore';
 import { fixCorruptedPrice, formatPriceFromCents } from '../../../../lib/price-utils';
 import { formatPrice } from '../../../../lib/utils';
+import { useCartStore } from '../../../stores/cartStore';
 
 interface SummaryStepProps {
   customerData: {
@@ -296,9 +296,12 @@ export default function SummaryStep({
       toast.success('Pedido criado com sucesso!', { id: loadingToast });
 
       // 4. Gerar mensagem do WhatsApp
-      const itemsList = cart.map(item => 
-        `• ${item.quantity}x ${item.name} - R$ ${item.price}`
-      ).join('\n');
+      const itemsList = cart.map(item => {
+        // Formatar o preço corretamente usando fixCorruptedPrice
+        const priceInCents = fixCorruptedPrice(item.price);
+        const formattedPrice = (priceInCents / 100).toFixed(2).replace('.', ',');
+        return `• ${item.quantity}x ${item.name} - R$ ${formattedPrice}`;
+      }).join('\n');
 
       const deliveryInfo = deliveryData.type === 'delivery' 
         ? `📍 *Entrega:*\n${deliveryData.address}, ${deliveryData.number}${deliveryData.complement ? `, ${deliveryData.complement}` : ''}\n${deliveryData.neighborhood} - ${deliveryData.city}/${deliveryData.state}\nCEP: ${deliveryData.cep}`
